@@ -1,0 +1,22 @@
+---
+description: Use pnpm as the package manager for this project
+alwaysApply: true
+---
+
+# Package Manager
+
+This project uses **pnpm**. Use `pnpm` for all build, install, and script commands. Never use `npm` or `yarn`.
+
+## Commands
+
+- Install dependencies: `pnpm install`
+- Add a dependency: `pnpm add <pkg>` (use `-D` for dev dependencies)
+- Remove a dependency: `pnpm remove <pkg>`
+- Run a script: `pnpm run <script>` (e.g. `pnpm run lint`, `pnpm run typecheck`)
+- Run the app: `pnpm start`, `pnpm ios`, `pnpm android`, `pnpm web`
+- Execute a binary: `pnpm exec <bin>` or `pnpm dlx <pkg>` (instead of `npx`)
+
+## Notes
+
+- The lockfile is `pnpm-lock.yaml`. Do not commit `package-lock.json` or `yarn.lock`.
+- Workspace config lives in `pnpm-workspace.yaml`.
