@@ -114,7 +114,7 @@ export default function RowScreen() {
             ) : (
               <LiveAccelerationCard
                 sample={stream.sample}
-                history={stream.history}
+                histories={stream.histories}
                 sampleRateHz={stream.sampleRateHz}
               />
             )

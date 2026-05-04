@@ -1,46 +1,56 @@
-import { Platform, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Fonts } from '@/constants/theme';
-import type { AccelerometerSample } from '@/hooks/use-accelerometer-stream';
+import type { AccelerometerSample, AxisHistories } from '@/hooks/use-accelerometer-stream';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 
 const COLORS = {
   light: {
     surface: '#F2F3F5',
     surfaceBorder: '#E4E6EA',
     label: '#687076',
-    axisLabel: '#9BA1A6',
+    axisLabel: '#687076',
     value: '#11181C',
-    accent: '#0a7ea4',
     pulse: '#1F9D55',
     sparkBg: '#E9EBEE',
+    sparkAxis: '#C7C9CC',
+    axisX: '#E5484D',
+    axisY: '#1F9D55',
+    axisZ: '#0a7ea4',
   },
   dark: {
     surface: '#1F2224',
     surfaceBorder: '#2A2D30',
     label: '#9BA1A6',
-    axisLabel: '#7C8186',
+    axisLabel: '#9BA1A6',
     value: '#ECEDEE',
-    accent: '#3DB7E0',
     pulse: '#34C759',
     sparkBg: '#15171A',
+    sparkAxis: '#2F3236',
+    axisX: '#FF6369',
+    axisY: '#34C759',
+    axisZ: '#3DB7E0',
   },
 } as const;
 
-const monoFont = Platform.select({
-  ios: Fonts.mono,
-  android: Fonts.mono,
-  default: Fonts.mono,
-}) as string;
+const monoFont = Fonts.mono;
+
+type AxisKey = 'x' | 'y' | 'z';
+
+const AXES: { key: AxisKey; label: string }[] = [
+  { key: 'x', label: 'X' },
+  { key: 'y', label: 'Y' },
+  { key: 'z', label: 'Z' },
+];
 
 type Props = {
   sample: AccelerometerSample | null;
-  history: number[];
+  histories: AxisHistories;
   sampleRateHz: number;
 };
 
-export function LiveAccelerationCard({ sample, history, sampleRateHz }: Props) {
+export function LiveAccelerationCard({ sample, histories, sampleRateHz }: Props) {
   const scheme = useColorScheme() ?? 'light';
   const palette = COLORS[scheme];
 
@@ -57,28 +67,23 @@ export function LiveAccelerationCard({ sample, history, sampleRateHz }: Props) {
         <View style={[styles.pulseDot, { backgroundColor: palette.pulse }]} />
       </View>
 
-      <View style={styles.axesRow}>
-        <AxisReadout
-          axis="X"
-          value={sample?.x}
-          axisColor={palette.axisLabel}
-          valueColor={palette.value}
-        />
-        <AxisReadout
-          axis="Y"
-          value={sample?.y}
-          axisColor={palette.axisLabel}
-          valueColor={palette.value}
-        />
-        <AxisReadout
-          axis="Z"
-          value={sample?.z}
-          axisColor={palette.axisLabel}
-          valueColor={palette.value}
-        />
+      <View style={styles.axisStack}>
+        {AXES.map(({ key, label }) => (
+          <AxisRow
+            key={key}
+            label={label}
+            value={sample?.[key]}
+            data={histories[key]}
+            accent={
+              key === 'x' ? palette.axisX : key === 'y' ? palette.axisY : palette.axisZ
+            }
+            axisLabelColor={palette.axisLabel}
+            valueColor={palette.value}
+            sparkBg={palette.sparkBg}
+            sparkAxisColor={palette.sparkAxis}
+          />
+        ))}
       </View>
-
-      <Sparkline data={history} accent={palette.accent} background={palette.sparkBg} />
 
       <ThemedText style={[styles.footer, { color: palette.label }]}>
         Sampling at {sampleRateHz} Hz
@@ -87,26 +92,35 @@ export function LiveAccelerationCard({ sample, history, sampleRateHz }: Props) {
   );
 }
 
-function AxisReadout({
-  axis,
+function AxisRow({
+  label,
   value,
-  axisColor,
+  data,
+  accent,
+  axisLabelColor,
   valueColor,
+  sparkBg,
+  sparkAxisColor,
 }: {
-  axis: string;
+  label: string;
   value: number | undefined;
-  axisColor: string;
+  data: number[];
+  accent: string;
+  axisLabelColor: string;
   valueColor: string;
+  sparkBg: string;
+  sparkAxisColor: string;
 }) {
-  const display = value === undefined || Number.isNaN(value) ? '—' : value.toFixed(2);
+  const display = value === undefined || Number.isNaN(value) ? '   —  ' : formatValue(value);
   return (
-    <View style={styles.axisCol}>
-      <ThemedText style={[styles.axisLabel, { color: axisColor }]}>{axis}</ThemedText>
+    <View style={styles.axisRow}>
+      <ThemedText style={[styles.axisLabel, { color: axisLabelColor }]}>{label}</ThemedText>
       <ThemedText
         style={[styles.axisValue, { color: valueColor, fontFamily: monoFont }]}
         numberOfLines={1}>
         {display}
       </ThemedText>
+      <Sparkline data={data} accent={accent} background={sparkBg} axisColor={sparkAxisColor} />
     </View>
   );
 }
@@ -115,42 +129,53 @@ function Sparkline({
   data,
   accent,
   background,
+  axisColor,
 }: {
   data: number[];
   accent: string;
   background: string;
+  axisColor: string;
 }) {
   const max = Math.max(0.5, ...data.map((v) => Math.abs(v)));
   return (
     <View style={[styles.sparkContainer, { backgroundColor: background }]}>
+      <View style={[styles.sparkAxis, { backgroundColor: axisColor }]} />
       {data.map((value, index) => {
         const normalized = Math.min(1, Math.abs(value) / max);
-        const heightPct = 6 + normalized * 88;
+        const heightPct = normalized * 50;
+        const isPositive = value >= 0;
         return (
-          <View
-            key={index}
-            style={[
-              styles.sparkBar,
-              {
-                backgroundColor: accent,
-                height: `${heightPct}%`,
-                opacity: 0.55 + normalized * 0.45,
-              },
-            ]}
-          />
+          <View key={index} style={styles.sparkSlot}>
+            <View
+              style={[
+                styles.sparkBar,
+                {
+                  backgroundColor: accent,
+                  height: `${heightPct}%`,
+                  opacity: 0.55 + normalized * 0.45,
+                  ...(isPositive ? { bottom: '50%' } : { top: '50%' }),
+                },
+              ]}
+            />
+          </View>
         );
       })}
     </View>
   );
 }
 
+function formatValue(value: number) {
+  const fixed = value.toFixed(2);
+  return value >= 0 ? ` ${fixed}` : fixed;
+}
+
 const styles = StyleSheet.create({
   card: {
-    paddingVertical: 16,
+    paddingVertical: 14,
     paddingHorizontal: 16,
     borderRadius: 16,
     borderWidth: StyleSheet.hairlineWidth,
-    gap: 14,
+    gap: 10,
   },
   headerRow: {
     flexDirection: 'row',
@@ -168,39 +193,55 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
   },
-  axesRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
+  axisStack: {
+    gap: 8,
   },
-  axisCol: {
-    flex: 1,
-    alignItems: 'flex-start',
-    gap: 2,
+  axisRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
   axisLabel: {
     fontSize: 12,
-    fontWeight: '500',
-    lineHeight: 14,
+    fontWeight: '700',
+    width: 14,
   },
   axisValue: {
-    fontSize: 28,
+    fontSize: 14,
     fontWeight: '500',
-    lineHeight: 32,
+    minWidth: 56,
+    textAlign: 'right',
   },
   sparkContainer: {
+    flex: 1,
     flexDirection: 'row',
-    alignItems: 'flex-end',
-    height: 64,
-    borderRadius: 10,
-    paddingHorizontal: 6,
-    paddingVertical: 4,
-    gap: 2,
+    alignItems: 'stretch',
+    height: 30,
+    borderRadius: 8,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  sparkAxis: {
+    position: 'absolute',
+    left: 4,
+    right: 4,
+    top: '50%',
+    height: StyleSheet.hairlineWidth,
+  },
+  sparkSlot: {
+    flex: 1,
+    height: '100%',
+    position: 'relative',
+    marginHorizontal: 0.5,
   },
   sparkBar: {
-    flex: 1,
-    borderRadius: 1.5,
-    minHeight: 2,
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    borderRadius: 1,
+    minHeight: 1,
   },
   footer: {
     fontSize: 12,
