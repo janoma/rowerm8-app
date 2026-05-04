@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Package Manager
 
-This project uses **pnpm**. Use `pnpm` for all build, install, and script commands. Never use `npm` or `yarn`.
+This project uses **pnpm 11.x** (see `packageManager` and `engines.pnpm` in `package.json`). Use `pnpm` for all build, install, and script commands. Never use `npm` or `yarn`.
 
 ## Commands
 
