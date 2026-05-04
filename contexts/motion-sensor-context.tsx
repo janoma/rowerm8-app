@@ -6,20 +6,30 @@ export type MotionSensorSource = 'none' | 'phone' | 'ble';
 export type MotionSensorSelection = {
   source: MotionSensorSource;
   deviceLabel: string | null;
+  bleDeviceId: string | null;
+  decoderKey: string | null;
+};
+
+export type SelectBleArgs = {
+  deviceLabel: string;
+  bleDeviceId: string;
+  decoderKey: string | null;
 };
 
 type MotionSensorContextValue = MotionSensorSelection & {
   isHydrated: boolean;
   selectPhone: () => void;
-  selectBle: (deviceLabel: string) => void;
+  selectBle: (args: SelectBleArgs) => void;
   clear: () => void;
 };
 
-const STORAGE_KEY = 'rowerm8.motionSensor.selection.v1';
+const STORAGE_KEY = 'rowerm8.motionSensor.selection.v2';
 
 const DEFAULT_SELECTION: MotionSensorSelection = {
   source: 'none',
   deviceLabel: null,
+  bleDeviceId: null,
+  decoderKey: null,
 };
 
 const MotionSensorContext = createContext<MotionSensorContextValue | null>(null);
@@ -35,9 +45,9 @@ export function MotionSensorProvider({ children }: { children: React.ReactNode }
         if (cancelled) return;
         if (raw) {
           try {
-            const parsed = JSON.parse(raw) as MotionSensorSelection;
+            const parsed = JSON.parse(raw) as Partial<MotionSensorSelection>;
             if (parsed && typeof parsed.source === 'string') {
-              setSelection(parsed);
+              setSelection({ ...DEFAULT_SELECTION, ...parsed });
             }
           } catch {
             // Ignore malformed persisted state and fall back to default.
@@ -66,8 +76,15 @@ export function MotionSensorProvider({ children }: { children: React.ReactNode }
     () => ({
       ...selection,
       isHydrated,
-      selectPhone: () => persist({ source: 'phone', deviceLabel: 'iPhone accelerometer' }),
-      selectBle: (deviceLabel: string) => persist({ source: 'ble', deviceLabel }),
+      selectPhone: () =>
+        persist({
+          source: 'phone',
+          deviceLabel: 'iPhone accelerometer',
+          bleDeviceId: null,
+          decoderKey: null,
+        }),
+      selectBle: ({ deviceLabel, bleDeviceId, decoderKey }: SelectBleArgs) =>
+        persist({ source: 'ble', deviceLabel, bleDeviceId, decoderKey }),
       clear: () => persist(DEFAULT_SELECTION),
     }),
     [selection, isHydrated, persist],

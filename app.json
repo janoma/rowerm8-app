@@ -12,7 +12,8 @@
       "supportsTablet": true,
       "infoPlist": {
         "NSMotionUsageDescription": "rowerm8 reads motion data to track your rowing strokes."
-      }
+      },
+      "bundleIdentifier": "com.janoma.rowerm8"
     },
     "android": {
       "adaptiveIcon": {
@@ -22,7 +23,12 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.BLUETOOTH",
+        "android.permission.BLUETOOTH_ADMIN",
+        "android.permission.BLUETOOTH_CONNECT"
+      ]
     },
     "web": {
       "output": "static",
@@ -30,6 +36,15 @@
     },
     "plugins": [
       "expo-router",
+      "expo-dev-client",
+      [
+        "react-native-ble-plx",
+        {
+          "isBackgroundEnabled": false,
+          "modes": [],
+          "bluetoothAlwaysPermission": "rowerm8 connects to Bluetooth motion sensors to track your rowing strokes."
+        }
+      ],
       [
         "expo-splash-screen",
         {

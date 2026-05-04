@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -8,11 +8,10 @@ import { SensorStatusCard } from '@/components/sensor/sensor-status-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { useBle } from '@/contexts/ble-context';
 import { useMotionSensor } from '@/contexts/motion-sensor-context';
-import { useAccelerometerStream } from '@/hooks/use-accelerometer-stream';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-
-const SAMPLE_RATE_HZ = 60;
+import { useMotionStream } from '@/hooks/use-motion-stream';
 
 const COLORS = {
   light: {
@@ -41,13 +40,79 @@ export default function RowScreen() {
   const scheme = useColorScheme() ?? 'light';
   const palette = COLORS[scheme];
   const { source, deviceLabel, selectPhone } = useMotionSensor();
+  const stream = useMotionStream();
+  const ble = useBle();
   const [pickerOpen, setPickerOpen] = useState(false);
 
-  const phoneActive = source === 'phone';
-  const stream = useAccelerometerStream({
-    enabled: phoneActive,
-    sampleRateHz: SAMPLE_RATE_HZ,
-  });
+  useEffect(() => {
+    if (source !== 'ble' && ble.activeDevice) {
+      ble.disconnect();
+    }
+  }, [source, ble]);
+
+  const renderDataSection = () => {
+    if (source === 'none') {
+      return (
+        <View
+          style={[styles.placeholder, { borderColor: palette.placeholderBorder }]}
+          accessibilityElementsHidden>
+          <ThemedText style={[styles.placeholderText, { color: palette.placeholderText }]}>
+            Live sensor data will appear here once you select a source.
+          </ThemedText>
+        </View>
+      );
+    }
+
+    if (source === 'phone') {
+      if (stream.permissionDenied) {
+        return (
+          <Notice palette={palette}>
+            Motion permission was denied. Enable Motion &amp; Fitness for rowerm8 in Settings to see
+            live data.
+          </Notice>
+        );
+      }
+      if (!stream.isAvailable) {
+        return <Notice palette={palette}>No accelerometer detected on this device.</Notice>;
+      }
+      return (
+        <LiveAccelerationCard
+          sample={stream.sample}
+          histories={stream.histories}
+          sampleRateHz={stream.sampleRateHz}
+        />
+      );
+    }
+
+    if (!ble.activeDevice) {
+      return (
+        <Notice palette={palette}>
+          Not connected to a Bluetooth sensor. Tap Change above to reconnect.
+        </Notice>
+      );
+    }
+
+    if (!stream.hasDecoder) {
+      return (
+        <Notice palette={palette}>
+          Connected to {deviceLabel ?? 'this device'}, but rowerm8 doesn&apos;t have a decoder for
+          it yet. Live data is unavailable.
+        </Notice>
+      );
+    }
+
+    if (!stream.isAvailable) {
+      return <Notice palette={palette}>Connecting to {deviceLabel ?? 'sensor'}...</Notice>;
+    }
+
+    return (
+      <LiveAccelerationCard
+        sample={stream.sample}
+        histories={stream.histories}
+        sampleRateHz={stream.sampleRateHz}
+      />
+    );
+  };
 
   return (
     <ThemedView style={styles.root}>
@@ -64,69 +129,31 @@ export default function RowScreen() {
           />
 
           {source === 'none' ? (
-            <Pressable
-              onPress={() => setPickerOpen(true)}
-              accessibilityRole="button"
-              accessibilityLabel="Select motion sensor"
-              style={({ pressed }) => [
-                styles.primaryButton,
-                { backgroundColor: palette.primaryBg, opacity: pressed ? 0.85 : 1 },
-              ]}>
-              <IconSymbol
-                name="dot.radiowaves.left.and.right"
-                size={20}
-                color={palette.primaryText}
-              />
-              <ThemedText style={[styles.primaryButtonText, { color: palette.primaryText }]}>
-                Select motion sensor
+            <>
+              <Pressable
+                onPress={() => setPickerOpen(true)}
+                accessibilityRole="button"
+                accessibilityLabel="Select motion sensor"
+                style={({ pressed }) => [
+                  styles.primaryButton,
+                  { backgroundColor: palette.primaryBg, opacity: pressed ? 0.85 : 1 },
+                ]}>
+                <IconSymbol
+                  name="dot.radiowaves.left.and.right"
+                  size={20}
+                  color={palette.primaryText}
+                />
+                <ThemedText style={[styles.primaryButtonText, { color: palette.primaryText }]}>
+                  Select motion sensor
+                </ThemedText>
+              </Pressable>
+              <ThemedText style={[styles.helper, { color: palette.helper }]}>
+                Choose how you want to track stroke motion.
               </ThemedText>
-            </Pressable>
+            </>
           ) : null}
 
-          {source === 'none' ? (
-            <ThemedText style={[styles.helper, { color: palette.helper }]}>
-              Choose how you want to track stroke motion.
-            </ThemedText>
-          ) : null}
-
-          {phoneActive ? (
-            stream.permissionDenied ? (
-              <View
-                style={[
-                  styles.notice,
-                  { backgroundColor: palette.permissionBg, borderColor: palette.permissionBorder },
-                ]}>
-                <ThemedText style={[styles.noticeText, { color: palette.permissionText }]}>
-                  Motion permission was denied. Enable Motion &amp; Fitness for rowerm8 in Settings to
-                  see live data.
-                </ThemedText>
-              </View>
-            ) : !stream.isAvailable ? (
-              <View
-                style={[
-                  styles.notice,
-                  { backgroundColor: palette.permissionBg, borderColor: palette.permissionBorder },
-                ]}>
-                <ThemedText style={[styles.noticeText, { color: palette.permissionText }]}>
-                  No accelerometer detected on this device.
-                </ThemedText>
-              </View>
-            ) : (
-              <LiveAccelerationCard
-                sample={stream.sample}
-                histories={stream.histories}
-                sampleRateHz={stream.sampleRateHz}
-              />
-            )
-          ) : source === 'none' ? (
-            <View
-              style={[styles.placeholder, { borderColor: palette.placeholderBorder }]}
-              accessibilityElementsHidden>
-              <ThemedText style={[styles.placeholderText, { color: palette.placeholderText }]}>
-                Live sensor data will appear here once you select a source.
-              </ThemedText>
-            </View>
-          ) : null}
+          {renderDataSection()}
         </View>
       </SafeAreaView>
 
@@ -136,6 +163,26 @@ export default function RowScreen() {
         onSelectPhone={selectPhone}
       />
     </ThemedView>
+  );
+}
+
+function Notice({
+  palette,
+  children,
+}: {
+  palette: (typeof COLORS)[keyof typeof COLORS];
+  children: React.ReactNode;
+}) {
+  return (
+    <View
+      style={[
+        styles.notice,
+        { backgroundColor: palette.permissionBg, borderColor: palette.permissionBorder },
+      ]}>
+      <ThemedText style={[styles.noticeText, { color: palette.permissionText }]}>
+        {children}
+      </ThemedText>
+    </View>
   );
 }
 

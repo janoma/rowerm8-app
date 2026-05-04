@@ -1,4 +1,6 @@
-nodeLinker: hoisted
-strictDepBuilds: false
+allowBuilds:
+  unrs-resolver: set this to true or false
 ignoredBuiltDependencies:
   - unrs-resolver
+nodeLinker: hoisted
+strictDepBuilds: false
