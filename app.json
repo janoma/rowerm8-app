@@ -9,7 +9,10 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSMotionUsageDescription": "rowerm8 reads motion data to track your rowing strokes."
+      }
     },
     "android": {
       "adaptiveIcon": {

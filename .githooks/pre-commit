@@ -1,0 +1,13 @@
+#!/usr/bin/env sh
+# Run TypeScript and ESLint checks before allowing a commit.
+# Enable on a fresh clone with:  git config core.hooksPath .githooks
+
+set -e
+
+echo "[pre-commit] typecheck..."
+pnpm run --silent typecheck
+
+echo "[pre-commit] lint..."
+pnpm run --silent lint
+
+echo "[pre-commit] OK"
