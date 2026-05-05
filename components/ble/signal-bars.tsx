@@ -1,5 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
+import { useColorScheme } from '@/hooks/use-color-scheme';
+
 const TOTAL_BARS = 4;
 
 const COLORS = {
@@ -12,8 +14,6 @@ const COLORS = {
     inactive: '#3A3D40',
   },
 } as const;
-
-import { useColorScheme } from '@/hooks/use-color-scheme';
 
 /**
  * Map an RSSI (dBm) value to a 0..TOTAL_BARS bucket.
