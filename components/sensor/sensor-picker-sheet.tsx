@@ -18,6 +18,8 @@ const COLORS = {
     accent: '#0a7ea4',
     accentSoft: 'rgba(10, 126, 164, 0.18)',
     chevron: '#687076',
+    danger: '#D02E1F',
+    dangerSoft: 'rgba(208, 46, 31, 0.12)',
   },
   dark: {
     backdrop: 'rgba(0, 0, 0, 0.55)',
@@ -30,6 +32,8 @@ const COLORS = {
     accent: '#3DB7E0',
     accentSoft: 'rgba(61, 183, 224, 0.22)',
     chevron: '#9BA1A6',
+    danger: '#FF6369',
+    dangerSoft: 'rgba(255, 99, 105, 0.18)',
   },
 } as const;
 
@@ -37,15 +41,26 @@ type Props = {
   visible: boolean;
   onClose: () => void;
   onSelectPhone: () => void;
+  /**
+   * If provided, renders a destructive "Disconnect" row at the bottom that
+   * clears the active sensor selection. Pass undefined when no source is
+   * currently selected (the row would be a no-op).
+   */
+  onDisconnect?: () => void;
 };
 
-export function SensorPickerSheet({ visible, onClose, onSelectPhone }: Props) {
+export function SensorPickerSheet({ visible, onClose, onSelectPhone, onDisconnect }: Props) {
   const scheme = useColorScheme() ?? 'light';
   const palette = COLORS[scheme];
 
   const handleBluetoothPress = () => {
     onClose();
     router.push('/ble-scan');
+  };
+
+  const handleDisconnectPress = () => {
+    onDisconnect?.();
+    onClose();
   };
 
   return (
@@ -120,6 +135,33 @@ export function SensorPickerSheet({ visible, onClose, onSelectPhone }: Props) {
             </View>
             <IconSymbol name="chevron.right" size={20} color={palette.chevron} />
           </Pressable>
+
+          {onDisconnect ? (
+            <Pressable
+              onPress={handleDisconnectPress}
+              accessibilityRole="button"
+              accessibilityLabel="Disconnect motion sensor"
+              style={({ pressed }) => [
+                styles.optionCard,
+                {
+                  backgroundColor: palette.cardEnabled,
+                  borderColor: palette.cardEnabledBorder,
+                  opacity: pressed ? 0.85 : 1,
+                },
+              ]}>
+              <View style={[styles.optionIcon, { backgroundColor: palette.dangerSoft }]}>
+                <IconSymbol name="xmark.circle" size={24} color={palette.danger} />
+              </View>
+              <View style={styles.optionTextBlock}>
+                <ThemedText style={[styles.optionTitle, { color: palette.danger }]}>
+                  Disconnect
+                </ThemedText>
+                <ThemedText style={[styles.optionSubtitle, { color: palette.subtitle }]}>
+                  Clear the current motion sensor selection
+                </ThemedText>
+              </View>
+            </Pressable>
+          ) : null}
 
           <Pressable
             onPress={onClose}

@@ -39,7 +39,7 @@ const COLORS = {
 export default function RowScreen() {
   const scheme = useColorScheme() ?? 'light';
   const palette = COLORS[scheme];
-  const { source, deviceLabel, selectPhone } = useMotionSensor();
+  const { source, deviceLabel, selectPhone, clear } = useMotionSensor();
   const stream = useMotionStream();
   const ble = useBle();
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -161,6 +161,7 @@ export default function RowScreen() {
         visible={pickerOpen}
         onClose={() => setPickerOpen(false)}
         onSelectPhone={selectPhone}
+        onDisconnect={source !== 'none' ? clear : undefined}
       />
     </ThemedView>
   );

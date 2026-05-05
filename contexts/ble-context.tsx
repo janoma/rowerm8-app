@@ -290,32 +290,40 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
               subscribersRef.current.forEach((cb) => cb(bytes));
             },
           );
-
-          // Send vendor-specific config (e.g. unlock + output rate). Failures here
-          // are non-fatal: a partial config still yields data, just at the device's
-          // previous settings.
-          if (decoder.writeUuid && decoder.initCommands?.length) {
-            for (const cmd of decoder.initCommands) {
-              try {
-                await connected.writeCharacteristicWithoutResponseForService(
-                  decoder.serviceUuid,
-                  decoder.writeUuid,
-                  bytesToBase64(cmd),
-                );
-                // WitMotion's controller needs a brief gap between register writes;
-                // 50 ms is enough for the unlock + RRATE pair to land reliably.
-                await new Promise((resolve) => setTimeout(resolve, 50));
-              } catch (e) {
-                console.warn('[ble] init command failed', e);
-              }
-            }
-          }
         }
 
         connectedDeviceRef.current = connected;
         setActiveDevice(scanned);
         setActiveDecoder(decoder);
         setConnectionState('connected');
+
+        // Fire vendor-specific config (e.g. unlock + output rate) AFTER we mark the
+        // connection live, so the UI never blocks on these writes. iOS sometimes
+        // back-pressures rapid WriteWithoutResponse calls, which previously left
+        // the picker stuck on "Connecting...". WriteWithResponse avoids that and
+        // surfaces errors; failures are logged but don't affect data flow (the
+        // device just stays at its previous settings).
+        if (decoder?.writeUuid && decoder.initCommands?.length) {
+          const writeUuid = decoder.writeUuid;
+          const serviceUuid = decoder.serviceUuid;
+          const commands = decoder.initCommands;
+          (async () => {
+            for (const cmd of commands) {
+              try {
+                await connected.writeCharacteristicWithResponseForService(
+                  serviceUuid,
+                  writeUuid,
+                  bytesToBase64(cmd),
+                );
+                // WitMotion's controller needs a small gap between register writes.
+                await new Promise((resolve) => setTimeout(resolve, 50));
+              } catch (e) {
+                console.warn('[ble] init command failed', e);
+              }
+            }
+          })().catch((e) => console.warn('[ble] init sequence failed', e));
+        }
+
         return scanned;
       } catch (e) {
         const message = e instanceof Error ? e.message : 'Failed to connect.';

@@ -23,6 +23,7 @@ const MAPPING = {
   'dot.radiowaves.left.and.right': 'sensors',
   iphone: 'smartphone',
   'dot.radiowaves.right': 'bluetooth',
+  'xmark.circle': 'cancel',
 } as IconMapping;
 
 /**
