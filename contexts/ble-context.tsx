@@ -32,6 +32,8 @@ const BATTERY_FIRST_READ_DELAY_MS = 1_500;
 // Verbose protocol-level logging for diagnosing decoder issues. Flip to false
 // once the WitMotion battery flow is verified end-to-end.
 const BLE_DEBUG_LOGS = true;
+// Most verbose logging for individual reads of motion data.
+const BLE_TRACE_LOGS = false;
 
 function hexBytes(bytes: Uint8Array, n = 20): string {
   const len = Math.min(n, bytes.length);
@@ -375,18 +377,24 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
               if (batteryFrame?.batteryPercent != null) {
                 setBatteryPercent(batteryFrame.batteryPercent);
               }
-              if (BLE_DEBUG_LOGS) {
-                // Skip the high-rate plain-accel notifications (a single
-                // 0x55 0x61 frame, exactly 20 bytes); log anything else so we
-                // can see battery responses or coalesced frames clearly.
-                const isPlainAccelChunk =
-                  bytes.length === 20 && bytes[0] === 0x55 && bytes[1] === 0x61;
-                if (!isPlainAccelChunk) {
+              if (BLE_TRACE_LOGS) {
+                // Suppress the 25-50 Hz accel chatter: any chunk whose
+                // frames are all plain accel (and therefore carry no
+                // battery / register-response payload) isn't interesting
+                // for protocol-level debugging. iOS commonly coalesces 2-3
+                // accel frames per notification, so a length check alone
+                // wouldn't be enough.
+                const isAllAccel =
+                  frames.length > 0 &&
+                  frames.every(
+                    (f) => f.accel != null && f.batteryPercent == null,
+                  );
+                if (!isAllAccel) {
                   console.log(
                     "[ble] notif",
                     hexBytes(bytes),
                     "→ frames:",
-                    frames.map((f) => Object.keys(f)).join(" | "),
+                    frames.map((f) => Object.keys(f).join(",")).join(" | "),
                   );
                 }
               }

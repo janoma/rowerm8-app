@@ -22,28 +22,38 @@ const WIT_SET_RATE_50HZ = new Uint8Array([0xff, 0xaa, 0x03, 0x08, 0x00]);
 const WIT_READ_BATTERY = new Uint8Array([0xff, 0xaa, 0x27, 0x64, 0x00]);
 
 /**
- * Map a Li-ion cell voltage to a 0-100 percentage. The device reports BATVAL
- * in 0.01 V units. The breakpoints below come from the WitMotion app's
- * published curve; a Li-ion cell drops sharply below ~3.6 V so the lower end
- * is more granular than the top.
+ * Map a 1-cell Li-ion voltage to a 0-100 state-of-charge.
+ *
+ * The WT9011DCL reports BATVAL in 0.01 V units. We deliberately do NOT use
+ * the curve from the WitMotion mobile app, which plateaus at "≥ 3.96 V →
+ * 100 %": that range covers many hours of light BLE use, so the on-screen
+ * percentage never moves from 100 %. The breakpoints below approximate a
+ * standard 1S Li-ion discharge under light load (BLE-only, no motor draw)
+ * and are linearly interpolated between points so the value changes
+ * smoothly as the cell drains.
  */
 function voltageToPercent(volts: number): number {
-  const table: [number, number][] = [
-    [3.96, 100],
-    [3.93, 90],
-    [3.87, 75],
-    [3.82, 60],
-    [3.79, 50],
-    [3.77, 40],
-    [3.73, 30],
-    [3.71, 20],
-    [3.69, 15],
-    [3.61, 10],
-    [3.55, 5],
+  const points: [voltsAt: number, percent: number][] = [
+    [4.2, 100],
+    [4.1, 95],
+    [4.0, 85],
+    [3.95, 75],
+    [3.85, 60],
+    [3.75, 45],
+    [3.65, 30],
+    [3.55, 20],
+    [3.45, 10],
+    [3.3, 0],
   ];
-  for (const [threshold, pct] of table) {
-    if (volts >= threshold) {
-      return pct;
+  if (volts >= points[0][0]) {
+    return points[0][1];
+  }
+  for (let i = 0; i < points.length - 1; i++) {
+    const [vHi, pHi] = points[i];
+    const [vLo, pLo] = points[i + 1];
+    if (volts >= vLo) {
+      const t = (volts - vLo) / (vHi - vLo);
+      return Math.round(pLo + t * (pHi - pLo));
     }
   }
   return 0;
