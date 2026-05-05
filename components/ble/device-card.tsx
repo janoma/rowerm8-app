@@ -1,6 +1,5 @@
 import { Pressable, StyleSheet, View } from "react-native";
 
-import { BatteryIndicator } from "@/components/ble/battery-indicator";
 import { SignalBars } from "@/components/ble/signal-bars";
 import { ThemedText } from "@/components/themed-text";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -33,17 +32,10 @@ const COLORS = {
 type Props = {
   device: ScannedDevice;
   busy?: boolean;
-  /** 0..100 — when null/undefined, the battery slot is hidden. */
-  batteryPercent?: number | null;
   onPress: (device: ScannedDevice) => void;
 };
 
-export function DeviceCard({
-  device,
-  busy = false,
-  batteryPercent = null,
-  onPress,
-}: Props) {
+export function DeviceCard({ device, busy = false, onPress }: Props) {
   const scheme = useColorScheme() ?? "light";
   const palette = COLORS[scheme];
 
@@ -94,19 +86,11 @@ export function DeviceCard({
           </ThemedText>
         </View>
 
-        <View style={styles.metaColumn}>
-          <View style={styles.metaTopSlot}>
-            <SignalBars rssi={device.rssi} size="lg" />
-          </View>
-          <View style={styles.metaBottomSlot}>
-            {batteryPercent != null ? (
-              <BatteryIndicator
-                percent={batteryPercent}
-                height={11}
-                fontSize={12}
-              />
-            ) : null}
-          </View>
+        {/* Signal slot is sized to match the title's line height so the bars
+            sit on the same visual line as the device name rather than the
+            vertical center of the card. */}
+        <View style={styles.signalSlot}>
+          <SignalBars rssi={device.rssi} size="lg" />
         </View>
       </View>
 
@@ -135,7 +119,7 @@ const styles = StyleSheet.create({
   bodyRow: {
     flex: 1,
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     gap: 10,
   },
   textColumn: {
@@ -151,19 +135,8 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
   },
-  // Right-side meta column has two stacked slots whose heights mirror the
-  // text column (title + subtitle) so the signal bars line up with the title
-  // row and the battery lines up with the subtitle row.
-  metaColumn: {
-    alignItems: "flex-end",
-    justifyContent: "center",
-  },
-  metaTopSlot: {
+  signalSlot: {
     height: 22,
-    justifyContent: "center",
-  },
-  metaBottomSlot: {
-    height: 18,
     justifyContent: "center",
   },
 });

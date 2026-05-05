@@ -6,17 +6,17 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 const COLORS = {
   light: {
     label: "#11181C",
-    body: "#11181C",
-    fill: "#1F9D55",
-    fillLow: "#E08A1E",
-    fillCritical: "#D02E1F",
+    body: "#A1A6AB",
+    fill: "#34C759",
+    fillLow: "#FF9F0A",
+    fillCritical: "#FF3B30",
   },
   dark: {
     label: "#ECEDEE",
-    body: "#ECEDEE",
-    fill: "#34C759",
-    fillLow: "#FFB020",
-    fillCritical: "#FF6369",
+    body: "#7C8186",
+    fill: "#30D158",
+    fillLow: "#FFD60A",
+    fillCritical: "#FF6961",
   },
 } as const;
 
@@ -33,13 +33,13 @@ function fillColorFor(percent: number, palette: Palette) {
 }
 
 /**
- * Compact battery icon (rounded body + terminal nub) plus a percentage label.
- * Sized to align with body text near it; dimensions in props are approximate
- * pixel heights.
+ * iOS-style battery icon: rounded body with a 1 px outline, a snug nub butted
+ * against the right edge, and a colored fill inset by uniform padding so the
+ * gap around the fill is identical on all four sides.
  */
 export function BatteryIndicator({
   percent,
-  height = 12,
+  height = 14,
   fontSize = 12,
 }: {
   percent: number;
@@ -51,13 +51,22 @@ export function BatteryIndicator({
   const clamped = Math.max(0, Math.min(100, Math.round(percent)));
   const fillColor = fillColorFor(clamped, palette);
 
+  // All measurements derive from `height` so the icon scales cleanly. Layout
+  // uses padding (instead of absolute positioning) for the fill so the
+  // top/left/right/bottom gaps are identical regardless of border width.
   const bodyHeight = height;
-  const bodyWidth = Math.round(bodyHeight * 1.8);
+  const bodyWidth = Math.round(bodyHeight * 2);
   const nubHeight = Math.round(bodyHeight * 0.5);
-  const nubWidth = Math.max(1, Math.round(bodyHeight * 0.18));
-  const innerInset = Math.max(1, Math.round(bodyHeight * 0.15));
-  const innerHeight = bodyHeight - innerInset * 2;
-  const innerMaxWidth = bodyWidth - innerInset * 2;
+  const nubWidth = Math.max(2, Math.round(bodyHeight * 0.18));
+  const borderWidth = 1;
+  // Padding equals border width: tight halo of body color, just enough to
+  // make the fill look set into the body rather than touching the outline.
+  const padding = borderWidth;
+  const borderRadius = Math.max(2, Math.round(bodyHeight * 0.3));
+  // Inner radius keeps the fill visually concentric with the outer body —
+  // each layer (border, padding) shaves one pixel off the curvature.
+  const innerRadius = Math.max(1, borderRadius - borderWidth - padding);
+  const innerMaxWidth = bodyWidth - 2 * borderWidth - 2 * padding;
   const innerWidth = Math.max(1, Math.round((innerMaxWidth * clamped) / 100));
 
   return (
@@ -66,38 +75,39 @@ export function BatteryIndicator({
       accessibilityRole="image"
       accessibilityLabel={`Battery ${clamped} percent`}
     >
-      <View
-        style={[
-          styles.body,
-          {
-            width: bodyWidth,
-            height: bodyHeight,
-            borderColor: palette.body,
-          },
-        ]}
-      >
+      <View style={styles.iconRow}>
+        <View
+          style={[
+            styles.body,
+            {
+              width: bodyWidth,
+              height: bodyHeight,
+              borderColor: palette.body,
+              borderWidth,
+              borderRadius,
+              padding,
+            },
+          ]}
+        >
+          <View
+            style={{
+              width: innerWidth,
+              height: "100%",
+              backgroundColor: fillColor,
+              borderRadius: innerRadius,
+            }}
+          />
+        </View>
         <View
           style={{
-            position: "absolute",
-            left: innerInset,
-            top: innerInset,
-            width: innerWidth,
-            height: innerHeight,
-            backgroundColor: fillColor,
-            borderRadius: 1,
+            width: nubWidth,
+            height: nubHeight,
+            backgroundColor: palette.body,
+            borderTopRightRadius: 1,
+            borderBottomRightRadius: 1,
           }}
         />
       </View>
-      <View
-        style={{
-          width: nubWidth,
-          height: nubHeight,
-          backgroundColor: palette.body,
-          borderTopRightRadius: 1,
-          borderBottomRightRadius: 1,
-          marginLeft: 1,
-        }}
-      />
       <ThemedText
         style={[styles.label, { color: palette.label, fontSize }]}
         numberOfLines={1}
@@ -113,13 +123,17 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
   },
+  // Body and nub render as one inline shape with no gap between them.
+  iconRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
   body: {
-    borderWidth: 1,
-    borderRadius: 2,
-    position: "relative",
+    flexDirection: "row",
+    alignItems: "stretch",
   },
   label: {
-    marginLeft: 4,
+    marginLeft: 5,
     fontWeight: "500",
   },
 });

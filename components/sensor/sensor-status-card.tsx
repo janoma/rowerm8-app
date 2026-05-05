@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, View } from "react-native";
 
+import { BatteryIndicator } from "@/components/ble/battery-indicator";
 import { ThemedText } from "@/components/themed-text";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -33,6 +34,12 @@ type Props = {
   /** Data is actively flowing from the chosen source right now. */
   connected: boolean;
   deviceLabel: string | null;
+  /**
+   * Battery percent (0-100) for the active source. Only meaningful while
+   * `connected` is true and the source actually reports it (e.g. BLE sensors);
+   * pass `null` to hide the indicator.
+   */
+  batteryPercent?: number | null;
   onPressAction: () => void;
 };
 
@@ -40,6 +47,7 @@ export function SensorStatusCard({
   selected,
   connected,
   deviceLabel,
+  batteryPercent = null,
   onPressAction,
 }: Props) {
   const scheme = useColorScheme() ?? "light";
@@ -81,6 +89,15 @@ export function SensorStatusCard({
           <ThemedText style={[styles.subtitle, { color: palette.warning }]}>
             Not connected
           </ThemedText>
+        ) : null}
+        {connected && batteryPercent != null ? (
+          <View style={styles.batteryRow}>
+            <BatteryIndicator
+              percent={batteryPercent}
+              height={14}
+              fontSize={12}
+            />
+          </View>
         ) : null}
       </View>
       {selected ? (
@@ -136,6 +153,11 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     lineHeight: 14,
     marginTop: 2,
+  },
+  batteryRow: {
+    marginTop: 4,
+    flexDirection: "row",
+    alignItems: "center",
   },
   action: {
     fontSize: 16,

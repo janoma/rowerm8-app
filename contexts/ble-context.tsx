@@ -22,6 +22,28 @@ import type {
 
 const SCAN_DURATION_MS = 15_000;
 const CONNECT_TIMEOUT_MS = 10_000;
+// Battery state changes slowly; once a minute is more than enough, and it
+// keeps the radio quiet between high-rate accel notifications.
+const BATTERY_POLL_INTERVAL_MS = 60_000;
+// Wait a beat after the connection is live (and after init writes are queued)
+// before the first battery read, so we don't fight iOS for write slots while
+// the connection is still warming up.
+const BATTERY_FIRST_READ_DELAY_MS = 1_500;
+// Verbose protocol-level logging for diagnosing decoder issues. Flip to false
+// once the WitMotion battery flow is verified end-to-end.
+const BLE_DEBUG_LOGS = true;
+
+function hexBytes(bytes: Uint8Array, n = 20): string {
+  const len = Math.min(n, bytes.length);
+  const parts: string[] = [];
+  for (let i = 0; i < len; i++) {
+    parts.push(bytes[i].toString(16).padStart(2, "0"));
+  }
+  return (
+    parts.join(" ") +
+    (bytes.length > len ? ` … (${bytes.length}B total)` : ` (${bytes.length}B)`)
+  );
+}
 
 let blePlxModule: typeof import("react-native-ble-plx") | null = null;
 function loadBlePlx(): typeof import("react-native-ble-plx") | null {
@@ -67,6 +89,8 @@ export type BleContextValue = {
   activeDecoder: SensorDecoder | null;
   connectionState: ConnectionState;
   connectionError: string | null;
+  /** Last-known battery level for the active device, 0-100. */
+  batteryPercent: number | null;
   startScan: () => Promise<void>;
   stopScan: () => void;
   connect: (deviceId: string) => Promise<ScannedDevice | null>;
@@ -144,6 +168,10 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
   const notifySubRef = useRef<Subscription | null>(null);
   const connectedDeviceRef = useRef<Device | null>(null);
   const subscribersRef = useRef<Set<(bytes: Uint8Array) => void>>(new Set());
+  const batteryTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const batteryFirstReadTimeoutRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
 
   const [availability, setAvailability] = useState<BleAvailability>("unknown");
   const [scanning, setScanning] = useState(false);
@@ -156,6 +184,7 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
   const [connectionState, setConnectionState] =
     useState<ConnectionState>("idle");
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [batteryPercent, setBatteryPercent] = useState<number | null>(null);
 
   const ensureManager = useCallback((): BleManagerType | null => {
     if (managerRef.current) return managerRef.current;
@@ -244,7 +273,19 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
     }
   }, [ensureManager, stopScan]);
 
+  const stopBatteryPolling = useCallback(() => {
+    if (batteryTimerRef.current) {
+      clearInterval(batteryTimerRef.current);
+      batteryTimerRef.current = null;
+    }
+    if (batteryFirstReadTimeoutRef.current) {
+      clearTimeout(batteryFirstReadTimeoutRef.current);
+      batteryFirstReadTimeoutRef.current = null;
+    }
+  }, []);
+
   const teardownConnection = useCallback(async () => {
+    stopBatteryPolling();
     if (notifySubRef.current) {
       try {
         notifySubRef.current.remove();
@@ -262,7 +303,7 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
       }
       connectedDeviceRef.current = null;
     }
-  }, []);
+  }, [stopBatteryPolling]);
 
   const disconnect = useCallback(async () => {
     await teardownConnection();
@@ -270,6 +311,7 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
     setActiveDecoder(null);
     setConnectionState("disconnected");
     setConnectionError(null);
+    setBatteryPercent(null);
   }, [teardownConnection]);
 
   const connect = useCallback(
@@ -286,6 +328,7 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
 
       setConnectionState("connecting");
       setConnectionError(null);
+      setBatteryPercent(null);
 
       try {
         const connected = await manager.connectToDevice(deviceId, {
@@ -305,9 +348,34 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
                 setConnectionState("disconnected");
                 return;
               }
-              if (!characteristic?.value) return;
+              if (!characteristic?.value) {
+                return;
+              }
               const bytes = base64ToBytes(characteristic.value);
               subscribersRef.current.forEach((cb) => cb(bytes));
+              // Pull battery responses out of the same notification stream.
+              // We rely on the decoder being closed-over here instead of
+              // reading state to avoid a stale-decoder race during reconnects.
+              const frames = decoder.decode(bytes);
+              const batteryFrame = frames.find((f) => f.batteryPercent != null);
+              if (batteryFrame?.batteryPercent != null) {
+                setBatteryPercent(batteryFrame.batteryPercent);
+              }
+              if (BLE_DEBUG_LOGS) {
+                // Skip the high-rate plain-accel notifications (a single
+                // 0x55 0x61 frame, exactly 20 bytes); log anything else so we
+                // can see battery responses or coalesced frames clearly.
+                const isPlainAccelChunk =
+                  bytes.length === 20 && bytes[0] === 0x55 && bytes[1] === 0x61;
+                if (!isPlainAccelChunk) {
+                  console.log(
+                    "[ble] notif",
+                    hexBytes(bytes),
+                    "→ frames:",
+                    frames.map((f) => Object.keys(f)).join(" | "),
+                  );
+                }
+              }
             },
           );
         }
@@ -344,6 +412,44 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
           })().catch((e) => console.warn("[ble] init sequence failed", e));
         }
 
+        // Periodic battery read. We schedule on intervals rather than tying it
+        // to the data callback so cadence is independent of the device's
+        // output rate (and so it keeps ticking even if the stream stalls).
+        if (decoder?.writeUuid && decoder.batteryReadCommand) {
+          const writeUuid = decoder.writeUuid;
+          const serviceUuid = decoder.serviceUuid;
+          const cmd = decoder.batteryReadCommand;
+          const writeBattery = async () => {
+            const t0 = Date.now();
+            if (BLE_DEBUG_LOGS) {
+              console.log("[ble] battery read → write", hexBytes(cmd));
+            }
+            try {
+              await connected.writeCharacteristicWithResponseForService(
+                serviceUuid,
+                writeUuid,
+                bytesToBase64(cmd),
+              );
+              if (BLE_DEBUG_LOGS) {
+                console.log(
+                  "[ble] battery read OK in",
+                  Date.now() - t0,
+                  "ms (waiting for response on notify)",
+                );
+              }
+            } catch (e) {
+              console.warn("[ble] battery read failed", e);
+            }
+          };
+          batteryFirstReadTimeoutRef.current = setTimeout(() => {
+            batteryFirstReadTimeoutRef.current = null;
+            writeBattery().catch(() => {});
+          }, BATTERY_FIRST_READ_DELAY_MS);
+          batteryTimerRef.current = setInterval(() => {
+            writeBattery().catch(() => {});
+          }, BATTERY_POLL_INTERVAL_MS);
+        }
+
         return scanned;
       } catch (e) {
         const message = e instanceof Error ? e.message : "Failed to connect.";
@@ -352,6 +458,7 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
         await teardownConnection();
         setActiveDevice(null);
         setActiveDecoder(null);
+        setBatteryPercent(null);
         return null;
       }
     },
@@ -404,6 +511,7 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
       activeDecoder,
       connectionState,
       connectionError,
+      batteryPercent,
       startScan,
       stopScan,
       connect,
@@ -419,6 +527,7 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
       activeDecoder,
       connectionState,
       connectionError,
+      batteryPercent,
       startScan,
       stopScan,
       connect,

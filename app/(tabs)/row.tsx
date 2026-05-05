@@ -149,6 +149,7 @@ export default function RowScreen() {
             selected={source !== "none"}
             connected={connected}
             deviceLabel={deviceLabel}
+            batteryPercent={source === "ble" ? ble.batteryPercent : null}
             onPressAction={() => setPickerOpen(true)}
           />
 
