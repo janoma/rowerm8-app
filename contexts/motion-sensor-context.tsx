@@ -61,7 +61,18 @@ export function MotionSensorProvider({
           try {
             const parsed = JSON.parse(raw) as Partial<MotionSensorSelection>;
             if (parsed && typeof parsed.source === "string") {
-              setSelection({ ...DEFAULT_SELECTION, ...parsed });
+              // BLE selections are NOT auto-reconnected on app launch yet, so
+              // a hydrated 'ble' source would just show a stale device name
+              // next to a non-functional UI. Until auto-reconnect lands, drop
+              // any persisted BLE selection on cold start so the screen
+              // matches the post-disconnect state. Phone selections are safe
+              // to restore because expo-sensors transparently re-subscribes.
+              if (parsed.source === "ble") {
+                setSelection(DEFAULT_SELECTION);
+                AsyncStorage.removeItem(STORAGE_KEY).catch(() => {});
+              } else {
+                setSelection({ ...DEFAULT_SELECTION, ...parsed });
+              }
             }
           } catch {
             // Ignore malformed persisted state and fall back to default.

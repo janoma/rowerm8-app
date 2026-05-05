@@ -44,6 +44,15 @@ export default function RowScreen() {
   const ble = useBle();
   const [pickerOpen, setPickerOpen] = useState(false);
 
+  // "Connected" means data is actually flowing right now, not just that a source
+  // has been persisted. After cold start the persisted selection hydrates
+  // immediately, but the BLE link has to be re-established from scratch — so we
+  // need this distinction to avoid showing a green check next to an inactive
+  // device.
+  const connected =
+    (source === "phone" && stream.isAvailable && !stream.permissionDenied) ||
+    (source === "ble" && !!ble.activeDevice && stream.hasDecoder);
+
   useEffect(() => {
     if (source !== "ble" && ble.activeDevice) {
       ble.disconnect();
@@ -97,7 +106,7 @@ export default function RowScreen() {
     if (!ble.activeDevice) {
       return (
         <Notice palette={palette}>
-          Not connected to a Bluetooth sensor. Tap Change above to reconnect.
+          Tap Connect to reconnect to {deviceLabel ?? "your Bluetooth sensor"}.
         </Notice>
       );
     }
@@ -138,6 +147,7 @@ export default function RowScreen() {
 
           <SensorStatusCard
             selected={source !== "none"}
+            connected={connected}
             deviceLabel={deviceLabel}
             onPressAction={() => setPickerOpen(true)}
           />

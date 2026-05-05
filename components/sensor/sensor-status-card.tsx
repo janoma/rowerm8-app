@@ -28,26 +28,34 @@ const COLORS = {
 } as const;
 
 type Props = {
+  /** A motion source has been chosen and persisted (regardless of live status). */
   selected: boolean;
+  /** Data is actively flowing from the chosen source right now. */
+  connected: boolean;
   deviceLabel: string | null;
   onPressAction: () => void;
 };
 
 export function SensorStatusCard({
   selected,
+  connected,
   deviceLabel,
   onPressAction,
 }: Props) {
   const scheme = useColorScheme() ?? "light";
   const palette = COLORS[scheme];
 
-  const iconName = selected
+  const iconName = connected
     ? "checkmark.circle.fill"
     : "exclamationmark.triangle.fill";
-  const badgeColor = selected ? palette.success : palette.warning;
-  const badgeBg = selected ? palette.successBg : palette.warningBg;
+  const badgeColor = connected ? palette.success : palette.warning;
+  const badgeBg = connected ? palette.successBg : palette.warningBg;
   const valueText = selected ? (deviceLabel ?? "Selected") : "Not selected";
-  const actionText = selected ? "Change" : "Select";
+  const showSubtitle = selected && !connected;
+  const actionText = connected ? "Change" : "Connect";
+  const accessibilityLabel = connected
+    ? "Change motion sensor"
+    : "Connect motion sensor";
 
   return (
     <View
@@ -69,13 +77,18 @@ export function SensorStatusCard({
         <ThemedText style={styles.value} numberOfLines={1}>
           {valueText}
         </ThemedText>
+        {showSubtitle ? (
+          <ThemedText style={[styles.subtitle, { color: palette.warning }]}>
+            Not connected
+          </ThemedText>
+        ) : null}
       </View>
       {selected ? (
         <Pressable
           onPress={onPressAction}
           hitSlop={8}
           accessibilityRole="button"
-          accessibilityLabel="Change motion sensor"
+          accessibilityLabel={accessibilityLabel}
         >
           <ThemedText style={[styles.action, { color: palette.accent }]}>
             {actionText}
@@ -117,6 +130,12 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: "600",
     lineHeight: 22,
+  },
+  subtitle: {
+    fontSize: 12,
+    fontWeight: "500",
+    lineHeight: 14,
+    marginTop: 2,
   },
   action: {
     fontSize: 16,
