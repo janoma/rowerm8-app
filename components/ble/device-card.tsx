@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, View } from "react-native";
 
+import { BatteryIndicator } from "@/components/ble/battery-indicator";
 import { SignalBars } from "@/components/ble/signal-bars";
 import { ThemedText } from "@/components/themed-text";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -10,51 +11,45 @@ const COLORS = {
   light: {
     surface: "#F2F3F5",
     surfaceBorder: "#E4E6EA",
-    surfaceRecommended: "#F2F3F5",
-    recommendedBorder: "#0a7ea4",
+    accentBar: "#0a7ea4",
     iconActive: "#0a7ea4",
     iconActiveBg: "rgba(10, 126, 164, 0.18)",
-    iconInactive: "#687076",
-    iconInactiveBg: "#E4E6EA",
     title: "#11181C",
     subtitle: "#687076",
     chevron: "#9BA1A6",
-    pillBg: "rgba(31, 157, 85, 0.18)",
-    pillText: "#117A3D",
-    rssi: "#687076",
   },
   dark: {
     surface: "#1F2224",
     surfaceBorder: "#2A2D30",
-    surfaceRecommended: "#1F2224",
-    recommendedBorder: "#3DB7E0",
+    accentBar: "#3DB7E0",
     iconActive: "#3DB7E0",
     iconActiveBg: "rgba(61, 183, 224, 0.22)",
-    iconInactive: "#9BA1A6",
-    iconInactiveBg: "#2A2D30",
     title: "#ECEDEE",
     subtitle: "#9BA1A6",
     chevron: "#7C8186",
-    pillBg: "rgba(52, 199, 89, 0.18)",
-    pillText: "#34C759",
-    rssi: "#9BA1A6",
   },
 } as const;
 
 type Props = {
   device: ScannedDevice;
   busy?: boolean;
+  /** 0..100 — when null/undefined, the battery slot is hidden. */
+  batteryPercent?: number | null;
   onPress: (device: ScannedDevice) => void;
 };
 
-export function DeviceCard({ device, busy = false, onPress }: Props) {
+export function DeviceCard({
+  device,
+  busy = false,
+  batteryPercent = null,
+  onPress,
+}: Props) {
   const scheme = useColorScheme() ?? "light";
   const palette = COLORS[scheme];
 
-  const recommended = !!device.decoder?.recommended;
   const displayName =
     device.name ?? device.localName ?? `Unknown ${device.id.slice(-5)}`;
-  const subtitle = device.decoder?.vendorDescription ?? "No decoder available";
+  const subtitle = device.decoder?.vendorDescription ?? "Unknown vendor";
 
   return (
     <Pressable
@@ -65,52 +60,32 @@ export function DeviceCard({ device, busy = false, onPress }: Props) {
       style={({ pressed }) => [
         styles.card,
         {
-          backgroundColor: recommended
-            ? palette.surfaceRecommended
-            : palette.surface,
+          backgroundColor: palette.surface,
           borderColor: palette.surfaceBorder,
           opacity: busy ? 0.5 : pressed ? 0.85 : 1,
-        },
-        recommended && {
-          borderLeftColor: palette.recommendedBorder,
+          borderLeftColor: palette.accentBar,
           borderLeftWidth: 3,
         },
       ]}
     >
       <View
-        style={[
-          styles.iconBadge,
-          {
-            backgroundColor: recommended
-              ? palette.iconActiveBg
-              : palette.iconInactiveBg,
-          },
-        ]}
+        style={[styles.iconBadge, { backgroundColor: palette.iconActiveBg }]}
       >
         <IconSymbol
           name="dot.radiowaves.right"
           size={22}
-          color={recommended ? palette.iconActive : palette.iconInactive}
+          color={palette.iconActive}
         />
       </View>
 
-      <View style={styles.textBlock}>
-        <ThemedText
-          style={[styles.title, { color: palette.title }]}
-          numberOfLines={1}
-        >
-          {displayName}
-        </ThemedText>
-        <View style={styles.subtitleRow}>
-          {recommended ? (
-            <View style={[styles.pill, { backgroundColor: palette.pillBg }]}>
-              <ThemedText
-                style={[styles.pillText, { color: palette.pillText }]}
-              >
-                Recommended
-              </ThemedText>
-            </View>
-          ) : null}
+      <View style={styles.bodyRow}>
+        <View style={styles.textColumn}>
+          <ThemedText
+            style={[styles.title, { color: palette.title }]}
+            numberOfLines={1}
+          >
+            {displayName}
+          </ThemedText>
           <ThemedText
             style={[styles.subtitle, { color: palette.subtitle }]}
             numberOfLines={1}
@@ -118,12 +93,24 @@ export function DeviceCard({ device, busy = false, onPress }: Props) {
             {subtitle}
           </ThemedText>
         </View>
+
+        <View style={styles.metaColumn}>
+          <View style={styles.metaTopSlot}>
+            <SignalBars rssi={device.rssi} size="lg" />
+          </View>
+          <View style={styles.metaBottomSlot}>
+            {batteryPercent != null ? (
+              <BatteryIndicator
+                percent={batteryPercent}
+                height={11}
+                fontSize={12}
+              />
+            ) : null}
+          </View>
+        </View>
       </View>
 
-      <View style={styles.trailing}>
-        <SignalBars rssi={device.rssi} />
-        <IconSymbol name="chevron.right" size={18} color={palette.chevron} />
-      </View>
+      <IconSymbol name="chevron.right" size={18} color={palette.chevron} />
     </Pressable>
   );
 }
@@ -145,38 +132,38 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  textBlock: {
+  bodyRow: {
     flex: 1,
-    gap: 4,
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: "600",
-    lineHeight: 20,
-  },
-  subtitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  subtitle: {
-    fontSize: 13,
-    lineHeight: 16,
-    flexShrink: 1,
-  },
-  trailing: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
   },
-  pill: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 999,
+  textColumn: {
+    flex: 1,
+    gap: 2,
   },
-  pillText: {
-    fontSize: 11,
-    fontWeight: "700",
-    lineHeight: 14,
+  title: {
+    fontSize: 16,
+    fontWeight: "600",
+    lineHeight: 22,
+  },
+  subtitle: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  // Right-side meta column has two stacked slots whose heights mirror the
+  // text column (title + subtitle) so the signal bars line up with the title
+  // row and the battery lines up with the subtitle row.
+  metaColumn: {
+    alignItems: "flex-end",
+    justifyContent: "center",
+  },
+  metaTopSlot: {
+    height: 22,
+    justifyContent: "center",
+  },
+  metaBottomSlot: {
+    height: 18,
+    justifyContent: "center",
   },
 });

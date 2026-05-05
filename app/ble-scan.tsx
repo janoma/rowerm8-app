@@ -14,7 +14,6 @@ import { DeviceCard } from "@/components/ble/device-card";
 import { ScanHero } from "@/components/ble/scan-hero";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { IconSymbol } from "@/components/ui/icon-symbol";
 import type { ScannedDevice } from "@/contexts/ble-context";
 import { useBle } from "@/contexts/ble-context";
 import { useMotionSensor } from "@/contexts/motion-sensor-context";
@@ -48,22 +47,15 @@ export default function BleScanScreen() {
   const ble = useBle();
   const { selectBle } = useMotionSensor();
   const [pendingId, setPendingId] = useState<string | null>(null);
-  const [showOthers, setShowOthers] = useState(false);
   const didAutoStartRef = useRef(false);
   const { availability, startScan, stopScan } = ble;
 
-  const { supportedDevices, otherDevices } = useMemo(() => {
-    const supported: ScannedDevice[] = [];
-    const others: ScannedDevice[] = [];
-    for (const d of ble.devices) {
-      if (d.decoder) {
-        supported.push(d);
-      } else {
-        others.push(d);
-      }
-    }
-    return { supportedDevices: supported, otherDevices: others };
-  }, [ble.devices]);
+  // Devices we don't have a decoder for can't actually be used, so we hide
+  // them entirely instead of cluttering the list.
+  const supportedDevices = useMemo(
+    () => ble.devices.filter((d) => d.decoder),
+    [ble.devices],
+  );
 
   useEffect(() => {
     if (availability === "on" && !didAutoStartRef.current) {
@@ -247,59 +239,6 @@ export default function BleScanScreen() {
           ))}
         </View>
 
-        {otherDevices.length > 0 ? (
-          <>
-            <Pressable
-              onPress={() => setShowOthers((v) => !v)}
-              hitSlop={8}
-              accessibilityRole="button"
-              accessibilityLabel={
-                showOthers
-                  ? "Hide other Bluetooth devices"
-                  : `Show ${otherDevices.length} other Bluetooth devices`
-              }
-              style={styles.disclosureRow}
-            >
-              <IconSymbol
-                name={showOthers ? "chevron.down" : "chevron.right"}
-                size={14}
-                color={palette.sectionLabel}
-              />
-              <ThemedText
-                style={[styles.disclosureText, { color: palette.sectionLabel }]}
-              >
-                {showOthers ? "HIDE" : "SHOW"} OTHER BLUETOOTH DEVICES (
-                {otherDevices.length})
-              </ThemedText>
-            </Pressable>
-
-            {showOthers ? (
-              <>
-                <ThemedText
-                  style={[
-                    styles.disclosureHelp,
-                    { color: palette.sectionLabel },
-                  ]}
-                >
-                  rowerm8 doesn&apos;t have a decoder for these devices, so live
-                  data won&apos;t be available. You can still pair to confirm
-                  the connection works.
-                </ThemedText>
-                <View style={styles.deviceList}>
-                  {otherDevices.map((device) => (
-                    <DeviceCard
-                      key={device.id}
-                      device={device}
-                      busy={pendingId !== null && pendingId !== device.id}
-                      onPress={handlePressDevice}
-                    />
-                  ))}
-                </View>
-              </>
-            ) : null}
-          </>
-        ) : null}
-
         {pendingId ? (
           <View style={styles.connectingFooter}>
             <ActivityIndicator size="small" color={palette.accent} />
@@ -370,25 +309,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: "center",
     paddingVertical: 20,
-  },
-  disclosureRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 4,
-    paddingVertical: 8,
-    marginTop: 8,
-  },
-  disclosureText: {
-    fontSize: 12,
-    fontWeight: "600",
-    letterSpacing: 0.8,
-  },
-  disclosureHelp: {
-    fontSize: 12,
-    lineHeight: 16,
-    paddingHorizontal: 4,
-    marginBottom: 4,
   },
   notice: {
     borderWidth: StyleSheet.hairlineWidth,

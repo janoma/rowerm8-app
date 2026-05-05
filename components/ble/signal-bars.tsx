@@ -44,12 +44,12 @@ export function SignalBars({
   size = "md",
 }: {
   rssi: number | null;
-  size?: "sm" | "md";
+  size?: "sm" | "md" | "lg";
 }) {
   const scheme = useColorScheme() ?? "light";
   const palette = COLORS[scheme];
   const filled = rssiToBars(rssi);
-  const dims = size === "sm" ? SIZES.sm : SIZES.md;
+  const dims = SIZES[size];
 
   return (
     <View
@@ -81,6 +81,10 @@ export function SignalBars({
 const SIZES = {
   sm: { barWidth: 3, maxHeight: 12 },
   md: { barWidth: 4, maxHeight: 16 },
+  // `lg` is intended to sit on the same visual line as a 16pt title; the
+  // tallest bar matches the font's cap height rather than its line height
+  // so it doesn't overshoot the text above.
+  lg: { barWidth: 4, maxHeight: 16 },
 } as const;
 
 const styles = StyleSheet.create({
