@@ -1,6 +1,7 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 import 'react-native-reanimated';
 
 import { BleProvider } from '@/contexts/ble-context';
@@ -15,20 +16,22 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
 
   return (
-    <MotionSensorProvider>
-      <BleProvider>
-        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-          <Stack>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-            <Stack.Screen
-              name="ble-scan"
-              options={{ presentation: 'fullScreenModal', headerShown: false }}
-            />
-          </Stack>
-          <StatusBar style="auto" />
-        </ThemeProvider>
-      </BleProvider>
-    </MotionSensorProvider>
+    <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+      <MotionSensorProvider>
+        <BleProvider>
+          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+            <Stack>
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+              <Stack.Screen
+                name="ble-scan"
+                options={{ presentation: 'fullScreenModal', headerShown: false }}
+              />
+            </Stack>
+            <StatusBar style="auto" />
+          </ThemeProvider>
+        </BleProvider>
+      </MotionSensorProvider>
+    </SafeAreaProvider>
   );
 }

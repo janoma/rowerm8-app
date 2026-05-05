@@ -17,6 +17,7 @@ const MAPPING = {
   'house.fill': 'home',
   'figure.indoor.rowing': 'rowing',
   'chevron.right': 'chevron-right',
+  'chevron.down': 'expand-more',
   'checkmark.circle.fill': 'check-circle',
   'exclamationmark.triangle.fill': 'warning',
   'dot.radiowaves.left.and.right': 'sensors',

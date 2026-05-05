@@ -182,7 +182,7 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
     setScanning(true);
 
     try {
-      manager.startDeviceScan(null, { allowDuplicates: true }, (error, device) => {
+      manager.startDeviceScan(null, { allowDuplicates: false }, (error, device) => {
         if (error) {
           setScanError(error.message ?? 'Scan failed.');
           setScanning(false);

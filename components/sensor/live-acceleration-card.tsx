@@ -104,7 +104,7 @@ function AxisRow({
 }: {
   label: string;
   value: number | undefined;
-  data: number[];
+  data: number[] | undefined;
   accent: string;
   axisLabelColor: string;
   valueColor: string;
@@ -131,16 +131,17 @@ function Sparkline({
   background,
   axisColor,
 }: {
-  data: number[];
+  data: number[] | undefined;
   accent: string;
   background: string;
   axisColor: string;
 }) {
-  const max = Math.max(0.5, ...data.map((v) => Math.abs(v)));
+  const safeData = data ?? [];
+  const max = Math.max(0.5, ...safeData.map((v) => Math.abs(v)));
   return (
     <View style={[styles.sparkContainer, { backgroundColor: background }]}>
       <View style={[styles.sparkAxis, { backgroundColor: axisColor }]} />
-      {data.map((value, index) => {
+      {safeData.map((value, index) => {
         const normalized = Math.min(1, Math.abs(value) / max);
         const heightPct = normalized * 50;
         const isPositive = value >= 0;

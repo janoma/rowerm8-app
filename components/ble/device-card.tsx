@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { SignalBars } from '@/components/ble/signal-bars';
 import { ThemedText } from '@/components/themed-text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -102,14 +103,12 @@ export function DeviceCard({ device, busy = false, onPress }: Props) {
             {subtitle}
           </ThemedText>
         </View>
-        {device.rssi != null ? (
-          <ThemedText style={[styles.rssi, { color: palette.rssi }]}>
-            Signal: {device.rssi} dBm
-          </ThemedText>
-        ) : null}
       </View>
 
-      <IconSymbol name="chevron.right" size={18} color={palette.chevron} />
+      <View style={styles.trailing}>
+        <SignalBars rssi={device.rssi} />
+        <IconSymbol name="chevron.right" size={18} color={palette.chevron} />
+      </View>
     </Pressable>
   );
 }
@@ -150,9 +149,10 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     flexShrink: 1,
   },
-  rssi: {
-    fontSize: 12,
-    lineHeight: 14,
+  trailing: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
   pill: {
     paddingHorizontal: 8,
