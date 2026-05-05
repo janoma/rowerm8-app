@@ -9,8 +9,8 @@ import {
 } from "react";
 import { Platform } from "react-native";
 
-import type { SensorDecoder } from "@/decoders/types";
 import { findDecoder } from "@/decoders/registry";
+import type { SensorDecoder } from "@/decoders/types";
 // Type-only imports are erased at runtime, so this does not pull the
 // react-native-ble-plx native module on platforms (e.g. web) that lack it.
 import type {
@@ -47,8 +47,12 @@ function hexBytes(bytes: Uint8Array, n = 20): string {
 
 let blePlxModule: typeof import("react-native-ble-plx") | null = null;
 function loadBlePlx(): typeof import("react-native-ble-plx") | null {
-  if (Platform.OS === "web") return null;
-  if (blePlxModule) return blePlxModule;
+  if (Platform.OS === "web") {
+    return null;
+  }
+  if (blePlxModule) {
+    return blePlxModule;
+  }
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     blePlxModule = require("react-native-ble-plx");
@@ -102,7 +106,9 @@ export type BleContextValue = {
 const BleContext = createContext<BleContextValue | null>(null);
 
 function mapState(s: State | null): BleAvailability {
-  if (!s) return "unknown";
+  if (!s) {
+    return "unknown";
+  }
   switch (s) {
     case "PoweredOn":
       return "on";
@@ -136,8 +142,12 @@ function toScannedDevice(device: Device): ScannedDevice {
 }
 
 function compareDevices(a: ScannedDevice, b: ScannedDevice): number {
-  if (a.decoder?.recommended && !b.decoder?.recommended) return -1;
-  if (!a.decoder?.recommended && b.decoder?.recommended) return 1;
+  if (a.decoder?.recommended && !b.decoder?.recommended) {
+    return -1;
+  }
+  if (!a.decoder?.recommended && b.decoder?.recommended) {
+    return 1;
+  }
   const aRssi = a.rssi ?? -200;
   const bRssi = b.rssi ?? -200;
   return bRssi - aRssi;
@@ -187,7 +197,9 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
   const [batteryPercent, setBatteryPercent] = useState<number | null>(null);
 
   const ensureManager = useCallback((): BleManagerType | null => {
-    if (managerRef.current) return managerRef.current;
+    if (managerRef.current) {
+      return managerRef.current;
+    }
     const mod = loadBlePlx();
     if (!mod) {
       setAvailability("unavailable");
@@ -244,7 +256,9 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
             setScanning(false);
             return;
           }
-          if (!device) return;
+          if (!device) {
+            return;
+          }
           setDevices((prev) => {
             const existing = prev[device.id];
             const incoming = toScannedDevice(device);
