@@ -45,26 +45,38 @@ export function useBleStream({
     }
 
     const unsubscribe = subscribeData((bytes) => {
-      const frame = activeDecoder.decode(bytes);
-      if (!frame?.accel) return;
-
-      setSample(frame.accel);
+      const frames = activeDecoder.decode(bytes);
+      if (!frames.length) return;
 
       const buffers = historiesRef.current;
-      buffers.x.shift();
-      buffers.x.push(frame.accel.x);
-      buffers.y.shift();
-      buffers.y.push(frame.accel.y);
-      buffers.z.shift();
-      buffers.z.push(frame.accel.z);
-      setHistoryVersion((v) => (v + 1) % 1_000_000);
+      let lastAccel: AccelerometerSample | null = null;
+      let count = 0;
 
-      const now = Date.now();
-      const arr = recentSampleTimes.current;
-      arr.push(now);
-      const cutoff = now - 1000;
-      while (arr.length && arr[0] < cutoff) arr.shift();
-      setSampleRateHz(arr.length);
+      for (const frame of frames) {
+        if (!frame.accel) continue;
+        lastAccel = frame.accel;
+        count += 1;
+        buffers.x.shift();
+        buffers.x.push(frame.accel.x);
+        buffers.y.shift();
+        buffers.y.push(frame.accel.y);
+        buffers.z.shift();
+        buffers.z.push(frame.accel.z);
+      }
+
+      if (lastAccel) {
+        setSample(lastAccel);
+        setHistoryVersion((v) => (v + 1) % 1_000_000);
+      }
+
+      if (count > 0) {
+        const now = Date.now();
+        const arr = recentSampleTimes.current;
+        for (let i = 0; i < count; i++) arr.push(now);
+        const cutoff = now - 1000;
+        while (arr.length && arr[0] < cutoff) arr.shift();
+        setSampleRateHz(arr.length);
+      }
     });
 
     return unsubscribe;

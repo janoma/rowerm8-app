@@ -27,5 +27,11 @@ export type SensorDecoder = {
   writeUuid?: string;
   initCommands?: Uint8Array[];
   matches: (device: DecoderDeviceHint) => boolean;
-  decode: (bytes: Uint8Array) => DecodedFrame | null;
+  /**
+   * Decode all complete frames present in a single BLE notification payload.
+   * iOS in particular often coalesces multiple frames into one notification when
+   * the device's output rate exceeds the connection interval, so decoders must
+   * emit every frame they can find rather than only the first one.
+   */
+  decode: (bytes: Uint8Array) => DecodedFrame[];
 };
