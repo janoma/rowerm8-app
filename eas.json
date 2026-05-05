@@ -1,0 +1,32 @@
+{
+  "cli": {
+    "version": ">= 18.10.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "base": {
+      "node": "22.20.0",
+      "pnpm": "11.0.4"
+    },
+    "development": {
+      "extends": "base",
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "extends": "base",
+      "distribution": "internal"
+    },
+    "production": {
+      "extends": "base",
+      "autoIncrement": true,
+      "ios": {
+        "ascAppId": "6766429191",
+        "appleTeamId": "44MB86328Z"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

@@ -1,17 +1,18 @@
 {
   "expo": {
-    "name": "rowerm8-app",
+    "name": "RowerM8",
     "slug": "rowerm8-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "rowerm8app",
+    "scheme": "rowerm8",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSMotionUsageDescription": "rowerm8 reads motion data to track your rowing strokes."
+        "NSMotionUsageDescription": "RowerM8 reads motion data to track your rowing strokes.",
+        "ITSAppUsesNonExemptEncryption": false
       },
       "bundleIdentifier": "com.janoma.rowerm8"
     },
@@ -42,7 +43,7 @@
         {
           "isBackgroundEnabled": false,
           "modes": [],
-          "bluetoothAlwaysPermission": "rowerm8 connects to Bluetooth motion sensors to track your rowing strokes."
+          "bluetoothAlwaysPermission": "RowerM8 connects to Bluetooth motion sensors to track your rowing strokes."
         }
       ],
       [
@@ -61,6 +62,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "f1b01cd3-7532-4b7e-b0a3-e83bf86f5b79"
+      }
+    },
+    "owner": "janoma"
   }
 }
