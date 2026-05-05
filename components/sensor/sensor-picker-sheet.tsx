@@ -1,39 +1,39 @@
-import { router } from 'expo-router';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from "expo-router";
+import { Modal, Pressable, StyleSheet, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { ThemedText } from '@/components/themed-text';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { ThemedText } from "@/components/themed-text";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
 const COLORS = {
   light: {
-    backdrop: 'rgba(0, 0, 0, 0.35)',
-    sheet: '#FFFFFF',
-    grabber: '#C7C9CC',
-    cardEnabled: '#F2F3F5',
-    cardEnabledBorder: '#E4E6EA',
-    title: '#11181C',
-    subtitle: '#687076',
-    accent: '#0a7ea4',
-    accentSoft: 'rgba(10, 126, 164, 0.18)',
-    chevron: '#687076',
-    danger: '#D02E1F',
-    dangerSoft: 'rgba(208, 46, 31, 0.12)',
+    backdrop: "rgba(0, 0, 0, 0.35)",
+    sheet: "#FFFFFF",
+    grabber: "#C7C9CC",
+    cardEnabled: "#F2F3F5",
+    cardEnabledBorder: "#E4E6EA",
+    title: "#11181C",
+    subtitle: "#687076",
+    accent: "#0a7ea4",
+    accentSoft: "rgba(10, 126, 164, 0.18)",
+    chevron: "#687076",
+    danger: "#D02E1F",
+    dangerSoft: "rgba(208, 46, 31, 0.12)",
   },
   dark: {
-    backdrop: 'rgba(0, 0, 0, 0.55)',
-    sheet: '#1B1D1F',
-    grabber: '#3A3D40',
-    cardEnabled: '#26292C',
-    cardEnabledBorder: '#2F3236',
-    title: '#ECEDEE',
-    subtitle: '#9BA1A6',
-    accent: '#3DB7E0',
-    accentSoft: 'rgba(61, 183, 224, 0.22)',
-    chevron: '#9BA1A6',
-    danger: '#FF6369',
-    dangerSoft: 'rgba(255, 99, 105, 0.18)',
+    backdrop: "rgba(0, 0, 0, 0.55)",
+    sheet: "#1B1D1F",
+    grabber: "#3A3D40",
+    cardEnabled: "#26292C",
+    cardEnabledBorder: "#2F3236",
+    title: "#ECEDEE",
+    subtitle: "#9BA1A6",
+    accent: "#3DB7E0",
+    accentSoft: "rgba(61, 183, 224, 0.22)",
+    chevron: "#9BA1A6",
+    danger: "#FF6369",
+    dangerSoft: "rgba(255, 99, 105, 0.18)",
   },
 } as const;
 
@@ -49,13 +49,18 @@ type Props = {
   onDisconnect?: () => void;
 };
 
-export function SensorPickerSheet({ visible, onClose, onSelectPhone, onDisconnect }: Props) {
-  const scheme = useColorScheme() ?? 'light';
+export function SensorPickerSheet({
+  visible,
+  onClose,
+  onSelectPhone,
+  onDisconnect,
+}: Props) {
+  const scheme = useColorScheme() ?? "light";
   const palette = COLORS[scheme];
 
   const handleBluetoothPress = () => {
     onClose();
-    router.push('/ble-scan');
+    router.push("/ble-scan");
   };
 
   const handleDisconnectPress = () => {
@@ -69,14 +74,20 @@ export function SensorPickerSheet({ visible, onClose, onSelectPhone, onDisconnec
       transparent
       animationType="slide"
       onRequestClose={onClose}
-      statusBarTranslucent>
+      statusBarTranslucent
+    >
       <Pressable
         style={[styles.backdrop, { backgroundColor: palette.backdrop }]}
         onPress={onClose}
       />
       <View style={styles.sheetWrapper} pointerEvents="box-none">
-        <SafeAreaView edges={['bottom']} style={[styles.sheet, { backgroundColor: palette.sheet }]}>
-          <View style={[styles.grabber, { backgroundColor: palette.grabber }]} />
+        <SafeAreaView
+          edges={["bottom"]}
+          style={[styles.sheet, { backgroundColor: palette.sheet }]}
+        >
+          <View
+            style={[styles.grabber, { backgroundColor: palette.grabber }]}
+          />
           <ThemedText style={[styles.title, { color: palette.title }]}>
             Choose motion sensor
           </ThemedText>
@@ -95,19 +106,33 @@ export function SensorPickerSheet({ visible, onClose, onSelectPhone, onDisconnec
                 borderColor: palette.cardEnabledBorder,
                 opacity: pressed ? 0.85 : 1,
               },
-            ]}>
-            <View style={[styles.optionIcon, { backgroundColor: palette.accentSoft }]}>
+            ]}
+          >
+            <View
+              style={[
+                styles.optionIcon,
+                { backgroundColor: palette.accentSoft },
+              ]}
+            >
               <IconSymbol name="iphone" size={24} color={palette.accent} />
             </View>
             <View style={styles.optionTextBlock}>
-              <ThemedText style={[styles.optionTitle, { color: palette.title }]}>
+              <ThemedText
+                style={[styles.optionTitle, { color: palette.title }]}
+              >
                 Use phone
               </ThemedText>
-              <ThemedText style={[styles.optionSubtitle, { color: palette.subtitle }]}>
+              <ThemedText
+                style={[styles.optionSubtitle, { color: palette.subtitle }]}
+              >
                 Use this device&apos;s built-in accelerometer
               </ThemedText>
             </View>
-            <IconSymbol name="chevron.right" size={20} color={palette.chevron} />
+            <IconSymbol
+              name="chevron.right"
+              size={20}
+              color={palette.chevron}
+            />
           </Pressable>
 
           <Pressable
@@ -121,19 +146,37 @@ export function SensorPickerSheet({ visible, onClose, onSelectPhone, onDisconnec
                 borderColor: palette.cardEnabledBorder,
                 opacity: pressed ? 0.85 : 1,
               },
-            ]}>
-            <View style={[styles.optionIcon, { backgroundColor: palette.accentSoft }]}>
-              <IconSymbol name="dot.radiowaves.right" size={24} color={palette.accent} />
+            ]}
+          >
+            <View
+              style={[
+                styles.optionIcon,
+                { backgroundColor: palette.accentSoft },
+              ]}
+            >
+              <IconSymbol
+                name="dot.radiowaves.right"
+                size={24}
+                color={palette.accent}
+              />
             </View>
             <View style={styles.optionTextBlock}>
-              <ThemedText style={[styles.optionTitle, { color: palette.title }]}>
+              <ThemedText
+                style={[styles.optionTitle, { color: palette.title }]}
+              >
                 Select Bluetooth device
               </ThemedText>
-              <ThemedText style={[styles.optionSubtitle, { color: palette.subtitle }]}>
+              <ThemedText
+                style={[styles.optionSubtitle, { color: palette.subtitle }]}
+              >
                 Pair an external IMU sensor like the WitMotion WT9011DCL
               </ThemedText>
             </View>
-            <IconSymbol name="chevron.right" size={20} color={palette.chevron} />
+            <IconSymbol
+              name="chevron.right"
+              size={20}
+              color={palette.chevron}
+            />
           </Pressable>
 
           {onDisconnect ? (
@@ -148,15 +191,29 @@ export function SensorPickerSheet({ visible, onClose, onSelectPhone, onDisconnec
                   borderColor: palette.cardEnabledBorder,
                   opacity: pressed ? 0.85 : 1,
                 },
-              ]}>
-              <View style={[styles.optionIcon, { backgroundColor: palette.dangerSoft }]}>
-                <IconSymbol name="xmark.circle" size={24} color={palette.danger} />
+              ]}
+            >
+              <View
+                style={[
+                  styles.optionIcon,
+                  { backgroundColor: palette.dangerSoft },
+                ]}
+              >
+                <IconSymbol
+                  name="xmark.circle"
+                  size={24}
+                  color={palette.danger}
+                />
               </View>
               <View style={styles.optionTextBlock}>
-                <ThemedText style={[styles.optionTitle, { color: palette.danger }]}>
+                <ThemedText
+                  style={[styles.optionTitle, { color: palette.danger }]}
+                >
                   Disconnect
                 </ThemedText>
-                <ThemedText style={[styles.optionSubtitle, { color: palette.subtitle }]}>
+                <ThemedText
+                  style={[styles.optionSubtitle, { color: palette.subtitle }]}
+                >
                   Clear the current motion sensor selection
                 </ThemedText>
               </View>
@@ -167,8 +224,11 @@ export function SensorPickerSheet({ visible, onClose, onSelectPhone, onDisconnec
             onPress={onClose}
             accessibilityRole="button"
             hitSlop={8}
-            style={styles.cancelButton}>
-            <ThemedText style={[styles.cancelText, { color: palette.accent }]}>Cancel</ThemedText>
+            style={styles.cancelButton}
+          >
+            <ThemedText style={[styles.cancelText, { color: palette.accent }]}>
+              Cancel
+            </ThemedText>
           </Pressable>
         </SafeAreaView>
       </View>
@@ -182,7 +242,7 @@ const styles = StyleSheet.create({
   },
   sheetWrapper: {
     flex: 1,
-    justifyContent: 'flex-end',
+    justifyContent: "flex-end",
   },
   sheet: {
     paddingHorizontal: 20,
@@ -192,7 +252,7 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   grabber: {
-    alignSelf: 'center',
+    alignSelf: "center",
     width: 36,
     height: 5,
     borderRadius: 3,
@@ -201,13 +261,13 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontWeight: '700',
-    textAlign: 'center',
+    fontWeight: "700",
+    textAlign: "center",
     marginBottom: 6,
   },
   optionCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 14,
     paddingVertical: 14,
     paddingHorizontal: 16,
@@ -218,8 +278,8 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   optionTextBlock: {
     flex: 1,
@@ -227,7 +287,7 @@ const styles = StyleSheet.create({
   },
   optionTitle: {
     fontSize: 17,
-    fontWeight: '600',
+    fontWeight: "600",
     lineHeight: 22,
   },
   optionSubtitle: {
@@ -235,12 +295,12 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   cancelButton: {
-    alignSelf: 'center',
+    alignSelf: "center",
     paddingVertical: 14,
     paddingHorizontal: 20,
   },
   cancelText: {
     fontSize: 17,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });

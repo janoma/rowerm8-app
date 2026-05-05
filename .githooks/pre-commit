@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-# Run TypeScript and ESLint checks before allowing a commit.
+# Run TypeScript, ESLint, and Prettier checks before allowing a commit.
 # Enable on a fresh clone with:  git config core.hooksPath .githooks
 
 set -e
@@ -9,5 +9,12 @@ pnpm run --silent typecheck
 
 echo "[pre-commit] lint..."
 pnpm run --silent lint
+
+echo "[pre-commit] format:check..."
+if ! pnpm run --silent format:check; then
+  echo ""
+  echo "[pre-commit] Formatting issues detected. Run 'pnpm format' to fix, then re-stage." >&2
+  exit 1
+fi
 
 echo "[pre-commit] OK"

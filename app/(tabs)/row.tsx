@@ -1,43 +1,43 @@
-import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useEffect, useState } from "react";
+import { Pressable, StyleSheet, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { LiveAccelerationCard } from '@/components/sensor/live-acceleration-card';
-import { SensorPickerSheet } from '@/components/sensor/sensor-picker-sheet';
-import { SensorStatusCard } from '@/components/sensor/sensor-status-card';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { useBle } from '@/contexts/ble-context';
-import { useMotionSensor } from '@/contexts/motion-sensor-context';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useMotionStream } from '@/hooks/use-motion-stream';
+import { LiveAccelerationCard } from "@/components/sensor/live-acceleration-card";
+import { SensorPickerSheet } from "@/components/sensor/sensor-picker-sheet";
+import { SensorStatusCard } from "@/components/sensor/sensor-status-card";
+import { ThemedText } from "@/components/themed-text";
+import { ThemedView } from "@/components/themed-view";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { useBle } from "@/contexts/ble-context";
+import { useMotionSensor } from "@/contexts/motion-sensor-context";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useMotionStream } from "@/hooks/use-motion-stream";
 
 const COLORS = {
   light: {
-    helper: '#687076',
-    placeholderBorder: '#D1D5DA',
-    placeholderText: '#9BA1A6',
-    primaryBg: '#0a7ea4',
-    primaryText: '#FFFFFF',
-    permissionBg: 'rgba(224, 138, 30, 0.12)',
-    permissionBorder: 'rgba(224, 138, 30, 0.4)',
-    permissionText: '#9C5E0E',
+    helper: "#687076",
+    placeholderBorder: "#D1D5DA",
+    placeholderText: "#9BA1A6",
+    primaryBg: "#0a7ea4",
+    primaryText: "#FFFFFF",
+    permissionBg: "rgba(224, 138, 30, 0.12)",
+    permissionBorder: "rgba(224, 138, 30, 0.4)",
+    permissionText: "#9C5E0E",
   },
   dark: {
-    helper: '#9BA1A6',
-    placeholderBorder: '#2F3236',
-    placeholderText: '#6E7174',
-    primaryBg: '#0a7ea4',
-    primaryText: '#FFFFFF',
-    permissionBg: 'rgba(255, 176, 32, 0.14)',
-    permissionBorder: 'rgba(255, 176, 32, 0.45)',
-    permissionText: '#FFB020',
+    helper: "#9BA1A6",
+    placeholderBorder: "#2F3236",
+    placeholderText: "#6E7174",
+    primaryBg: "#0a7ea4",
+    primaryText: "#FFFFFF",
+    permissionBg: "rgba(255, 176, 32, 0.14)",
+    permissionBorder: "rgba(255, 176, 32, 0.45)",
+    permissionText: "#FFB020",
   },
 } as const;
 
 export default function RowScreen() {
-  const scheme = useColorScheme() ?? 'light';
+  const scheme = useColorScheme() ?? "light";
   const palette = COLORS[scheme];
   const { source, deviceLabel, selectPhone, clear } = useMotionSensor();
   const stream = useMotionStream();
@@ -45,35 +45,45 @@ export default function RowScreen() {
   const [pickerOpen, setPickerOpen] = useState(false);
 
   useEffect(() => {
-    if (source !== 'ble' && ble.activeDevice) {
+    if (source !== "ble" && ble.activeDevice) {
       ble.disconnect();
     }
   }, [source, ble]);
 
   const renderDataSection = () => {
-    if (source === 'none') {
+    if (source === "none") {
       return (
         <View
-          style={[styles.placeholder, { borderColor: palette.placeholderBorder }]}
-          accessibilityElementsHidden>
-          <ThemedText style={[styles.placeholderText, { color: palette.placeholderText }]}>
+          style={[
+            styles.placeholder,
+            { borderColor: palette.placeholderBorder },
+          ]}
+          accessibilityElementsHidden
+        >
+          <ThemedText
+            style={[styles.placeholderText, { color: palette.placeholderText }]}
+          >
             Live sensor data will appear here once you select a source.
           </ThemedText>
         </View>
       );
     }
 
-    if (source === 'phone') {
+    if (source === "phone") {
       if (stream.permissionDenied) {
         return (
           <Notice palette={palette}>
-            Motion permission was denied. Enable Motion &amp; Fitness for rowerm8 in Settings to see
-            live data.
+            Motion permission was denied. Enable Motion &amp; Fitness for
+            rowerm8 in Settings to see live data.
           </Notice>
         );
       }
       if (!stream.isAvailable) {
-        return <Notice palette={palette}>No accelerometer detected on this device.</Notice>;
+        return (
+          <Notice palette={palette}>
+            No accelerometer detected on this device.
+          </Notice>
+        );
       }
       return (
         <LiveAccelerationCard
@@ -95,14 +105,18 @@ export default function RowScreen() {
     if (!stream.hasDecoder) {
       return (
         <Notice palette={palette}>
-          Connected to {deviceLabel ?? 'this device'}, but rowerm8 doesn&apos;t have a decoder for
-          it yet. Live data is unavailable.
+          Connected to {deviceLabel ?? "this device"}, but rowerm8 doesn&apos;t
+          have a decoder for it yet. Live data is unavailable.
         </Notice>
       );
     }
 
     if (!stream.isAvailable) {
-      return <Notice palette={palette}>Connecting to {deviceLabel ?? 'sensor'}...</Notice>;
+      return (
+        <Notice palette={palette}>
+          Connecting to {deviceLabel ?? "sensor"}...
+        </Notice>
+      );
     }
 
     return (
@@ -116,19 +130,19 @@ export default function RowScreen() {
 
   return (
     <ThemedView style={styles.root}>
-      <SafeAreaView edges={['top']} style={styles.safeArea}>
+      <SafeAreaView edges={["top"]} style={styles.safeArea}>
         <View style={styles.content}>
           <ThemedText type="title" style={styles.title}>
             Row
           </ThemedText>
 
           <SensorStatusCard
-            selected={source !== 'none'}
+            selected={source !== "none"}
             deviceLabel={deviceLabel}
             onPressAction={() => setPickerOpen(true)}
           />
 
-          {source === 'none' ? (
+          {source === "none" ? (
             <>
               <Pressable
                 onPress={() => setPickerOpen(true)}
@@ -136,14 +150,23 @@ export default function RowScreen() {
                 accessibilityLabel="Select motion sensor"
                 style={({ pressed }) => [
                   styles.primaryButton,
-                  { backgroundColor: palette.primaryBg, opacity: pressed ? 0.85 : 1 },
-                ]}>
+                  {
+                    backgroundColor: palette.primaryBg,
+                    opacity: pressed ? 0.85 : 1,
+                  },
+                ]}
+              >
                 <IconSymbol
                   name="dot.radiowaves.left.and.right"
                   size={20}
                   color={palette.primaryText}
                 />
-                <ThemedText style={[styles.primaryButtonText, { color: palette.primaryText }]}>
+                <ThemedText
+                  style={[
+                    styles.primaryButtonText,
+                    { color: palette.primaryText },
+                  ]}
+                >
                   Select motion sensor
                 </ThemedText>
               </Pressable>
@@ -161,7 +184,7 @@ export default function RowScreen() {
         visible={pickerOpen}
         onClose={() => setPickerOpen(false)}
         onSelectPhone={selectPhone}
-        onDisconnect={source !== 'none' ? clear : undefined}
+        onDisconnect={source !== "none" ? clear : undefined}
       />
     </ThemedView>
   );
@@ -178,9 +201,15 @@ function Notice({
     <View
       style={[
         styles.notice,
-        { backgroundColor: palette.permissionBg, borderColor: palette.permissionBorder },
-      ]}>
-      <ThemedText style={[styles.noticeText, { color: palette.permissionText }]}>
+        {
+          backgroundColor: palette.permissionBg,
+          borderColor: palette.permissionBorder,
+        },
+      ]}
+    >
+      <ThemedText
+        style={[styles.noticeText, { color: palette.permissionText }]}
+      >
         {children}
       </ThemedText>
     </View>
@@ -204,9 +233,9 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   primaryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 10,
     paddingVertical: 14,
     paddingHorizontal: 18,
@@ -214,7 +243,7 @@ const styles = StyleSheet.create({
   },
   primaryButtonText: {
     fontSize: 17,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   helper: {
     fontSize: 14,
@@ -223,16 +252,16 @@ const styles = StyleSheet.create({
   },
   placeholder: {
     borderWidth: 1,
-    borderStyle: 'dashed',
+    borderStyle: "dashed",
     borderRadius: 14,
     paddingVertical: 28,
     paddingHorizontal: 18,
-    alignItems: 'center',
+    alignItems: "center",
   },
   placeholderText: {
     fontSize: 14,
     lineHeight: 18,
-    textAlign: 'center',
+    textAlign: "center",
   },
   notice: {
     borderWidth: StyleSheet.hairlineWidth,

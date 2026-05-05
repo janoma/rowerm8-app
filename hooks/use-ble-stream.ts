@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from "react";
 
-import { useBle } from '@/contexts/ble-context';
+import { useBle } from "@/contexts/ble-context";
 import type {
   AccelerometerSample,
   AccelerometerStream,
   AxisHistories,
-} from '@/hooks/use-accelerometer-stream';
+} from "@/hooks/use-accelerometer-stream";
 
 const ZERO_SAMPLE: AccelerometerSample = { x: 0, y: 0, z: 0, magnitude: 0 };
 
@@ -95,7 +95,7 @@ export function useBleStream({
   return {
     sample: sample ?? (enabled ? ZERO_SAMPLE : null),
     histories,
-    isAvailable: connectionState === 'connected',
+    isAvailable: connectionState === "connected",
     permissionDenied: false,
     sampleRateHz,
   };

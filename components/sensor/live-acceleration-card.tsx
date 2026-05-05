@@ -1,47 +1,50 @@
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from "react-native";
 
-import { ThemedText } from '@/components/themed-text';
-import { Fonts } from '@/constants/theme';
-import type { AccelerometerSample, AxisHistories } from '@/hooks/use-accelerometer-stream';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { ThemedText } from "@/components/themed-text";
+import { Fonts } from "@/constants/theme";
+import type {
+  AccelerometerSample,
+  AxisHistories,
+} from "@/hooks/use-accelerometer-stream";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
 const COLORS = {
   light: {
-    surface: '#F2F3F5',
-    surfaceBorder: '#E4E6EA',
-    label: '#687076',
-    axisLabel: '#687076',
-    value: '#11181C',
-    pulse: '#1F9D55',
-    sparkBg: '#E9EBEE',
-    sparkAxis: '#C7C9CC',
-    axisX: '#E5484D',
-    axisY: '#1F9D55',
-    axisZ: '#0a7ea4',
+    surface: "#F2F3F5",
+    surfaceBorder: "#E4E6EA",
+    label: "#687076",
+    axisLabel: "#687076",
+    value: "#11181C",
+    pulse: "#1F9D55",
+    sparkBg: "#E9EBEE",
+    sparkAxis: "#C7C9CC",
+    axisX: "#E5484D",
+    axisY: "#1F9D55",
+    axisZ: "#0a7ea4",
   },
   dark: {
-    surface: '#1F2224',
-    surfaceBorder: '#2A2D30',
-    label: '#9BA1A6',
-    axisLabel: '#9BA1A6',
-    value: '#ECEDEE',
-    pulse: '#34C759',
-    sparkBg: '#15171A',
-    sparkAxis: '#2F3236',
-    axisX: '#FF6369',
-    axisY: '#34C759',
-    axisZ: '#3DB7E0',
+    surface: "#1F2224",
+    surfaceBorder: "#2A2D30",
+    label: "#9BA1A6",
+    axisLabel: "#9BA1A6",
+    value: "#ECEDEE",
+    pulse: "#34C759",
+    sparkBg: "#15171A",
+    sparkAxis: "#2F3236",
+    axisX: "#FF6369",
+    axisY: "#34C759",
+    axisZ: "#3DB7E0",
   },
 } as const;
 
 const monoFont = Fonts.mono;
 
-type AxisKey = 'x' | 'y' | 'z';
+type AxisKey = "x" | "y" | "z";
 
 const AXES: { key: AxisKey; label: string }[] = [
-  { key: 'x', label: 'X' },
-  { key: 'y', label: 'Y' },
-  { key: 'z', label: 'Z' },
+  { key: "x", label: "X" },
+  { key: "y", label: "Y" },
+  { key: "z", label: "Z" },
 ];
 
 type Props = {
@@ -50,16 +53,24 @@ type Props = {
   sampleRateHz: number;
 };
 
-export function LiveAccelerationCard({ sample, histories, sampleRateHz }: Props) {
-  const scheme = useColorScheme() ?? 'light';
+export function LiveAccelerationCard({
+  sample,
+  histories,
+  sampleRateHz,
+}: Props) {
+  const scheme = useColorScheme() ?? "light";
   const palette = COLORS[scheme];
 
   return (
     <View
       style={[
         styles.card,
-        { backgroundColor: palette.surface, borderColor: palette.surfaceBorder },
-      ]}>
+        {
+          backgroundColor: palette.surface,
+          borderColor: palette.surfaceBorder,
+        },
+      ]}
+    >
       <View style={styles.headerRow}>
         <ThemedText style={[styles.headerLabel, { color: palette.label }]}>
           LIVE ACCELERATION (m/s²)
@@ -75,7 +86,11 @@ export function LiveAccelerationCard({ sample, histories, sampleRateHz }: Props)
             value={sample?.[key]}
             data={histories[key]}
             accent={
-              key === 'x' ? palette.axisX : key === 'y' ? palette.axisY : palette.axisZ
+              key === "x"
+                ? palette.axisX
+                : key === "y"
+                  ? palette.axisY
+                  : palette.axisZ
             }
             axisLabelColor={palette.axisLabel}
             valueColor={palette.value}
@@ -111,16 +126,25 @@ function AxisRow({
   sparkBg: string;
   sparkAxisColor: string;
 }) {
-  const display = value === undefined || Number.isNaN(value) ? '   —  ' : formatValue(value);
+  const display =
+    value === undefined || Number.isNaN(value) ? "   —  " : formatValue(value);
   return (
     <View style={styles.axisRow}>
-      <ThemedText style={[styles.axisLabel, { color: axisLabelColor }]}>{label}</ThemedText>
+      <ThemedText style={[styles.axisLabel, { color: axisLabelColor }]}>
+        {label}
+      </ThemedText>
       <ThemedText
         style={[styles.axisValue, { color: valueColor, fontFamily: monoFont }]}
-        numberOfLines={1}>
+        numberOfLines={1}
+      >
         {display}
       </ThemedText>
-      <Sparkline data={data} accent={accent} background={sparkBg} axisColor={sparkAxisColor} />
+      <Sparkline
+        data={data}
+        accent={accent}
+        background={sparkBg}
+        axisColor={sparkAxisColor}
+      />
     </View>
   );
 }
@@ -154,7 +178,7 @@ function Sparkline({
                   backgroundColor: accent,
                   height: `${heightPct}%`,
                   opacity: 0.55 + normalized * 0.45,
-                  ...(isPositive ? { bottom: '50%' } : { top: '50%' }),
+                  ...(isPositive ? { bottom: "50%" } : { top: "50%" }),
                 },
               ]}
             />
@@ -179,13 +203,13 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   headerLabel: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: "600",
     letterSpacing: 0.8,
     flex: 1,
   },
@@ -198,47 +222,47 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   axisRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 10,
   },
   axisLabel: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: "700",
     width: 14,
   },
   axisValue: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
     minWidth: 56,
-    textAlign: 'right',
+    textAlign: "right",
   },
   sparkContainer: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'stretch',
+    flexDirection: "row",
+    alignItems: "stretch",
     height: 30,
     borderRadius: 8,
     paddingHorizontal: 4,
     paddingVertical: 2,
-    overflow: 'hidden',
-    position: 'relative',
+    overflow: "hidden",
+    position: "relative",
   },
   sparkAxis: {
-    position: 'absolute',
+    position: "absolute",
     left: 4,
     right: 4,
-    top: '50%',
+    top: "50%",
     height: StyleSheet.hairlineWidth,
   },
   sparkSlot: {
     flex: 1,
-    height: '100%',
-    position: 'relative',
+    height: "100%",
+    position: "relative",
     marginHorizontal: 0.5,
   },
   sparkBar: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     right: 0,
     borderRadius: 1,

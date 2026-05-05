@@ -1,5 +1,5 @@
-import { Accelerometer } from 'expo-sensors';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Accelerometer } from "expo-sensors";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 const G = 9.80665;
 
@@ -78,7 +78,9 @@ export function useAccelerometerStream({
         }
         setPermissionDenied(false);
 
-        Accelerometer.setUpdateInterval(Math.max(1, Math.round(1000 / sampleRateHz)));
+        Accelerometer.setUpdateInterval(
+          Math.max(1, Math.round(1000 / sampleRateHz)),
+        );
 
         subscription = Accelerometer.addListener((data) => {
           const x = data.x * G;

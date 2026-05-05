@@ -6,11 +6,11 @@ import {
   useMemo,
   useRef,
   useState,
-} from 'react';
-import { Platform } from 'react-native';
+} from "react";
+import { Platform } from "react-native";
 
-import type { SensorDecoder } from '@/decoders/types';
-import { findDecoder } from '@/decoders/registry';
+import type { SensorDecoder } from "@/decoders/types";
+import { findDecoder } from "@/decoders/registry";
 // Type-only imports are erased at runtime, so this does not pull the
 // react-native-ble-plx native module on platforms (e.g. web) that lack it.
 import type {
@@ -18,18 +18,18 @@ import type {
   Device,
   State,
   Subscription,
-} from 'react-native-ble-plx';
+} from "react-native-ble-plx";
 
 const SCAN_DURATION_MS = 15_000;
 const CONNECT_TIMEOUT_MS = 10_000;
 
-let blePlxModule: typeof import('react-native-ble-plx') | null = null;
-function loadBlePlx(): typeof import('react-native-ble-plx') | null {
-  if (Platform.OS === 'web') return null;
+let blePlxModule: typeof import("react-native-ble-plx") | null = null;
+function loadBlePlx(): typeof import("react-native-ble-plx") | null {
+  if (Platform.OS === "web") return null;
   if (blePlxModule) return blePlxModule;
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    blePlxModule = require('react-native-ble-plx');
+    blePlxModule = require("react-native-ble-plx");
     return blePlxModule;
   } catch {
     return null;
@@ -45,8 +45,18 @@ export type ScannedDevice = {
   decoder: SensorDecoder | null;
 };
 
-export type BleAvailability = 'unavailable' | 'unknown' | 'unauthorized' | 'off' | 'on';
-export type ConnectionState = 'idle' | 'connecting' | 'connected' | 'disconnected' | 'failed';
+export type BleAvailability =
+  | "unavailable"
+  | "unknown"
+  | "unauthorized"
+  | "off"
+  | "on";
+export type ConnectionState =
+  | "idle"
+  | "connecting"
+  | "connected"
+  | "disconnected"
+  | "failed";
 
 export type BleContextValue = {
   availability: BleAvailability;
@@ -68,20 +78,20 @@ export type BleContextValue = {
 const BleContext = createContext<BleContextValue | null>(null);
 
 function mapState(s: State | null): BleAvailability {
-  if (!s) return 'unknown';
+  if (!s) return "unknown";
   switch (s) {
-    case 'PoweredOn':
-      return 'on';
-    case 'PoweredOff':
-      return 'off';
-    case 'Unauthorized':
-      return 'unauthorized';
-    case 'Unsupported':
-      return 'unavailable';
-    case 'Resetting':
-    case 'Unknown':
+    case "PoweredOn":
+      return "on";
+    case "PoweredOff":
+      return "off";
+    case "Unauthorized":
+      return "unauthorized";
+    case "Unsupported":
+      return "unavailable";
+    case "Resetting":
+    case "Unknown":
     default:
-      return 'unknown';
+      return "unknown";
   }
 }
 
@@ -120,7 +130,7 @@ function base64ToBytes(b64: string): Uint8Array {
 }
 
 function bytesToBase64(bytes: Uint8Array): string {
-  let binary = '';
+  let binary = "";
   for (let i = 0; i < bytes.length; i++) {
     binary += String.fromCharCode(bytes[i]);
   }
@@ -135,29 +145,35 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
   const connectedDeviceRef = useRef<Device | null>(null);
   const subscribersRef = useRef<Set<(bytes: Uint8Array) => void>>(new Set());
 
-  const [availability, setAvailability] = useState<BleAvailability>('unknown');
+  const [availability, setAvailability] = useState<BleAvailability>("unknown");
   const [scanning, setScanning] = useState(false);
   const [devices, setDevices] = useState<Record<string, ScannedDevice>>({});
   const [scanError, setScanError] = useState<string | null>(null);
   const [activeDevice, setActiveDevice] = useState<ScannedDevice | null>(null);
-  const [activeDecoder, setActiveDecoder] = useState<SensorDecoder | null>(null);
-  const [connectionState, setConnectionState] = useState<ConnectionState>('idle');
+  const [activeDecoder, setActiveDecoder] = useState<SensorDecoder | null>(
+    null,
+  );
+  const [connectionState, setConnectionState] =
+    useState<ConnectionState>("idle");
   const [connectionError, setConnectionError] = useState<string | null>(null);
 
   const ensureManager = useCallback((): BleManagerType | null => {
     if (managerRef.current) return managerRef.current;
     const mod = loadBlePlx();
     if (!mod) {
-      setAvailability('unavailable');
+      setAvailability("unavailable");
       return null;
     }
     try {
       const manager = new mod.BleManager();
       managerRef.current = manager;
-      stateSubRef.current = manager.onStateChange((s) => setAvailability(mapState(s)), true);
+      stateSubRef.current = manager.onStateChange(
+        (s) => setAvailability(mapState(s)),
+        true,
+      );
       return manager;
     } catch {
-      setAvailability('unavailable');
+      setAvailability("unavailable");
       return null;
     }
   }, []);
@@ -181,7 +197,7 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
   const startScan = useCallback(async () => {
     const manager = ensureManager();
     if (!manager) {
-      setScanError('Bluetooth is not available on this device.');
+      setScanError("Bluetooth is not available on this device.");
       return;
     }
 
@@ -190,35 +206,39 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
     setScanning(true);
 
     try {
-      manager.startDeviceScan(null, { allowDuplicates: false }, (error, device) => {
-        if (error) {
-          setScanError(error.message ?? 'Scan failed.');
-          setScanning(false);
-          return;
-        }
-        if (!device) return;
-        setDevices((prev) => {
-          const existing = prev[device.id];
-          const incoming = toScannedDevice(device);
-          const merged: ScannedDevice = existing
-            ? {
-                ...existing,
-                name: incoming.name ?? existing.name,
-                localName: incoming.localName ?? existing.localName,
-                rssi: incoming.rssi ?? existing.rssi,
-                serviceUUIDs: incoming.serviceUUIDs ?? existing.serviceUUIDs,
-                decoder: incoming.decoder ?? existing.decoder,
-              }
-            : incoming;
-          return { ...prev, [device.id]: merged };
-        });
-      });
+      manager.startDeviceScan(
+        null,
+        { allowDuplicates: false },
+        (error, device) => {
+          if (error) {
+            setScanError(error.message ?? "Scan failed.");
+            setScanning(false);
+            return;
+          }
+          if (!device) return;
+          setDevices((prev) => {
+            const existing = prev[device.id];
+            const incoming = toScannedDevice(device);
+            const merged: ScannedDevice = existing
+              ? {
+                  ...existing,
+                  name: incoming.name ?? existing.name,
+                  localName: incoming.localName ?? existing.localName,
+                  rssi: incoming.rssi ?? existing.rssi,
+                  serviceUUIDs: incoming.serviceUUIDs ?? existing.serviceUUIDs,
+                  decoder: incoming.decoder ?? existing.decoder,
+                }
+              : incoming;
+            return { ...prev, [device.id]: merged };
+          });
+        },
+      );
 
       scanTimerRef.current = setTimeout(() => {
         stopScan();
       }, SCAN_DURATION_MS);
     } catch (e) {
-      const message = e instanceof Error ? e.message : 'Scan failed.';
+      const message = e instanceof Error ? e.message : "Scan failed.";
       setScanError(message);
       setScanning(false);
     }
@@ -248,7 +268,7 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
     await teardownConnection();
     setActiveDevice(null);
     setActiveDecoder(null);
-    setConnectionState('disconnected');
+    setConnectionState("disconnected");
     setConnectionError(null);
   }, [teardownConnection]);
 
@@ -256,15 +276,15 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
     async (deviceId: string): Promise<ScannedDevice | null> => {
       const manager = ensureManager();
       if (!manager) {
-        setConnectionError('Bluetooth is not available on this device.');
-        setConnectionState('failed');
+        setConnectionError("Bluetooth is not available on this device.");
+        setConnectionState("failed");
         return null;
       }
 
       stopScan();
       await teardownConnection();
 
-      setConnectionState('connecting');
+      setConnectionState("connecting");
       setConnectionError(null);
 
       try {
@@ -281,8 +301,8 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
             decoder.notifyUuid,
             (error, characteristic) => {
               if (error) {
-                setConnectionError(error.message ?? 'Connection lost.');
-                setConnectionState('disconnected');
+                setConnectionError(error.message ?? "Connection lost.");
+                setConnectionState("disconnected");
                 return;
               }
               if (!characteristic?.value) return;
@@ -295,7 +315,7 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
         connectedDeviceRef.current = connected;
         setActiveDevice(scanned);
         setActiveDecoder(decoder);
-        setConnectionState('connected');
+        setConnectionState("connected");
 
         // Fire vendor-specific config (e.g. unlock + output rate) AFTER we mark the
         // connection live, so the UI never blocks on these writes. iOS sometimes
@@ -318,17 +338,17 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
                 // WitMotion's controller needs a small gap between register writes.
                 await new Promise((resolve) => setTimeout(resolve, 50));
               } catch (e) {
-                console.warn('[ble] init command failed', e);
+                console.warn("[ble] init command failed", e);
               }
             }
-          })().catch((e) => console.warn('[ble] init sequence failed', e));
+          })().catch((e) => console.warn("[ble] init sequence failed", e));
         }
 
         return scanned;
       } catch (e) {
-        const message = e instanceof Error ? e.message : 'Failed to connect.';
+        const message = e instanceof Error ? e.message : "Failed to connect.";
         setConnectionError(message);
-        setConnectionState('failed');
+        setConnectionState("failed");
         await teardownConnection();
         setActiveDevice(null);
         setActiveDecoder(null);
@@ -413,7 +433,7 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
 export function useBle() {
   const ctx = useContext(BleContext);
   if (!ctx) {
-    throw new Error('useBle must be used within a BleProvider');
+    throw new Error("useBle must be used within a BleProvider");
   }
   return ctx;
 }

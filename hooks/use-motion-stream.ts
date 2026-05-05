@@ -1,9 +1,12 @@
-import { useBle } from '@/contexts/ble-context';
-import { useMotionSensor } from '@/contexts/motion-sensor-context';
-import type { AccelerometerStream, AxisHistories } from '@/hooks/use-accelerometer-stream';
-import { useAccelerometerStream } from '@/hooks/use-accelerometer-stream';
-import { useBleStream } from '@/hooks/use-ble-stream';
-import type { MotionSensorSource } from '@/contexts/motion-sensor-context';
+import { useBle } from "@/contexts/ble-context";
+import { useMotionSensor } from "@/contexts/motion-sensor-context";
+import type {
+  AccelerometerStream,
+  AxisHistories,
+} from "@/hooks/use-accelerometer-stream";
+import { useAccelerometerStream } from "@/hooks/use-accelerometer-stream";
+import { useBleStream } from "@/hooks/use-ble-stream";
+import type { MotionSensorSource } from "@/contexts/motion-sensor-context";
 
 const EMPTY_HISTORIES: AxisHistories = { x: [], y: [], z: [] };
 
@@ -19,14 +22,14 @@ export type MotionStream = AccelerometerStream & {
  */
 export function useMotionStream(): MotionStream {
   const { source } = useMotionSensor();
-  const phone = useAccelerometerStream({ enabled: source === 'phone' });
-  const ble = useBleStream({ enabled: source === 'ble' });
+  const phone = useAccelerometerStream({ enabled: source === "phone" });
+  const ble = useBleStream({ enabled: source === "ble" });
   const { activeDecoder } = useBle();
 
-  if (source === 'phone') {
+  if (source === "phone") {
     return { ...phone, source, hasDecoder: true };
   }
-  if (source === 'ble') {
+  if (source === "ble") {
     return { ...ble, source, hasDecoder: !!activeDecoder };
   }
   return {

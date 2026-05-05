@@ -1,4 +1,4 @@
-import type { DecodedFrame, SensorDecoder } from './types';
+import type { DecodedFrame, SensorDecoder } from "./types";
 
 const G = 9.80665;
 const ACCEL_RANGE_G = 16;
@@ -8,7 +8,7 @@ const GYRO_SCALE = GYRO_RANGE_DPS / 32768;
 const ANGLE_RANGE_DEG = 180;
 const ANGLE_SCALE = ANGLE_RANGE_DEG / 32768;
 
-const WIT_NAME_PREFIXES = ['WT', 'BWT', 'HWT'];
+const WIT_NAME_PREFIXES = ["WT", "BWT", "HWT"];
 
 // Output Rate Register (RRATE = 0x03) value codes from the WitMotion protocol:
 //   0x06 = 10 Hz (factory default), 0x07 = 20 Hz, 0x08 = 50 Hz, 0x09 = 100 Hz, 0x0B = 200 Hz.
@@ -31,16 +31,16 @@ const WIT_SET_RATE_50HZ = new Uint8Array([0xff, 0xaa, 0x03, 0x08, 0x00]);
  * https://github.com/WITMOTION/WitBluetooth_BWT901BLE5_0 (BleUUID + Bwt901bleResolver).
  */
 export const witmotionBwt901: SensorDecoder = {
-  key: 'witmotion-bwt901',
-  displayName: 'WitMotion 9-axis IMU',
-  vendorDescription: 'WT9011DCL / BWT901BLE5.0',
+  key: "witmotion-bwt901",
+  displayName: "WitMotion 9-axis IMU",
+  vendorDescription: "WT9011DCL / BWT901BLE5.0",
   recommended: true,
-  serviceUuid: '0000ffe5-0000-1000-8000-00805f9a34fb',
-  notifyUuid: '0000ffe4-0000-1000-8000-00805f9a34fb',
-  writeUuid: '0000ffe9-0000-1000-8000-00805f9a34fb',
+  serviceUuid: "0000ffe5-0000-1000-8000-00805f9a34fb",
+  notifyUuid: "0000ffe4-0000-1000-8000-00805f9a34fb",
+  writeUuid: "0000ffe9-0000-1000-8000-00805f9a34fb",
   initCommands: [WIT_UNLOCK, WIT_SET_RATE_50HZ],
   matches: ({ name, localName }) => {
-    const candidate = (name ?? localName ?? '').toUpperCase();
+    const candidate = (name ?? localName ?? "").toUpperCase();
     return WIT_NAME_PREFIXES.some((prefix) => candidate.startsWith(prefix));
   },
   decode: (bytes) => {

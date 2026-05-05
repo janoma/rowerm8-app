@@ -1,0 +1,18 @@
+# Dependencies
+node_modules
+
+# Native projects (managed by Expo prebuild)
+ios
+android
+
+# Build artifacts
+dist
+build
+.expo
+expo-env.d.ts
+
+# Lockfiles and generated metadata
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+*.log

@@ -1,5 +1,5 @@
-import type { DecoderDeviceHint, SensorDecoder } from './types';
-import { witmotionBwt901 } from './witmotion-bwt901';
+import type { DecoderDeviceHint, SensorDecoder } from "./types";
+import { witmotionBwt901 } from "./witmotion-bwt901";
 
 export const KNOWN_DECODERS: SensorDecoder[] = [witmotionBwt901];
 
@@ -11,7 +11,9 @@ export function findDecoder(device: DecoderDeviceHint): SensorDecoder | null {
   return KNOWN_DECODERS.find((d) => d.matches(device)) ?? null;
 }
 
-export function getDecoderByKey(key: string | null | undefined): SensorDecoder | null {
+export function getDecoderByKey(
+  key: string | null | undefined,
+): SensorDecoder | null {
   if (!key) return null;
   return BY_KEY[key] ?? null;
 }
