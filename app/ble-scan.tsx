@@ -93,6 +93,7 @@ export default function BleScanScreen() {
     if (ble.availability === 'off') return 'Bluetooth is off';
     if (ble.availability === 'unauthorized') return 'Bluetooth permission needed';
     if (ble.availability === 'unavailable') return 'Bluetooth not available';
+    if (ble.availability === 'unknown') return 'Initializing Bluetooth...';
     if (ble.scanning) return 'Scanning for nearby sensors...';
     return 'Scan complete';
   })();
@@ -103,6 +104,7 @@ export default function BleScanScreen() {
       return 'Enable Bluetooth for rowerm8 in iOS Settings.';
     if (ble.availability === 'unavailable')
       return 'This build does not include native Bluetooth support.';
+    if (ble.availability === 'unknown') return 'Hang tight, this only takes a moment.';
     if (ble.scanning) return 'Make sure your sensor is powered on and within 5 m';
     return 'Tap "Scan again" to keep looking.';
   })();

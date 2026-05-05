@@ -310,6 +310,12 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    // Eagerly create the BleManager so its onStateChange subscription resolves
+    // `availability` before the user opens the picker. Without this, the manager
+    // is only created on the first scan/connect and `availability` stays at
+    // 'unknown', which both blocks the auto-scan effect on the picker screen
+    // and shows misleading "Scan complete" copy.
+    ensureManager();
     return () => {
       stopScan();
       teardownConnection().catch(() => {});
@@ -325,7 +331,7 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
         managerRef.current = null;
       }
     };
-  }, [stopScan, teardownConnection]);
+  }, [ensureManager, stopScan, teardownConnection]);
 
   const sortedDevices = useMemo(
     () => Object.values(devices).slice().sort(compareDevices),
