@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+# Validate commit messages against @commitlint/config-conventional defaults.
+# Enable on a fresh clone with:  git config core.hooksPath .githooks
+
+pnpm exec commitlint --edit "$1"
