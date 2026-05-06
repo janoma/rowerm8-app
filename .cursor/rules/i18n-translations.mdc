@@ -1,0 +1,26 @@
+---
+description: When working on the UI, only touch English strings. Translations to other languages are handled in a separate workflow.
+alwaysApply: true
+---
+
+# i18n Translations
+
+When working on UI changes (adding screens, copy edits, new buttons, error messages, accessibility labels, etc.), **only add, remove, or update keys in `locales/en/*.json`**. Do not edit, add, or remove translations in any other language catalog (`locales/{es,fr,de,it,ja,zh-Hans,ar}/*.json`). Translations are reviewed and committed independently, often by the user.
+
+## What to do
+
+- Add new keys under the appropriate namespace in `locales/en/`:
+  - `common.json` — shared actions ("Cancel", "OK", "Done")
+  - `tabs.json`, `home.json`, `row.json`, `settings.json`, `sensor.json`, `ble.json`, `modal.json` — screen-specific
+- Reference keys in components via `useTranslation("<namespace>")` and `t("path.to.key")`.
+- Use ICU MessageFormat for plurals/selects/numbers, e.g. `"{count, number}"`, `"{direction, select, rtl {…} other {…}}"`.
+
+## What NOT to do
+
+- Do not edit files under `locales/es/`, `locales/fr/`, `locales/de/`, `locales/it/`, `locales/ja/`, `locales/zh-Hans/`, or `locales/ar/`.
+- Do not invent translations or "best-effort" stubs in the non-English catalogs.
+- Do not block on missing translations: i18next falls back to `en` automatically when a key is missing in the active language, so the UI never breaks.
+
+## Adding a new language
+
+If asked to add a brand-new language, that's an exception to this rule — see `lib/i18n/resources.ts` and `lib/i18n/languages.ts` for the registration pattern.
