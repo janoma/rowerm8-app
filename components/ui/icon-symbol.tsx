@@ -27,6 +27,8 @@ const MAPPING = {
   iphone: "smartphone",
   "dot.radiowaves.right": "bluetooth",
   "xmark.circle": "cancel",
+  "checkmark.square.fill": "check-box",
+  square: "check-box-outline-blank",
 } as IconMapping;
 
 /**

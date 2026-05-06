@@ -1,17 +1,24 @@
-import { useEffect, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { LiveAccelerationCard } from "@/components/sensor/live-acceleration-card";
 import { SensorPickerSheet } from "@/components/sensor/sensor-picker-sheet";
+import { SensorPlacementModal } from "@/components/sensor/sensor-placement-modal";
 import { SensorStatusCard } from "@/components/sensor/sensor-status-card";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useBle } from "@/contexts/ble-context";
-import { useMotionSensor } from "@/contexts/motion-sensor-context";
+import {
+  type MotionSensorSource,
+  useMotionSensor,
+} from "@/contexts/motion-sensor-context";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useMotionStream } from "@/hooks/use-motion-stream";
+
+const PLACEMENT_DONT_SHOW_KEY = "rowerm8.sensorPlacement.dontShowAgain";
 
 const COLORS = {
   light: {
@@ -43,6 +50,37 @@ export default function RowScreen() {
   const stream = useMotionStream();
   const ble = useBle();
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [placementVisible, setPlacementVisible] = useState(false);
+  const prevSource = useRef<MotionSensorSource>(source);
+  const placementSuppressed = useRef(false);
+
+  useEffect(() => {
+    AsyncStorage.getItem(PLACEMENT_DONT_SHOW_KEY).then((v) => {
+      if (v === "true") {
+        placementSuppressed.current = true;
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    const prev = prevSource.current;
+    prevSource.current = source;
+    if (
+      prev === "none" &&
+      (source === "phone" || source === "ble") &&
+      !placementSuppressed.current
+    ) {
+      setPlacementVisible(true);
+    }
+  }, [source]);
+
+  const handlePlacementDismiss = useCallback((dontShowAgain: boolean) => {
+    setPlacementVisible(false);
+    if (dontShowAgain) {
+      placementSuppressed.current = true;
+      AsyncStorage.setItem(PLACEMENT_DONT_SHOW_KEY, "true").catch(() => {});
+    }
+  }, []);
 
   // "Connected" means data is actually flowing right now, not just that a source
   // has been persisted. After cold start the persisted selection hydrates
@@ -197,6 +235,14 @@ export default function RowScreen() {
         onSelectPhone={selectPhone}
         onDisconnect={source !== "none" ? clear : undefined}
       />
+
+      {source !== "none" && (
+        <SensorPlacementModal
+          visible={placementVisible}
+          onDismiss={handlePlacementDismiss}
+          source={source}
+        />
+      )}
     </ThemedView>
   );
 }
