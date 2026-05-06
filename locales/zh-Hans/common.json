@@ -1,0 +1,17 @@
+{
+  "actions": {
+    "cancel": "取消",
+    "ok": "好",
+    "done": "完成",
+    "back": "返回",
+    "close": "关闭",
+    "reset": "重置",
+    "save": "存储",
+    "gotIt": "知道了",
+    "dontShowAgain": "不再显示",
+    "scanAgain": "重新扫描"
+  },
+  "system": {
+    "auto": "自动"
+  }
+}

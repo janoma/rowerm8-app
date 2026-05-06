@@ -1,0 +1,43 @@
+{
+  "scan": {
+    "navTitle": "蓝牙传感器",
+    "section": "兼容设备 ({count, number})",
+    "empty": "暂未找到兼容的传感器。请确保传感器已开启，然后重试。",
+    "connecting": "正在连接…",
+    "connectError": "无法连接：{error}",
+    "hero": {
+      "off": {
+        "title": "蓝牙已关闭",
+        "subtitle": "请在“设置”中启用蓝牙以继续。"
+      },
+      "unauthorized": {
+        "title": "需要蓝牙权限",
+        "subtitle": "请在 iOS 设置中为 rowerm8 启用蓝牙。"
+      },
+      "unavailable": {
+        "title": "蓝牙不可用",
+        "subtitle": "此版本不包含原生蓝牙支持。"
+      },
+      "unknown": {
+        "title": "正在初始化蓝牙…",
+        "subtitle": "请稍候，马上就好。"
+      },
+      "scanning": {
+        "title": "正在搜索附近的传感器…",
+        "subtitle": "请确保传感器已开启且距离不超过 5 米"
+      },
+      "complete": {
+        "title": "扫描完成",
+        "subtitle": "轻点“重新扫描”以继续查找。"
+      }
+    }
+  },
+  "device": {
+    "unknownVendor": "未知厂商",
+    "unknownNamePrefix": "未知 {suffix}",
+    "fallbackLabel": "蓝牙设备 {suffix}",
+    "a11yConnect": "连接到 {name}",
+    "a11ySignal": "信号强度 {filled, number}/{total, number}",
+    "a11yBattery": "电量 {percent, number}%"
+  }
+}

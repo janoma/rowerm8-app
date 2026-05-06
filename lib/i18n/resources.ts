@@ -66,6 +66,14 @@ import jaRow from "@/locales/ja/row.json";
 import jaSensor from "@/locales/ja/sensor.json";
 import jaSettings from "@/locales/ja/settings.json";
 import jaTabs from "@/locales/ja/tabs.json";
+import zhHansBle from "@/locales/zh-Hans/ble.json";
+import zhHansCommon from "@/locales/zh-Hans/common.json";
+import zhHansHome from "@/locales/zh-Hans/home.json";
+import zhHansModal from "@/locales/zh-Hans/modal.json";
+import zhHansRow from "@/locales/zh-Hans/row.json";
+import zhHansSensor from "@/locales/zh-Hans/sensor.json";
+import zhHansSettings from "@/locales/zh-Hans/settings.json";
+import zhHansTabs from "@/locales/zh-Hans/tabs.json";
 
 export const NAMESPACES = [
   "common",
@@ -152,5 +160,18 @@ export const RESOURCES = {
     ble: deBle,
     settings: deSettings,
     modal: deModal,
+  },
+  // BCP-47 tag with script subtag — must be quoted because it's not a
+  // valid JS identifier. i18next looks up languages by exact tag, so this
+  // matches `SupportedLanguageCode` ("zh-Hans") and the OS-resolved language.
+  "zh-Hans": {
+    common: zhHansCommon,
+    tabs: zhHansTabs,
+    home: zhHansHome,
+    row: zhHansRow,
+    sensor: zhHansSensor,
+    ble: zhHansBle,
+    settings: zhHansSettings,
+    modal: zhHansModal,
   },
 } as const;

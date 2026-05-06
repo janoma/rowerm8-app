@@ -1,0 +1,38 @@
+{
+  "placement": {
+    "handlebar": "用双面胶或魔术贴将传感器固定在把手侧面。",
+    "phone": "如果改用手机，请将其固定在座椅侧面或下方。"
+  },
+  "picker": {
+    "title": "选择运动传感器",
+    "phone": {
+      "title": "使用手机",
+      "subtitle": "使用本设备内置的加速度计",
+      "a11y": "使用手机加速度计"
+    },
+    "ble": {
+      "title": "选择蓝牙设备",
+      "subtitle": "配对外部 IMU 传感器，例如 WitMotion WT9011DCL",
+      "a11y": "选择蓝牙设备"
+    },
+    "disconnect": {
+      "title": "断开连接",
+      "subtitle": "清除当前的运动传感器选择",
+      "a11y": "断开运动传感器"
+    }
+  },
+  "status": {
+    "label": "运动传感器",
+    "selected": "已选择",
+    "notSelected": "未选择",
+    "notConnected": "未连接",
+    "actionConnect": "连接",
+    "actionChange": "更改",
+    "a11yConnect": "连接运动传感器",
+    "a11yChange": "更改运动传感器"
+  },
+  "live": {
+    "header": "实时加速度 (m/s²)",
+    "footer": "采样率 {rate, number} Hz"
+  }
+}
