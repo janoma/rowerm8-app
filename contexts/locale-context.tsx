@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocales } from "expo-localization";
-import i18next from "i18next";
+import i18next, { changeLanguage } from "i18next";
 import {
   createContext,
   useCallback,
@@ -153,7 +153,7 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
   const lastRtlAppliedRef = useRef<boolean | null>(null);
   useEffect(() => {
     if (i18next.language !== resolved.language) {
-      i18next.changeLanguage(resolved.language).catch((err) => {
+      changeLanguage(resolved.language).catch((err) => {
         console.warn("[locale] changeLanguage failed", err);
       });
     }

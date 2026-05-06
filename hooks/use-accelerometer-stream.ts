@@ -66,12 +66,18 @@ export function useAccelerometerStream({
     (async () => {
       try {
         const available = await Accelerometer.isAvailableAsync();
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
         setIsAvailable(available);
-        if (!available) return;
+        if (!available) {
+          return;
+        }
 
         const permission = await Accelerometer.requestPermissionsAsync();
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
         if (!permission.granted) {
           setPermissionDenied(true);
           return;
@@ -101,7 +107,9 @@ export function useAccelerometerStream({
           setHistoryVersion((v) => (v + 1) % 1_000_000);
         });
       } catch {
-        if (!cancelled) setIsAvailable(false);
+        if (!cancelled) {
+          setIsAvailable(false);
+        }
       }
     })();
 
@@ -111,14 +119,15 @@ export function useAccelerometerStream({
     };
   }, [enabled, sampleRateHz, historyLength]);
 
-  // historyVersion is the trigger here; the actual data lives in historiesRef.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // historyVersion is the trigger here; the actual data lives in historiesRef,
+  // so eslint can't see the dependency relationship.
   const histories = useMemo<AxisHistories>(
     () => ({
       x: historiesRef.current.x.slice(),
       y: historiesRef.current.y.slice(),
       z: historiesRef.current.z.slice(),
     }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [historyVersion],
   );
 

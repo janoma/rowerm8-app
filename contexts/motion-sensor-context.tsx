@@ -56,7 +56,9 @@ export function MotionSensorProvider({
     let cancelled = false;
     AsyncStorage.getItem(STORAGE_KEY)
       .then((raw) => {
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
         if (raw) {
           try {
             const parsed = JSON.parse(raw) as Partial<MotionSensorSelection>;
@@ -83,7 +85,9 @@ export function MotionSensorProvider({
         // Ignore storage errors; we'll just use the default.
       })
       .finally(() => {
-        if (!cancelled) setIsHydrated(true);
+        if (!cancelled) {
+          setIsHydrated(true);
+        }
       });
     return () => {
       cancelled = true;

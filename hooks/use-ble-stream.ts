@@ -46,14 +46,18 @@ export function useBleStream({
 
     const unsubscribe = subscribeData((bytes) => {
       const frames = activeDecoder.decode(bytes);
-      if (!frames.length) return;
+      if (!frames.length) {
+        return;
+      }
 
       const buffers = historiesRef.current;
       let lastAccel: AccelerometerSample | null = null;
       let count = 0;
 
       for (const frame of frames) {
-        if (!frame.accel) continue;
+        if (!frame.accel) {
+          continue;
+        }
         lastAccel = frame.accel;
         count += 1;
         buffers.x.shift();
@@ -72,9 +76,13 @@ export function useBleStream({
       if (count > 0) {
         const now = Date.now();
         const arr = recentSampleTimes.current;
-        for (let i = 0; i < count; i++) arr.push(now);
+        for (let i = 0; i < count; i++) {
+          arr.push(now);
+        }
         const cutoff = now - 1000;
-        while (arr.length && arr[0] < cutoff) arr.shift();
+        while (arr.length && arr[0] < cutoff) {
+          arr.shift();
+        }
         setSampleRateHz(arr.length);
       }
     });
@@ -82,13 +90,15 @@ export function useBleStream({
     return unsubscribe;
   }, [enabled, activeDecoder, subscribeData, historyLength]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // historyVersion is the trigger here; the actual data lives in historiesRef,
+  // so eslint can't see the dependency relationship.
   const histories = useMemo<AxisHistories>(
     () => ({
       x: historiesRef.current.x.slice(),
       y: historiesRef.current.y.slice(),
       z: historiesRef.current.z.slice(),
     }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [historyVersion],
   );
 

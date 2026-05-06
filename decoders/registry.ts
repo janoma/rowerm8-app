@@ -14,6 +14,8 @@ export function findDecoder(device: DecoderDeviceHint): SensorDecoder | null {
 export function getDecoderByKey(
   key: string | null | undefined,
 ): SensorDecoder | null {
-  if (!key) return null;
+  if (!key) {
+    return null;
+  }
   return BY_KEY[key] ?? null;
 }

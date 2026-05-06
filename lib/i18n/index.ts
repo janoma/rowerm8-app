@@ -1,4 +1,7 @@
-import i18next from "i18next";
+// `use` is aliased because React's `use` hook lint (`react-hooks/rules-of-hooks`)
+// treats any `use*()` call as a hook invocation and would flag the i18next
+// initializer below.
+import i18next, { use as registerI18nPlugin } from "i18next";
 import ICU from "i18next-icu";
 import { initReactI18next } from "react-i18next";
 
@@ -22,8 +25,7 @@ export function initI18n(): typeof i18next {
   }
   initialized = true;
 
-  i18next
-    .use(ICU)
+  registerI18nPlugin(ICU)
     .use(initReactI18next)
     .init({
       resources: RESOURCES,
