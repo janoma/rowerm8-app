@@ -29,6 +29,7 @@ const MAPPING = {
   "xmark.circle": "cancel",
   "checkmark.square.fill": "check-box",
   square: "check-box-outline-blank",
+  "gearshape.fill": "settings",
 } as IconMapping;
 
 /**

@@ -10,6 +10,7 @@ import { SensorStatusCard } from "@/components/sensor/sensor-status-card";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { PLACEMENT_DONT_SHOW_KEY } from "@/constants/storage-keys";
 import { useBle } from "@/contexts/ble-context";
 import {
   type MotionSensorSource,
@@ -17,8 +18,6 @@ import {
 } from "@/contexts/motion-sensor-context";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useMotionStream } from "@/hooks/use-motion-stream";
-
-const PLACEMENT_DONT_SHOW_KEY = "rowerm8.sensorPlacement.dontShowAgain";
 
 const COLORS = {
   light: {
@@ -52,32 +51,23 @@ export default function RowScreen() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [placementVisible, setPlacementVisible] = useState(false);
   const prevSource = useRef<MotionSensorSource>(source);
-  const placementSuppressed = useRef(false);
-
-  useEffect(() => {
-    AsyncStorage.getItem(PLACEMENT_DONT_SHOW_KEY).then((v) => {
-      if (v === "true") {
-        placementSuppressed.current = true;
-      }
-    });
-  }, []);
 
   useEffect(() => {
     const prev = prevSource.current;
     prevSource.current = source;
-    if (
-      prev === "none" &&
-      (source === "phone" || source === "ble") &&
-      !placementSuppressed.current
-    ) {
-      setPlacementVisible(true);
+    if (prev !== "none" || (source !== "phone" && source !== "ble")) {
+      return;
     }
+    AsyncStorage.getItem(PLACEMENT_DONT_SHOW_KEY).then((v) => {
+      if (v !== "true") {
+        setPlacementVisible(true);
+      }
+    });
   }, [source]);
 
   const handlePlacementDismiss = useCallback((dontShowAgain: boolean) => {
     setPlacementVisible(false);
     if (dontShowAgain) {
-      placementSuppressed.current = true;
       AsyncStorage.setItem(PLACEMENT_DONT_SHOW_KEY, "true").catch(() => {});
     }
   }, []);
