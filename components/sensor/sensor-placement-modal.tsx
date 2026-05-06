@@ -50,22 +50,16 @@ type Slide = {
   text: string;
 };
 
-const SLIDE_MACHINE: Slide = {
-  key: "machine",
+const SLIDE_HANDLEBAR: Slide = {
+  key: "handlebar",
   image: require("@/assets/images/sensor-placement-1.png"),
-  text: "Locate the front face of the seat on your rowing machine.",
-};
-
-const SLIDE_SENSOR: Slide = {
-  key: "sensor",
-  image: require("@/assets/images/sensor-placement-2.png"),
-  text: "Attach the sensor to the front of the seat using double-sided tape or velcro.",
+  text: "Attach the sensor to the side of the handlebar using double-sided tape or velcro.",
 };
 
 const SLIDE_PHONE: Slide = {
   key: "phone",
   image: require("@/assets/images/sensor-placement-3.png"),
-  text: "If using your phone, attach it to the side of the seat. You\u2019re less likely to bump it there.",
+  text: "If you\u2019re using your phone instead, attach it to the side of the seat \u2014 you\u2019re less likely to bump it there.",
 };
 
 type Props = {
@@ -85,9 +79,7 @@ export function SensorPlacementModal({ visible, onDismiss, source }: Props) {
 
   const slides = useMemo<Slide[]>(
     () =>
-      source === "phone"
-        ? [SLIDE_MACHINE, SLIDE_SENSOR, SLIDE_PHONE]
-        : [SLIDE_MACHINE, SLIDE_SENSOR],
+      source === "phone" ? [SLIDE_HANDLEBAR, SLIDE_PHONE] : [SLIDE_HANDLEBAR],
     [source],
   );
 
@@ -160,20 +152,22 @@ export function SensorPlacementModal({ visible, onDismiss, source }: Props) {
             style={styles.carousel}
           />
 
-          <View style={styles.dots}>
-            {slides.map((s, i) => (
-              <View
-                key={s.key}
-                style={[
-                  styles.dot,
-                  {
-                    backgroundColor:
-                      i === activeIndex ? palette.dotActive : palette.dot,
-                  },
-                ]}
-              />
-            ))}
-          </View>
+          {slides.length > 1 ? (
+            <View style={styles.dots}>
+              {slides.map((s, i) => (
+                <View
+                  key={s.key}
+                  style={[
+                    styles.dot,
+                    {
+                      backgroundColor:
+                        i === activeIndex ? palette.dotActive : palette.dot,
+                    },
+                  ]}
+                />
+              ))}
+            </View>
+          ) : null}
 
           <ThemedText style={[styles.body, { color: palette.body }]}>
             {slides[activeIndex]?.text}
