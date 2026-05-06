@@ -1,0 +1,20 @@
+{
+  "title": "Rudern",
+  "selectSensor": "Bewegungssensor auswählen",
+  "a11ySelectSensor": "Bewegungssensor auswählen",
+  "selectHelper": "Wähle, wie du die Schlagbewegung erfassen möchtest.",
+  "placeholder": "Live-Sensordaten erscheinen hier, sobald du eine Quelle auswählst.",
+  "phone": {
+    "noPermission": "Die Bewegungserlaubnis wurde verweigert. Aktiviere „Bewegung & Fitness“ für rowerm8 in den Einstellungen, um Live-Daten zu sehen.",
+    "noAccelerometer": "Auf diesem Gerät wurde kein Beschleunigungssensor erkannt.",
+    "label": "iPhone-Beschleunigungssensor"
+  },
+  "ble": {
+    "reconnect": "Tippe auf „Verbinden“, um dich erneut mit {label} zu verbinden.",
+    "reconnectFallback": "Tippe auf „Verbinden“, um dich erneut mit deinem Bluetooth-Sensor zu verbinden.",
+    "noDecoder": "Mit {label} verbunden, aber rowerm8 unterstützt dieses Gerät noch nicht. Live-Daten sind nicht verfügbar.",
+    "noDecoderFallback": "Mit diesem Gerät verbunden, aber rowerm8 unterstützt es noch nicht. Live-Daten sind nicht verfügbar.",
+    "connecting": "Verbinde mit {label}…",
+    "connectingFallback": "Verbinde mit Sensor…"
+  }
+}

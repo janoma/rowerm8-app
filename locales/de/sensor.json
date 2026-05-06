@@ -1,0 +1,38 @@
+{
+  "placement": {
+    "handlebar": "Befestige den Sensor mit doppelseitigem Klebeband oder Klettband seitlich am Griff.",
+    "phone": "Wenn du stattdessen dein Smartphone verwendest, befestige es seitlich am oder unter dem Sitz."
+  },
+  "picker": {
+    "title": "Bewegungssensor auswählen",
+    "phone": {
+      "title": "Smartphone verwenden",
+      "subtitle": "Den eingebauten Beschleunigungssensor dieses Geräts verwenden",
+      "a11y": "Smartphone-Beschleunigungssensor verwenden"
+    },
+    "ble": {
+      "title": "Bluetooth-Gerät auswählen",
+      "subtitle": "Einen externen IMU-Sensor wie den WitMotion WT9011DCL koppeln",
+      "a11y": "Bluetooth-Gerät auswählen"
+    },
+    "disconnect": {
+      "title": "Trennen",
+      "subtitle": "Aktuelle Auswahl des Bewegungssensors aufheben",
+      "a11y": "Bewegungssensor trennen"
+    }
+  },
+  "status": {
+    "label": "BEWEGUNGSSENSOR",
+    "selected": "Ausgewählt",
+    "notSelected": "Nicht ausgewählt",
+    "notConnected": "Nicht verbunden",
+    "actionConnect": "Verbinden",
+    "actionChange": "Ändern",
+    "a11yConnect": "Bewegungssensor verbinden",
+    "a11yChange": "Bewegungssensor ändern"
+  },
+  "live": {
+    "header": "LIVE-BESCHLEUNIGUNG (m/s²)",
+    "footer": "Abtastrate {rate, number} Hz"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "actions": {
+    "cancel": "Abbrechen",
+    "ok": "OK",
+    "done": "Fertig",
+    "back": "Zurück",
+    "close": "Schließen",
+    "reset": "Zurücksetzen",
+    "save": "Sichern",
+    "gotIt": "Verstanden",
+    "dontShowAgain": "Nicht erneut anzeigen",
+    "scanAgain": "Erneut suchen"
+  },
+  "system": {
+    "auto": "Automatisch"
+  }
+}

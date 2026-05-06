@@ -18,6 +18,14 @@ import arRow from "@/locales/ar/row.json";
 import arSensor from "@/locales/ar/sensor.json";
 import arSettings from "@/locales/ar/settings.json";
 import arTabs from "@/locales/ar/tabs.json";
+import deBle from "@/locales/de/ble.json";
+import deCommon from "@/locales/de/common.json";
+import deHome from "@/locales/de/home.json";
+import deModal from "@/locales/de/modal.json";
+import deRow from "@/locales/de/row.json";
+import deSensor from "@/locales/de/sensor.json";
+import deSettings from "@/locales/de/settings.json";
+import deTabs from "@/locales/de/tabs.json";
 import enBle from "@/locales/en/ble.json";
 import enCommon from "@/locales/en/common.json";
 import enHome from "@/locales/en/home.json";
@@ -134,5 +142,15 @@ export const RESOURCES = {
     ble: arBle,
     settings: arSettings,
     modal: arModal,
+  },
+  de: {
+    common: deCommon,
+    tabs: deTabs,
+    home: deHome,
+    row: deRow,
+    sensor: deSensor,
+    ble: deBle,
+    settings: deSettings,
+    modal: deModal,
   },
 } as const;

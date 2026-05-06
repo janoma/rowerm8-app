@@ -1,0 +1,76 @@
+{
+  "title": "Einstellungen",
+  "sections": {
+    "language": "Sprache",
+    "units": "Einheiten",
+    "help": "Hilfe"
+  },
+  "language": {
+    "row": {
+      "label": "Sprache",
+      "subtitle": "{language}",
+      "subtitleAuto": "System folgen ({language})"
+    },
+    "pickerTitle": "Sprache",
+    "pickerFooter": "Wähle die Sprache, die in der gesamten App verwendet wird. Beim Wechseln zu oder von einer von rechts nach links geschriebenen Sprache ist ein Neustart erforderlich.",
+    "rtlReloadAlert": {
+      "title": "Neustart erforderlich",
+      "message": "Beim Wechsel zu einer Sprache, die {direction, select, rtl {von rechts nach links} other {von links nach rechts}} geschrieben wird, muss die App neu gestartet werden, um das Layout zu aktualisieren.",
+      "confirm": "Jetzt neu starten",
+      "later": "Nicht jetzt"
+    }
+  },
+  "languages": {
+    "en": "Englisch",
+    "es": "Spanisch",
+    "fr": "Französisch",
+    "de": "Deutsch",
+    "it": "Italienisch",
+    "ja": "Japanisch",
+    "zh-Hans": "Chinesisch (vereinfacht)",
+    "ar": "Arabisch"
+  },
+  "units": {
+    "system": {
+      "label": "Maßsystem",
+      "auto": "System folgen ({system})",
+      "metric": "Metrisch",
+      "imperialUS": "Imperial (USA)",
+      "inline": {
+        "metric": "metrisch",
+        "imperialUS": "imperial USA"
+      }
+    },
+    "pace": {
+      "label": "Rudertempo",
+      "per500m": "Pro 500 m",
+      "perKm": "Pro Kilometer",
+      "perMile": "Pro Meile",
+      "footer": "Im Rudersport ist die Konvention pro 500 m, unabhängig von den Distanzeinheiten."
+    },
+    "weight": {
+      "label": "Körpergewicht",
+      "auto": "Maßsystem folgen",
+      "kg": "Kilogramm (kg)",
+      "lb": "Pfund (lb)"
+    },
+    "temperature": {
+      "label": "Temperatur",
+      "auto": "Maßsystem folgen",
+      "C": "Celsius (°C)",
+      "F": "Fahrenheit (°F)"
+    }
+  },
+  "help": {
+    "resetPlacement": {
+      "label": "Platzierungsanleitung zurücksetzen",
+      "subtitle": "Die Sensor-Platzierungsanleitung bei der nächsten Auswahl anzeigen",
+      "footer": "Stellt zuvor mit „Nicht erneut anzeigen“ geschlossene Dialoge wieder her.",
+      "alert": {
+        "title": "Platzierungsanleitung zurücksetzen",
+        "message": "Die Sensor-Platzierungsanleitung wird beim nächsten Auswählen eines Sensors erneut angezeigt.",
+        "confirm": "Zurücksetzen"
+      }
+    }
+  }
+}
