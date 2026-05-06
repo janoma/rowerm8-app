@@ -1,0 +1,43 @@
+{
+  "scan": {
+    "navTitle": "مستشعرات Bluetooth",
+    "section": "الأجهزة المتوافقة ({count, number})",
+    "empty": "لم يتم العثور على مستشعرات متوافقة بعد. تأكد من تشغيل المستشعر وحاول مرة أخرى.",
+    "connecting": "جارٍ الاتصال…",
+    "connectError": "تعذّر الاتصال: {error}",
+    "hero": {
+      "off": {
+        "title": "Bluetooth غير مُفعّل",
+        "subtitle": "فعّل Bluetooth من الإعدادات للمتابعة."
+      },
+      "unauthorized": {
+        "title": "إذن Bluetooth مطلوب",
+        "subtitle": "فعّل Bluetooth لـ rowerm8 من إعدادات iOS."
+      },
+      "unavailable": {
+        "title": "Bluetooth غير متاح",
+        "subtitle": "هذا الإصدار لا يتضمن دعم Bluetooth الأصلي."
+      },
+      "unknown": {
+        "title": "جارٍ تهيئة Bluetooth…",
+        "subtitle": "لحظة من فضلك، لن يستغرق الأمر سوى لحظات."
+      },
+      "scanning": {
+        "title": "جارٍ البحث عن مستشعرات قريبة…",
+        "subtitle": "تأكد من تشغيل المستشعر وأنه على بعد أقل من 5 أمتار"
+      },
+      "complete": {
+        "title": "اكتمل المسح",
+        "subtitle": "اضغط على «إعادة المسح» لمتابعة البحث."
+      }
+    }
+  },
+  "device": {
+    "unknownVendor": "الشركة المصنعة غير معروفة",
+    "unknownNamePrefix": "غير معروف {suffix}",
+    "fallbackLabel": "جهاز Bluetooth {suffix}",
+    "a11yConnect": "الاتصال بـ {name}",
+    "a11ySignal": "قوة الإشارة {filled, number} من {total, number}",
+    "a11yBattery": "البطارية {percent, number} بالمئة"
+  }
+}

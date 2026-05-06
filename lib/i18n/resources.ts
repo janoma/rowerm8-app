@@ -10,6 +10,14 @@
  * import them below, and register them under `RESOURCES[<lang>]`.
  */
 
+import arBle from "@/locales/ar/ble.json";
+import arCommon from "@/locales/ar/common.json";
+import arHome from "@/locales/ar/home.json";
+import arModal from "@/locales/ar/modal.json";
+import arRow from "@/locales/ar/row.json";
+import arSensor from "@/locales/ar/sensor.json";
+import arSettings from "@/locales/ar/settings.json";
+import arTabs from "@/locales/ar/tabs.json";
 import enBle from "@/locales/en/ble.json";
 import enCommon from "@/locales/en/common.json";
 import enHome from "@/locales/en/home.json";
@@ -116,5 +124,15 @@ export const RESOURCES = {
     ble: jaBle,
     settings: jaSettings,
     modal: jaModal,
+  },
+  ar: {
+    common: arCommon,
+    tabs: arTabs,
+    home: arHome,
+    row: arRow,
+    sensor: arSensor,
+    ble: arBle,
+    settings: arSettings,
+    modal: arModal,
   },
 } as const;
