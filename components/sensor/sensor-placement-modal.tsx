@@ -59,7 +59,7 @@ const SLIDE_HANDLEBAR: Slide = {
 const SLIDE_PHONE: Slide = {
   key: "phone",
   image: require("@/assets/images/sensor-placement-3.png"),
-  text: "If you\u2019re using your phone instead, attach it to the side of the seat \u2014 you\u2019re less likely to bump it there.",
+  text: "If you\u2019re using your phone instead, attach it to the side or the bottom of the seat.",
 };
 
 type Props = {
