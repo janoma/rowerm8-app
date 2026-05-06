@@ -1,0 +1,43 @@
+{
+  "scan": {
+    "navTitle": "Capteurs Bluetooth",
+    "section": "APPAREILS COMPATIBLES ({count, number})",
+    "empty": "Aucun capteur compatible trouvé pour le moment. Assurez-vous que votre capteur est allumé et réessayez.",
+    "connecting": "Connexion…",
+    "connectError": "Connexion impossible : {error}",
+    "hero": {
+      "off": {
+        "title": "Bluetooth désactivé",
+        "subtitle": "Activez le Bluetooth dans Réglages pour continuer."
+      },
+      "unauthorized": {
+        "title": "Autorisation Bluetooth requise",
+        "subtitle": "Activez le Bluetooth pour rowerm8 dans Réglages iOS."
+      },
+      "unavailable": {
+        "title": "Bluetooth indisponible",
+        "subtitle": "Cette version n’inclut pas la prise en charge native du Bluetooth."
+      },
+      "unknown": {
+        "title": "Initialisation du Bluetooth…",
+        "subtitle": "Patientez un instant, cela ne prend que quelques secondes."
+      },
+      "scanning": {
+        "title": "Recherche de capteurs à proximité…",
+        "subtitle": "Assurez-vous que votre capteur est allumé et à moins de 5 m"
+      },
+      "complete": {
+        "title": "Recherche terminée",
+        "subtitle": "Touchez « Rechercher à nouveau » pour continuer."
+      }
+    }
+  },
+  "device": {
+    "unknownVendor": "Fabricant inconnu",
+    "unknownNamePrefix": "Inconnu {suffix}",
+    "fallbackLabel": "Appareil Bluetooth {suffix}",
+    "a11yConnect": "Se connecter à {name}",
+    "a11ySignal": "Force du signal {filled, number} sur {total, number}",
+    "a11yBattery": "Batterie à {percent, number} pour cent"
+  }
+}

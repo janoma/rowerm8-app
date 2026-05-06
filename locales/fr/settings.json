@@ -1,0 +1,76 @@
+{
+  "title": "Réglages",
+  "sections": {
+    "language": "Langue",
+    "units": "Unités",
+    "help": "Aide"
+  },
+  "language": {
+    "row": {
+      "label": "Langue",
+      "subtitle": "{language}",
+      "subtitleAuto": "Suivre le système ({language})"
+    },
+    "pickerTitle": "Langue",
+    "pickerFooter": "Choisissez la langue utilisée dans toute l’application. Passer d’une langue de droite à gauche à une autre nécessite un redémarrage.",
+    "rtlReloadAlert": {
+      "title": "Redémarrage requis",
+      "message": "Passer à une langue {direction, select, rtl {de droite à gauche} other {de gauche à droite}} nécessite de redémarrer l’application pour mettre à jour la mise en page.",
+      "confirm": "Redémarrer maintenant",
+      "later": "Plus tard"
+    }
+  },
+  "languages": {
+    "en": "Anglais",
+    "es": "Espagnol",
+    "fr": "Français",
+    "de": "Allemand",
+    "it": "Italien",
+    "ja": "Japonais",
+    "zh-Hans": "Chinois (simplifié)",
+    "ar": "Arabe"
+  },
+  "units": {
+    "system": {
+      "label": "Système de mesure",
+      "auto": "Suivre le système ({system})",
+      "metric": "Métrique",
+      "imperialUS": "Impérial (US)",
+      "inline": {
+        "metric": "métrique",
+        "imperialUS": "impérial US"
+      }
+    },
+    "pace": {
+      "label": "Allure d’aviron",
+      "per500m": "Par 500 m",
+      "perKm": "Par kilomètre",
+      "perMile": "Par mile",
+      "footer": "La convention en aviron est par 500 m, quelles que soient les unités de distance."
+    },
+    "weight": {
+      "label": "Poids corporel",
+      "auto": "Suivre le système de mesure",
+      "kg": "Kilogrammes (kg)",
+      "lb": "Livres (lb)"
+    },
+    "temperature": {
+      "label": "Température",
+      "auto": "Suivre le système de mesure",
+      "C": "Celsius (°C)",
+      "F": "Fahrenheit (°F)"
+    }
+  },
+  "help": {
+    "resetPlacement": {
+      "label": "Réinitialiser les instructions de placement",
+      "subtitle": "Afficher le guide de placement du capteur lors de la prochaine sélection",
+      "footer": "Restaure les boîtes de dialogue précédemment masquées avec « Ne plus afficher ».",
+      "alert": {
+        "title": "Réinitialiser les instructions de placement",
+        "message": "Le guide de placement du capteur sera affiché à nouveau lors de la prochaine sélection d’un capteur.",
+        "confirm": "Réinitialiser"
+      }
+    }
+  }
+}

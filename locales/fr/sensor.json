@@ -1,0 +1,38 @@
+{
+  "placement": {
+    "handlebar": "Fixez le capteur sur le côté de la poignée avec du ruban adhésif double face ou du velcro.",
+    "phone": "Si vous utilisez votre téléphone à la place, fixez-le sur le côté ou sous le siège."
+  },
+  "picker": {
+    "title": "Choisir un capteur de mouvement",
+    "phone": {
+      "title": "Utiliser le téléphone",
+      "subtitle": "Utiliser l’accéléromètre intégré de cet appareil",
+      "a11y": "Utiliser l’accéléromètre du téléphone"
+    },
+    "ble": {
+      "title": "Sélectionner un appareil Bluetooth",
+      "subtitle": "Associer un capteur IMU externe comme le WitMotion WT9011DCL",
+      "a11y": "Sélectionner un appareil Bluetooth"
+    },
+    "disconnect": {
+      "title": "Déconnecter",
+      "subtitle": "Effacer la sélection actuelle du capteur de mouvement",
+      "a11y": "Déconnecter le capteur de mouvement"
+    }
+  },
+  "status": {
+    "label": "CAPTEUR DE MOUVEMENT",
+    "selected": "Sélectionné",
+    "notSelected": "Non sélectionné",
+    "notConnected": "Non connecté",
+    "actionConnect": "Connecter",
+    "actionChange": "Modifier",
+    "a11yConnect": "Connecter le capteur de mouvement",
+    "a11yChange": "Modifier le capteur de mouvement"
+  },
+  "live": {
+    "header": "ACCÉLÉRATION EN DIRECT (m/s²)",
+    "footer": "Échantillonnage à {rate, number} Hz"
+  }
+}
