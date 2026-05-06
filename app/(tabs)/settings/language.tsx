@@ -70,7 +70,13 @@ export default function LanguagePickerScreen() {
             <SettingsRow
               key={lang.code}
               label={lang.nativeName}
-              subtitle={lang.englishName}
+              // Localized name of the language in the *active* UI language
+              // (e.g. "Spanish" in English, "Espa\u00f1ol" in Spanish, "Spanisch"
+              // in German). Falls back to `englishName` via i18next's `en`
+              // fallback if a catalog hasn't translated this key yet.
+              subtitle={t(`languages.${lang.code}`, {
+                defaultValue: lang.englishName,
+              })}
               accessory={
                 isSelected(lang.code) ? (
                   <IconSymbol name="checkmark" size={20} color={tint} />

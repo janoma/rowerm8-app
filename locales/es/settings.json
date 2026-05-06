@@ -1,0 +1,76 @@
+{
+  "title": "Ajustes",
+  "sections": {
+    "language": "Idioma",
+    "units": "Unidades",
+    "help": "Ayuda"
+  },
+  "language": {
+    "row": {
+      "label": "Idioma",
+      "subtitle": "{language}",
+      "subtitleAuto": "Seguir el sistema ({language})"
+    },
+    "pickerTitle": "Idioma",
+    "pickerFooter": "Elige el idioma que se usará en toda la aplicación. Cambiar a o desde un idioma de derecha a izquierda requiere reiniciar.",
+    "rtlReloadAlert": {
+      "title": "Es necesario reiniciar",
+      "message": "Cambiar a un idioma {direction, select, rtl {de derecha a izquierda} other {de izquierda a derecha}} requiere reiniciar la aplicación para actualizar la disposición.",
+      "confirm": "Reiniciar ahora",
+      "later": "Ahora no"
+    }
+  },
+  "languages": {
+    "en": "Inglés",
+    "es": "Español",
+    "fr": "Francés",
+    "de": "Alemán",
+    "it": "Italiano",
+    "ja": "Japonés",
+    "zh-Hans": "Chino (simplificado)",
+    "ar": "Árabe"
+  },
+  "units": {
+    "system": {
+      "label": "Sistema de medición",
+      "auto": "Seguir el sistema ({system})",
+      "metric": "Métrico",
+      "imperialUS": "Imperial (EE. UU.)",
+      "inline": {
+        "metric": "métrico",
+        "imperialUS": "imperial EE. UU."
+      }
+    },
+    "pace": {
+      "label": "Ritmo de remo",
+      "per500m": "Cada 500 m",
+      "perKm": "Cada kilómetro",
+      "perMile": "Cada milla",
+      "footer": "La convención del remo es cada 500 m, independientemente de las unidades de distancia."
+    },
+    "weight": {
+      "label": "Peso corporal",
+      "auto": "Seguir el sistema de medición",
+      "kg": "Kilogramos (kg)",
+      "lb": "Libras (lb)"
+    },
+    "temperature": {
+      "label": "Temperatura",
+      "auto": "Seguir el sistema de medición",
+      "C": "Celsius (°C)",
+      "F": "Fahrenheit (°F)"
+    }
+  },
+  "help": {
+    "resetPlacement": {
+      "label": "Restablecer instrucciones de colocación",
+      "subtitle": "Mostrar la guía de colocación del sensor en la próxima selección",
+      "footer": "Restaura los diálogos que descartaste antes con «No mostrar de nuevo».",
+      "alert": {
+        "title": "Restablecer instrucciones de colocación",
+        "message": "La guía de colocación del sensor se mostrará de nuevo la próxima vez que selecciones un sensor.",
+        "confirm": "Restablecer"
+      }
+    }
+  }
+}

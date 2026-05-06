@@ -3,8 +3,8 @@
     "navTitle": "Bluetooth sensors",
     "section": "COMPATIBLE DEVICES ({count, number})",
     "empty": "No compatible sensors found yet. Make sure your sensor is on and try again.",
-    "connecting": "Connecting\u2026",
-    "connectError": "Couldn\u2019t connect: {error}",
+    "connecting": "Connecting…",
+    "connectError": "Couldn’t connect: {error}",
     "hero": {
       "off": {
         "title": "Bluetooth is off",
@@ -19,16 +19,16 @@
         "subtitle": "This build does not include native Bluetooth support."
       },
       "unknown": {
-        "title": "Initializing Bluetooth\u2026",
+        "title": "Initializing Bluetooth…",
         "subtitle": "Hang tight, this only takes a moment."
       },
       "scanning": {
-        "title": "Scanning for nearby sensors\u2026",
+        "title": "Scanning for nearby sensors…",
         "subtitle": "Make sure your sensor is powered on and within 5 m"
       },
       "complete": {
         "title": "Scan complete",
-        "subtitle": "Tap \u201CScan again\u201D to keep looking."
+        "subtitle": "Tap “Scan again” to keep looking."
       }
     }
   },

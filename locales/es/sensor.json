@@ -1,0 +1,38 @@
+{
+  "placement": {
+    "handlebar": "Fija el sensor al lateral de la empuñadura con cinta de doble cara o velcro.",
+    "phone": "Si en vez del sensor usas el teléfono, fíjalo al lateral o a la parte inferior del asiento."
+  },
+  "picker": {
+    "title": "Elegir sensor de movimiento",
+    "phone": {
+      "title": "Usar teléfono",
+      "subtitle": "Usar el acelerómetro integrado de este dispositivo",
+      "a11y": "Usar el acelerómetro del teléfono"
+    },
+    "ble": {
+      "title": "Seleccionar dispositivo Bluetooth",
+      "subtitle": "Vincular un sensor IMU externo como el WitMotion WT9011DCL",
+      "a11y": "Seleccionar dispositivo Bluetooth"
+    },
+    "disconnect": {
+      "title": "Desconectar",
+      "subtitle": "Borrar la selección actual de sensor de movimiento",
+      "a11y": "Desconectar sensor de movimiento"
+    }
+  },
+  "status": {
+    "label": "SENSOR DE MOVIMIENTO",
+    "selected": "Seleccionado",
+    "notSelected": "No seleccionado",
+    "notConnected": "No conectado",
+    "actionConnect": "Conectar",
+    "actionChange": "Cambiar",
+    "a11yConnect": "Conectar sensor de movimiento",
+    "a11yChange": "Cambiar sensor de movimiento"
+  },
+  "live": {
+    "header": "ACELERACIÓN EN VIVO (m/s²)",
+    "footer": "Muestreando a {rate, number} Hz"
+  }
+}
