@@ -1,0 +1,38 @@
+{
+  "placement": {
+    "handlebar": "両面テープまたはマジックテープでハンドルの側面にセンサーを取り付けてください。",
+    "phone": "代わりに iPhone を使用する場合は、シートの側面または底面に取り付けてください。"
+  },
+  "picker": {
+    "title": "モーションセンサーを選択",
+    "phone": {
+      "title": "iPhone を使用",
+      "subtitle": "このデバイスに内蔵された加速度センサーを使用",
+      "a11y": "iPhone の加速度センサーを使用"
+    },
+    "ble": {
+      "title": "Bluetooth デバイスを選択",
+      "subtitle": "WitMotion WT9011DCL のような外部 IMU センサーをペアリング",
+      "a11y": "Bluetooth デバイスを選択"
+    },
+    "disconnect": {
+      "title": "切断",
+      "subtitle": "現在のモーションセンサーの選択を解除",
+      "a11y": "モーションセンサーを切断"
+    }
+  },
+  "status": {
+    "label": "モーションセンサー",
+    "selected": "選択済み",
+    "notSelected": "未選択",
+    "notConnected": "未接続",
+    "actionConnect": "接続",
+    "actionChange": "変更",
+    "a11yConnect": "モーションセンサーを接続",
+    "a11yChange": "モーションセンサーを変更"
+  },
+  "live": {
+    "header": "ライブ加速度（m/s²）",
+    "footer": "{rate, number} Hz でサンプリング中"
+  }
+}

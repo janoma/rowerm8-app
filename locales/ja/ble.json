@@ -1,0 +1,43 @@
+{
+  "scan": {
+    "navTitle": "Bluetooth センサー",
+    "section": "対応デバイス（{count, number}）",
+    "empty": "対応センサーが見つかりません。センサーの電源が入っていることを確認して、もう一度お試しください。",
+    "connecting": "接続中…",
+    "connectError": "接続できませんでした：{error}",
+    "hero": {
+      "off": {
+        "title": "Bluetooth がオフです",
+        "subtitle": "続行するには設定で Bluetooth をオンにしてください。"
+      },
+      "unauthorized": {
+        "title": "Bluetooth の許可が必要です",
+        "subtitle": "iOS の設定で rowerm8 の Bluetooth を有効にしてください。"
+      },
+      "unavailable": {
+        "title": "Bluetooth は利用できません",
+        "subtitle": "このビルドにはネイティブの Bluetooth サポートが含まれていません。"
+      },
+      "unknown": {
+        "title": "Bluetooth を初期化中…",
+        "subtitle": "少々お待ちください。すぐに完了します。"
+      },
+      "scanning": {
+        "title": "近くのセンサーを検索中…",
+        "subtitle": "センサーの電源が入っていて、5 m 以内にあることを確認してください"
+      },
+      "complete": {
+        "title": "スキャン完了",
+        "subtitle": "「再スキャン」をタップして検索を続けます。"
+      }
+    }
+  },
+  "device": {
+    "unknownVendor": "メーカー不明",
+    "unknownNamePrefix": "不明 {suffix}",
+    "fallbackLabel": "Bluetooth デバイス {suffix}",
+    "a11yConnect": "{name} に接続",
+    "a11ySignal": "信号強度 {total, number} 段階中 {filled, number}",
+    "a11yBattery": "バッテリー残量 {percent, number}%"
+  }
+}

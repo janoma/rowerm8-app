@@ -1,0 +1,17 @@
+{
+  "actions": {
+    "cancel": "キャンセル",
+    "ok": "OK",
+    "done": "完了",
+    "back": "戻る",
+    "close": "閉じる",
+    "reset": "リセット",
+    "save": "保存",
+    "gotIt": "了解",
+    "dontShowAgain": "今後表示しない",
+    "scanAgain": "再スキャン"
+  },
+  "system": {
+    "auto": "自動"
+  }
+}

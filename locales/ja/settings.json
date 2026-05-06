@@ -1,0 +1,76 @@
+{
+  "title": "設定",
+  "sections": {
+    "language": "言語",
+    "units": "単位",
+    "help": "ヘルプ"
+  },
+  "language": {
+    "row": {
+      "label": "言語",
+      "subtitle": "{language}",
+      "subtitleAuto": "システムに従う（{language}）"
+    },
+    "pickerTitle": "言語",
+    "pickerFooter": "アプリ全体で使用する言語を選択してください。右から左に書く言語に切り替える際にはアプリの再起動が必要です。",
+    "rtlReloadAlert": {
+      "title": "再起動が必要です",
+      "message": "{direction, select, rtl {右から左に書く} other {左から右に書く}}言語に切り替えるには、レイアウトを更新するためにアプリの再起動が必要です。",
+      "confirm": "今すぐ再起動",
+      "later": "あとで"
+    }
+  },
+  "languages": {
+    "en": "英語",
+    "es": "スペイン語",
+    "fr": "フランス語",
+    "de": "ドイツ語",
+    "it": "イタリア語",
+    "ja": "日本語",
+    "zh-Hans": "中国語（簡体字）",
+    "ar": "アラビア語"
+  },
+  "units": {
+    "system": {
+      "label": "単位系",
+      "auto": "システムに従う（{system}）",
+      "metric": "メートル法",
+      "imperialUS": "ヤード・ポンド法（米国）",
+      "inline": {
+        "metric": "メートル法",
+        "imperialUS": "ヤード・ポンド法"
+      }
+    },
+    "pace": {
+      "label": "ローイングペース",
+      "per500m": "500 m あたり",
+      "perKm": "1 km あたり",
+      "perMile": "1 マイルあたり",
+      "footer": "ローイングでは距離単位に関わらず 500 m あたりが慣例です。"
+    },
+    "weight": {
+      "label": "体重",
+      "auto": "単位系に従う",
+      "kg": "キログラム（kg）",
+      "lb": "ポンド（lb）"
+    },
+    "temperature": {
+      "label": "温度",
+      "auto": "単位系に従う",
+      "C": "摂氏（°C）",
+      "F": "華氏（°F）"
+    }
+  },
+  "help": {
+    "resetPlacement": {
+      "label": "取り付けガイドをリセット",
+      "subtitle": "次回センサー選択時にセンサー取り付けガイドを表示します",
+      "footer": "「今後表示しない」で非表示にしたダイアログを再表示します。",
+      "alert": {
+        "title": "取り付けガイドをリセット",
+        "message": "次回センサーを選択する際にセンサー取り付けガイドが再表示されます。",
+        "confirm": "リセット"
+      }
+    }
+  }
+}

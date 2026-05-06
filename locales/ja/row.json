@@ -1,0 +1,20 @@
+{
+  "title": "ローイング",
+  "selectSensor": "モーションセンサーを選択",
+  "a11ySelectSensor": "モーションセンサーを選択",
+  "selectHelper": "ストロークの動きをトラッキングする方法を選んでください。",
+  "placeholder": "ソースを選択するとセンサーのライブデータがここに表示されます。",
+  "phone": {
+    "noPermission": "モーション権限が拒否されました。ライブデータを表示するには、設定で rowerm8 のモーションとフィットネスを有効にしてください。",
+    "noAccelerometer": "このデバイスでは加速度センサーが検出されませんでした。",
+    "label": "iPhone 加速度センサー"
+  },
+  "ble": {
+    "reconnect": "{label} に再接続するには「接続」をタップしてください。",
+    "reconnectFallback": "Bluetooth センサーに再接続するには「接続」をタップしてください。",
+    "noDecoder": "{label} に接続しましたが、rowerm8 にはまだこのデバイス用のデコーダーがありません。ライブデータは利用できません。",
+    "noDecoderFallback": "このデバイスに接続しましたが、rowerm8 にはまだデコーダーがありません。ライブデータは利用できません。",
+    "connecting": "{label} に接続中…",
+    "connectingFallback": "センサーに接続中…"
+  }
+}
