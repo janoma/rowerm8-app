@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { StyleSheet, View } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
@@ -60,6 +61,7 @@ export function LiveAccelerationCard({
 }: Props) {
   const scheme = useColorScheme() ?? "light";
   const palette = COLORS[scheme];
+  const { t } = useTranslation("sensor");
 
   return (
     <View
@@ -73,7 +75,7 @@ export function LiveAccelerationCard({
     >
       <View style={styles.headerRow}>
         <ThemedText style={[styles.headerLabel, { color: palette.label }]}>
-          LIVE ACCELERATION (m/s²)
+          {t("live.header")}
         </ThemedText>
         <View style={[styles.pulseDot, { backgroundColor: palette.pulse }]} />
       </View>
@@ -101,7 +103,7 @@ export function LiveAccelerationCard({
       </View>
 
       <ThemedText style={[styles.footer, { color: palette.label }]}>
-        Sampling at {sampleRateHz} Hz
+        {t("live.footer", { rate: sampleRateHz })}
       </ThemedText>
     </View>
   );

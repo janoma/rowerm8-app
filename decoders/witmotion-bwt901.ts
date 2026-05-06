@@ -1,8 +1,12 @@
+import { GRAVITY_MPS2 } from "@/lib/units";
+
 import type { DecodedFrame, SensorDecoder } from "./types";
 
-const G = 9.80665;
 const ACCEL_RANGE_G = 16;
-const ACCEL_SCALE = (ACCEL_RANGE_G * G) / 32768;
+// Raw int16 -> m/s^2. The sensor reports in "g" units; we anchor on
+// GRAVITY_MPS2 (the one place 9.80665 is defined) so the rule "no
+// non-SI literals outside lib/units" holds across the codebase.
+const ACCEL_SCALE = (ACCEL_RANGE_G * GRAVITY_MPS2) / 32768;
 const GYRO_RANGE_DPS = 2000;
 const GYRO_SCALE = GYRO_RANGE_DPS / 32768;
 const ANGLE_RANGE_DEG = 180;

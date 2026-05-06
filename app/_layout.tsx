@@ -12,6 +12,7 @@ import {
 import "react-native-reanimated";
 
 import { BleProvider } from "@/contexts/ble-context";
+import { LocaleProvider } from "@/contexts/locale-context";
 import { MotionSensorProvider } from "@/contexts/motion-sensor-context";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
@@ -24,29 +25,31 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-      <MotionSensorProvider>
-        <BleProvider>
-          <ThemeProvider
-            value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
-          >
-            <Stack>
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen
-                name="modal"
-                options={{ presentation: "modal", title: "Modal" }}
-              />
-              <Stack.Screen
-                name="ble-scan"
-                options={{
-                  presentation: "fullScreenModal",
-                  headerShown: false,
-                }}
-              />
-            </Stack>
-            <StatusBar style="auto" />
-          </ThemeProvider>
-        </BleProvider>
-      </MotionSensorProvider>
+      <LocaleProvider>
+        <MotionSensorProvider>
+          <BleProvider>
+            <ThemeProvider
+              value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
+            >
+              <Stack>
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                <Stack.Screen
+                  name="modal"
+                  options={{ presentation: "modal", title: "Modal" }}
+                />
+                <Stack.Screen
+                  name="ble-scan"
+                  options={{
+                    presentation: "fullScreenModal",
+                    headerShown: false,
+                  }}
+                />
+              </Stack>
+              <StatusBar style="auto" />
+            </ThemeProvider>
+          </BleProvider>
+        </MotionSensorProvider>
+      </LocaleProvider>
     </SafeAreaProvider>
   );
 }

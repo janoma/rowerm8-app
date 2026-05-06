@@ -1,0 +1,20 @@
+{
+  "title": "Row",
+  "selectSensor": "Select motion sensor",
+  "a11ySelectSensor": "Select motion sensor",
+  "selectHelper": "Choose how you want to track stroke motion.",
+  "placeholder": "Live sensor data will appear here once you select a source.",
+  "phone": {
+    "noPermission": "Motion permission was denied. Enable Motion & Fitness for rowerm8 in Settings to see live data.",
+    "noAccelerometer": "No accelerometer detected on this device.",
+    "label": "iPhone accelerometer"
+  },
+  "ble": {
+    "reconnect": "Tap Connect to reconnect to {label}.",
+    "reconnectFallback": "Tap Connect to reconnect to your Bluetooth sensor.",
+    "noDecoder": "Connected to {label}, but rowerm8 doesn\u2019t have a decoder for it yet. Live data is unavailable.",
+    "noDecoderFallback": "Connected to this device, but rowerm8 doesn\u2019t have a decoder for it yet. Live data is unavailable.",
+    "connecting": "Connecting to {label}\u2026",
+    "connectingFallback": "Connecting to sensor\u2026"
+  }
+}

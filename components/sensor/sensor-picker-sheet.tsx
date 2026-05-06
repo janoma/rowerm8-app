@@ -1,4 +1,5 @@
 import { router } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { Modal, Pressable, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -57,6 +58,8 @@ export function SensorPickerSheet({
 }: Props) {
   const scheme = useColorScheme() ?? "light";
   const palette = COLORS[scheme];
+  const { t } = useTranslation("sensor");
+  const { t: tc } = useTranslation("common");
 
   const handleBluetoothPress = () => {
     onClose();
@@ -89,7 +92,7 @@ export function SensorPickerSheet({
             style={[styles.grabber, { backgroundColor: palette.grabber }]}
           />
           <ThemedText style={[styles.title, { color: palette.title }]}>
-            Choose motion sensor
+            {t("picker.title")}
           </ThemedText>
 
           <Pressable
@@ -98,7 +101,7 @@ export function SensorPickerSheet({
               onClose();
             }}
             accessibilityRole="button"
-            accessibilityLabel="Use phone accelerometer"
+            accessibilityLabel={t("picker.phone.a11y")}
             style={({ pressed }) => [
               styles.optionCard,
               {
@@ -120,12 +123,12 @@ export function SensorPickerSheet({
               <ThemedText
                 style={[styles.optionTitle, { color: palette.title }]}
               >
-                Use phone
+                {t("picker.phone.title")}
               </ThemedText>
               <ThemedText
                 style={[styles.optionSubtitle, { color: palette.subtitle }]}
               >
-                Use this device&apos;s built-in accelerometer
+                {t("picker.phone.subtitle")}
               </ThemedText>
             </View>
             <IconSymbol
@@ -138,7 +141,7 @@ export function SensorPickerSheet({
           <Pressable
             onPress={handleBluetoothPress}
             accessibilityRole="button"
-            accessibilityLabel="Select Bluetooth device"
+            accessibilityLabel={t("picker.ble.a11y")}
             style={({ pressed }) => [
               styles.optionCard,
               {
@@ -164,12 +167,12 @@ export function SensorPickerSheet({
               <ThemedText
                 style={[styles.optionTitle, { color: palette.title }]}
               >
-                Select Bluetooth device
+                {t("picker.ble.title")}
               </ThemedText>
               <ThemedText
                 style={[styles.optionSubtitle, { color: palette.subtitle }]}
               >
-                Pair an external IMU sensor like the WitMotion WT9011DCL
+                {t("picker.ble.subtitle")}
               </ThemedText>
             </View>
             <IconSymbol
@@ -183,7 +186,7 @@ export function SensorPickerSheet({
             <Pressable
               onPress={handleDisconnectPress}
               accessibilityRole="button"
-              accessibilityLabel="Disconnect motion sensor"
+              accessibilityLabel={t("picker.disconnect.a11y")}
               style={({ pressed }) => [
                 styles.optionCard,
                 {
@@ -209,12 +212,12 @@ export function SensorPickerSheet({
                 <ThemedText
                   style={[styles.optionTitle, { color: palette.danger }]}
                 >
-                  Disconnect
+                  {t("picker.disconnect.title")}
                 </ThemedText>
                 <ThemedText
                   style={[styles.optionSubtitle, { color: palette.subtitle }]}
                 >
-                  Clear the current motion sensor selection
+                  {t("picker.disconnect.subtitle")}
                 </ThemedText>
               </View>
             </Pressable>
@@ -227,7 +230,7 @@ export function SensorPickerSheet({
             style={styles.cancelButton}
           >
             <ThemedText style={[styles.cancelText, { color: palette.accent }]}>
-              Cancel
+              {tc("actions.cancel")}
             </ThemedText>
           </Pressable>
         </SafeAreaView>

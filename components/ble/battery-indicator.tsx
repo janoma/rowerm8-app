@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { StyleSheet, View } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
@@ -48,6 +49,7 @@ export function BatteryIndicator({
 }) {
   const scheme = useColorScheme() ?? "light";
   const palette = COLORS[scheme];
+  const { t } = useTranslation("ble");
   const clamped = Math.max(0, Math.min(100, Math.round(percent)));
   const fillColor = fillColorFor(clamped, palette);
 
@@ -73,7 +75,7 @@ export function BatteryIndicator({
     <View
       style={styles.row}
       accessibilityRole="image"
-      accessibilityLabel={`Battery ${clamped} percent`}
+      accessibilityLabel={t("device.a11yBattery", { percent: clamped })}
     >
       <View style={styles.iconRow}>
         <View
@@ -133,7 +135,7 @@ const styles = StyleSheet.create({
     alignItems: "stretch",
   },
   label: {
-    marginLeft: 5,
+    marginStart: 5,
     fontWeight: "500",
   },
 });

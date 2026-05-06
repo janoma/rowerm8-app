@@ -101,10 +101,12 @@ export function MotionSensorProvider({
     () => ({
       ...selection,
       isHydrated,
+      // Phone selections leave `deviceLabel` null on purpose — the UI fills in
+      // a localized label at render time so it follows the current language.
       selectPhone: () =>
         persist({
           source: "phone",
-          deviceLabel: "iPhone accelerometer",
+          deviceLabel: null,
           bleDeviceId: null,
           decoderKey: null,
         }),

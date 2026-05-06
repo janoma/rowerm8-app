@@ -1,7 +1,7 @@
 import { Accelerometer } from "expo-sensors";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-const G = 9.80665;
+import { gToMps2 } from "@/lib/units";
 
 export type AccelerometerSample = {
   x: number;
@@ -83,9 +83,11 @@ export function useAccelerometerStream({
         );
 
         subscription = Accelerometer.addListener((data) => {
-          const x = data.x * G;
-          const y = data.y * G;
-          const z = data.z * G;
+          // Sensor reports in "g". Normalize to SI at ingress so everything
+          // downstream (charts, decoders, persisted history) works in m/s^2.
+          const x = gToMps2(data.x);
+          const y = gToMps2(data.y);
+          const z = gToMps2(data.z);
           const magnitude = Math.sqrt(x * x + y * y + z * z);
           setSample({ x, y, z, magnitude });
 

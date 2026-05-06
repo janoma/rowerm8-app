@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Dimensions,
   FlatList,
@@ -44,22 +45,21 @@ const COLORS = {
   },
 } as const;
 
+type SlideKey = "handlebar" | "phone";
+
 type Slide = {
-  key: string;
+  key: SlideKey;
   image: ImageSourcePropType;
-  text: string;
 };
 
 const SLIDE_HANDLEBAR: Slide = {
   key: "handlebar",
   image: require("@/assets/images/sensor-placement-1.png"),
-  text: "Attach the sensor to the side of the handlebar using double-sided tape or velcro.",
 };
 
 const SLIDE_PHONE: Slide = {
   key: "phone",
   image: require("@/assets/images/sensor-placement-3.png"),
-  text: "If you\u2019re using your phone instead, attach it to the side or the bottom of the seat.",
 };
 
 type Props = {
@@ -76,6 +76,8 @@ const IMAGE_WIDTH = CARD_WIDTH - CARD_H_PADDING * 2;
 export function SensorPlacementModal({ visible, onDismiss, source }: Props) {
   const scheme = useColorScheme() ?? "light";
   const palette = COLORS[scheme];
+  const { t } = useTranslation("sensor");
+  const { t: tc } = useTranslation("common");
 
   const slides = useMemo<Slide[]>(
     () =>
@@ -170,7 +172,9 @@ export function SensorPlacementModal({ visible, onDismiss, source }: Props) {
           ) : null}
 
           <ThemedText style={[styles.body, { color: palette.body }]}>
-            {slides[activeIndex]?.text}
+            {slides[activeIndex]
+              ? t(`placement.${slides[activeIndex].key}`)
+              : ""}
           </ThemedText>
 
           <Pressable
@@ -188,7 +192,7 @@ export function SensorPlacementModal({ visible, onDismiss, source }: Props) {
             <ThemedText
               style={[styles.checkLabel, { color: palette.checkLabel }]}
             >
-              Don&apos;t show this again
+              {tc("actions.dontShowAgain")}
             </ThemedText>
           </Pressable>
 
@@ -206,7 +210,7 @@ export function SensorPlacementModal({ visible, onDismiss, source }: Props) {
             <ThemedText
               style={[styles.primaryButtonText, { color: palette.primaryText }]}
             >
-              Got it
+              {tc("actions.gotIt")}
             </ThemedText>
           </Pressable>
         </View>

@@ -1,0 +1,43 @@
+{
+  "scan": {
+    "navTitle": "Bluetooth sensors",
+    "section": "COMPATIBLE DEVICES ({count, number})",
+    "empty": "No compatible sensors found yet. Make sure your sensor is on and try again.",
+    "connecting": "Connecting\u2026",
+    "connectError": "Couldn\u2019t connect: {error}",
+    "hero": {
+      "off": {
+        "title": "Bluetooth is off",
+        "subtitle": "Turn on Bluetooth in Settings to continue."
+      },
+      "unauthorized": {
+        "title": "Bluetooth permission needed",
+        "subtitle": "Enable Bluetooth for rowerm8 in iOS Settings."
+      },
+      "unavailable": {
+        "title": "Bluetooth not available",
+        "subtitle": "This build does not include native Bluetooth support."
+      },
+      "unknown": {
+        "title": "Initializing Bluetooth\u2026",
+        "subtitle": "Hang tight, this only takes a moment."
+      },
+      "scanning": {
+        "title": "Scanning for nearby sensors\u2026",
+        "subtitle": "Make sure your sensor is powered on and within 5 m"
+      },
+      "complete": {
+        "title": "Scan complete",
+        "subtitle": "Tap \u201CScan again\u201D to keep looking."
+      }
+    }
+  },
+  "device": {
+    "unknownVendor": "Unknown vendor",
+    "unknownNamePrefix": "Unknown {suffix}",
+    "fallbackLabel": "Bluetooth device {suffix}",
+    "a11yConnect": "Connect to {name}",
+    "a11ySignal": "Signal strength {filled, number} of {total, number}",
+    "a11yBattery": "Battery {percent, number} percent"
+  }
+}

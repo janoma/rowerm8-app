@@ -30,6 +30,7 @@ const MAPPING = {
   "checkmark.square.fill": "check-box",
   square: "check-box-outline-blank",
   "gearshape.fill": "settings",
+  checkmark: "check",
 } as IconMapping;
 
 /**

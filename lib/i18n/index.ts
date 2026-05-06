@@ -1,0 +1,60 @@
+import i18next from "i18next";
+import ICU from "i18next-icu";
+import { initReactI18next } from "react-i18next";
+
+import { DEFAULT_LANGUAGE } from "./languages";
+import { DEFAULT_NAMESPACE, NAMESPACES, RESOURCES } from "./resources";
+
+let initialized = false;
+
+/**
+ * Boot i18next with the bundled English catalogs and ICU MessageFormat
+ * support (needed for plurals/genders in languages like Arabic, Russian,
+ * and Japanese once those translations land).
+ *
+ * Idempotent: safe to call from multiple module entry points. The actual
+ * resolved language is set later by `LocaleProvider` once it has read user
+ * preferences and OS locales.
+ */
+export function initI18n(): typeof i18next {
+  if (initialized) {
+    return i18next;
+  }
+  initialized = true;
+
+  i18next
+    .use(ICU)
+    .use(initReactI18next)
+    .init({
+      resources: RESOURCES,
+      lng: DEFAULT_LANGUAGE,
+      fallbackLng: DEFAULT_LANGUAGE,
+      ns: NAMESPACES as unknown as string[],
+      defaultNS: DEFAULT_NAMESPACE,
+      interpolation: {
+        // ICU MessageFormat handles its own escaping; React Native already
+        // renders strings as text nodes so HTML escaping is unnecessary.
+        escapeValue: false,
+      },
+      returnNull: false,
+      // Surface missing keys loudly in dev so untranslated strings are
+      // obvious during development, but never throw — a missing string
+      // should never crash the UI in release.
+      saveMissing: false,
+    })
+    .catch((err: unknown) => {
+      console.warn("[i18n] init failed", err);
+    });
+
+  return i18next;
+}
+
+export { default as i18n } from "i18next";
+export * from "./languages";
+export * from "./resolveLanguage";
+export * from "./resources";
+export {
+  applyRtlForLanguage,
+  isReloadRequiredForLanguage,
+  reloadApp,
+} from "./rtl";

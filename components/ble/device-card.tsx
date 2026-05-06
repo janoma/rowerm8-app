@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, View } from "react-native";
 
 import { SignalBars } from "@/components/ble/signal-bars";
@@ -38,25 +39,29 @@ type Props = {
 export function DeviceCard({ device, busy = false, onPress }: Props) {
   const scheme = useColorScheme() ?? "light";
   const palette = COLORS[scheme];
+  const { t } = useTranslation("ble");
 
   const displayName =
-    device.name ?? device.localName ?? `Unknown ${device.id.slice(-5)}`;
-  const subtitle = device.decoder?.vendorDescription ?? "Unknown vendor";
+    device.name ??
+    device.localName ??
+    t("device.unknownNamePrefix", { suffix: device.id.slice(-5) });
+  const subtitle =
+    device.decoder?.vendorDescription ?? t("device.unknownVendor");
 
   return (
     <Pressable
       onPress={() => onPress(device)}
       disabled={busy}
       accessibilityRole="button"
-      accessibilityLabel={`Connect to ${displayName}`}
+      accessibilityLabel={t("device.a11yConnect", { name: displayName })}
       style={({ pressed }) => [
         styles.card,
         {
           backgroundColor: palette.surface,
           borderColor: palette.surfaceBorder,
           opacity: busy ? 0.5 : pressed ? 0.85 : 1,
-          borderLeftColor: palette.accentBar,
-          borderLeftWidth: 3,
+          borderStartColor: palette.accentBar,
+          borderStartWidth: 3,
         },
       ]}
     >

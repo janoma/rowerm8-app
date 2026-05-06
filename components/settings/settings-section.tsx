@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: StyleSheet.hairlineWidth,
-    marginLeft: 16,
+    marginStart: 16,
   },
   footer: {
     fontSize: 13,

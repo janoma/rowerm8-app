@@ -1,0 +1,66 @@
+{
+  "title": "Settings",
+  "sections": {
+    "language": "Language",
+    "units": "Units",
+    "help": "Help"
+  },
+  "language": {
+    "row": {
+      "label": "Language",
+      "subtitle": "{language}",
+      "subtitleAuto": "Follow system ({language})"
+    },
+    "pickerTitle": "Language",
+    "pickerFooter": "Choose the language used throughout the app. Switching to or from a right-to-left language requires a restart.",
+    "rtlReloadAlert": {
+      "title": "Restart required",
+      "message": "Switching to a {direction, select, rtl {right-to-left} other {left-to-right}} language needs the app to restart so the layout updates.",
+      "confirm": "Restart now",
+      "later": "Not now"
+    }
+  },
+  "units": {
+    "system": {
+      "label": "Measurement system",
+      "auto": "Follow system ({system})",
+      "metric": "Metric",
+      "imperialUS": "Imperial (US)",
+      "inline": {
+        "metric": "metric",
+        "imperialUS": "imperial US"
+      }
+    },
+    "pace": {
+      "label": "Rowing pace",
+      "per500m": "Per 500 m",
+      "perKm": "Per kilometer",
+      "perMile": "Per mile",
+      "footer": "Rowing convention is per 500 m, regardless of distance units."
+    },
+    "weight": {
+      "label": "Body weight",
+      "auto": "Follow measurement system",
+      "kg": "Kilograms (kg)",
+      "lb": "Pounds (lb)"
+    },
+    "temperature": {
+      "label": "Temperature",
+      "auto": "Follow measurement system",
+      "C": "Celsius (\u00B0C)",
+      "F": "Fahrenheit (\u00B0F)"
+    }
+  },
+  "help": {
+    "resetPlacement": {
+      "label": "Reset placement instructions",
+      "subtitle": "Show the sensor placement guide on next selection",
+      "footer": "Restores dialogs you\u2019ve previously dismissed with \u2018Don\u2019t show again\u2019.",
+      "alert": {
+        "title": "Reset placement instructions",
+        "message": "The sensor placement guide will be shown again the next time you select a sensor.",
+        "confirm": "Reset"
+      }
+    }
+  }
+}

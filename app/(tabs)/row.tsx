@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -45,9 +46,19 @@ const COLORS = {
 export default function RowScreen() {
   const scheme = useColorScheme() ?? "light";
   const palette = COLORS[scheme];
-  const { source, deviceLabel, selectPhone, clear } = useMotionSensor();
+  const {
+    source,
+    deviceLabel: rawDeviceLabel,
+    selectPhone,
+    clear,
+  } = useMotionSensor();
   const stream = useMotionStream();
   const ble = useBle();
+  const { t } = useTranslation("row");
+  // Phone labels follow the current language; BLE labels are user-visible
+  // device names so we keep them as-is.
+  const deviceLabel =
+    source === "phone" ? t("phone.label") : (rawDeviceLabel ?? null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [placementVisible, setPlacementVisible] = useState(false);
   const prevSource = useRef<MotionSensorSource>(source);
@@ -100,7 +111,7 @@ export default function RowScreen() {
           <ThemedText
             style={[styles.placeholderText, { color: palette.placeholderText }]}
           >
-            Live sensor data will appear here once you select a source.
+            {t("placeholder")}
           </ThemedText>
         </View>
       );
@@ -108,19 +119,10 @@ export default function RowScreen() {
 
     if (source === "phone") {
       if (stream.permissionDenied) {
-        return (
-          <Notice palette={palette}>
-            Motion permission was denied. Enable Motion &amp; Fitness for
-            rowerm8 in Settings to see live data.
-          </Notice>
-        );
+        return <Notice palette={palette}>{t("phone.noPermission")}</Notice>;
       }
       if (!stream.isAvailable) {
-        return (
-          <Notice palette={palette}>
-            No accelerometer detected on this device.
-          </Notice>
-        );
+        return <Notice palette={palette}>{t("phone.noAccelerometer")}</Notice>;
       }
       return (
         <LiveAccelerationCard
@@ -134,7 +136,9 @@ export default function RowScreen() {
     if (!ble.activeDevice) {
       return (
         <Notice palette={palette}>
-          Tap Connect to reconnect to {deviceLabel ?? "your Bluetooth sensor"}.
+          {deviceLabel
+            ? t("ble.reconnect", { label: deviceLabel })
+            : t("ble.reconnectFallback")}
         </Notice>
       );
     }
@@ -142,8 +146,9 @@ export default function RowScreen() {
     if (!stream.hasDecoder) {
       return (
         <Notice palette={palette}>
-          Connected to {deviceLabel ?? "this device"}, but rowerm8 doesn&apos;t
-          have a decoder for it yet. Live data is unavailable.
+          {deviceLabel
+            ? t("ble.noDecoder", { label: deviceLabel })
+            : t("ble.noDecoderFallback")}
         </Notice>
       );
     }
@@ -151,7 +156,9 @@ export default function RowScreen() {
     if (!stream.isAvailable) {
       return (
         <Notice palette={palette}>
-          Connecting to {deviceLabel ?? "sensor"}...
+          {deviceLabel
+            ? t("ble.connecting", { label: deviceLabel })
+            : t("ble.connectingFallback")}
         </Notice>
       );
     }
@@ -170,7 +177,7 @@ export default function RowScreen() {
       <SafeAreaView edges={["top"]} style={styles.safeArea}>
         <View style={styles.content}>
           <ThemedText type="title" style={styles.title}>
-            Row
+            {t("title")}
           </ThemedText>
 
           <SensorStatusCard
@@ -186,7 +193,7 @@ export default function RowScreen() {
               <Pressable
                 onPress={() => setPickerOpen(true)}
                 accessibilityRole="button"
-                accessibilityLabel="Select motion sensor"
+                accessibilityLabel={t("a11ySelectSensor")}
                 style={({ pressed }) => [
                   styles.primaryButton,
                   {
@@ -206,11 +213,11 @@ export default function RowScreen() {
                     { color: palette.primaryText },
                   ]}
                 >
-                  Select motion sensor
+                  {t("selectSensor")}
                 </ThemedText>
               </Pressable>
               <ThemedText style={[styles.helper, { color: palette.helper }]}>
-                Choose how you want to track stroke motion.
+                {t("selectHelper")}
               </ThemedText>
             </>
           ) : null}

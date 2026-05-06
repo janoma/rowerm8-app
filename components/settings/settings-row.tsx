@@ -28,8 +28,14 @@ type Props = {
   onPress?: () => void;
   destructive?: boolean;
   /**
-   * Optional element rendered on the right side (e.g. a Switch or value text).
-   * When omitted and `onPress` is provided, a chevron is shown.
+   * Element rendered on the right side. Three possible values:
+   *   - omitted (`undefined`): if `onPress` is set, a chevron is shown to
+   *     indicate this row pushes to another screen.
+   *   - `null`: explicitly suppress the chevron — used by option-selector
+   *     rows where the row is pressable but doesn't navigate (e.g. the
+   *     "Metric / Imperial" pickers, where the right side is either a
+   *     checkmark or empty).
+   *   - any node: rendered as-is (e.g. a checkmark, switch, or value text).
    */
   accessory?: ReactNode;
   accessibilityHint?: string;
@@ -48,6 +54,16 @@ export function SettingsRow({
 
   const labelColor = destructive ? palette.danger : palette.label;
 
+  // Explicit `null` means "no trailing widget"; only an undefined `accessory`
+  // falls back to the chevron. This lets selector rows render either a
+  // checkmark or nothing without accidentally implying a sub-screen.
+  const trailing =
+    accessory !== undefined ? (
+      accessory
+    ) : onPress ? (
+      <IconSymbol name="chevron.right" size={18} color={palette.chevron} />
+    ) : null;
+
   const content = (
     <View style={styles.row}>
       <View style={styles.textBlock}>
@@ -60,10 +76,7 @@ export function SettingsRow({
           </ThemedText>
         ) : null}
       </View>
-      {accessory ??
-        (onPress ? (
-          <IconSymbol name="chevron.right" size={18} color={palette.chevron} />
-        ) : null)}
+      {trailing}
     </View>
   );
 

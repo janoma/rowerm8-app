@@ -1,5 +1,6 @@
 import { router } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Platform,
@@ -40,12 +41,22 @@ const COLORS = {
   },
 } as const;
 
+type HeroState =
+  | "off"
+  | "unauthorized"
+  | "unavailable"
+  | "unknown"
+  | "scanning"
+  | "complete";
+
 export default function BleScanScreen() {
   const scheme = useColorScheme() ?? "light";
   const palette = COLORS[scheme];
   const insets = useSafeAreaInsets();
   const ble = useBle();
   const { selectBle } = useMotionSensor();
+  const { t } = useTranslation("ble");
+  const { t: tc } = useTranslation("common");
   const [pendingId, setPendingId] = useState<string | null>(null);
   const didAutoStartRef = useRef(false);
   const { availability, startScan, stopScan } = ble;
@@ -78,7 +89,7 @@ export default function BleScanScreen() {
       const label =
         connected.name ??
         connected.localName ??
-        `Bluetooth device ${connected.id.slice(-5)}`;
+        t("device.fallbackLabel", { suffix: connected.id.slice(-5) });
       selectBle({
         deviceLabel: label,
         bleDeviceId: connected.id,
@@ -93,43 +104,26 @@ export default function BleScanScreen() {
     router.dismiss();
   };
 
-  const heroTitle = (() => {
+  const heroState: HeroState = (() => {
     if (ble.availability === "off") {
-      return "Bluetooth is off";
+      return "off";
     }
     if (ble.availability === "unauthorized") {
-      return "Bluetooth permission needed";
+      return "unauthorized";
     }
     if (ble.availability === "unavailable") {
-      return "Bluetooth not available";
+      return "unavailable";
     }
     if (ble.availability === "unknown") {
-      return "Initializing Bluetooth...";
+      return "unknown";
     }
     if (ble.scanning) {
-      return "Scanning for nearby sensors...";
+      return "scanning";
     }
-    return "Scan complete";
+    return "complete";
   })();
-
-  const heroSubtitle = (() => {
-    if (ble.availability === "off") {
-      return "Turn on Bluetooth in Settings to continue.";
-    }
-    if (ble.availability === "unauthorized") {
-      return "Enable Bluetooth for rowerm8 in iOS Settings.";
-    }
-    if (ble.availability === "unavailable") {
-      return "This build does not include native Bluetooth support.";
-    }
-    if (ble.availability === "unknown") {
-      return "Hang tight, this only takes a moment.";
-    }
-    if (ble.scanning) {
-      return "Make sure your sensor is powered on and within 5 m";
-    }
-    return 'Tap "Scan again" to keep looking.';
-  })();
+  const heroTitle = t(`scan.hero.${heroState}.title`);
+  const heroSubtitle = t(`scan.hero.${heroState}.subtitle`);
 
   return (
     <ThemedView style={styles.root}>
@@ -139,13 +133,13 @@ export default function BleScanScreen() {
             onPress={close}
             hitSlop={12}
             accessibilityRole="button"
-            accessibilityLabel="Cancel"
+            accessibilityLabel={tc("actions.cancel")}
           >
             <ThemedText style={[styles.navAction, { color: palette.accent }]}>
-              Cancel
+              {tc("actions.cancel")}
             </ThemedText>
           </Pressable>
-          <ThemedText style={styles.navTitle}>Bluetooth sensors</ThemedText>
+          <ThemedText style={styles.navTitle}>{t("scan.navTitle")}</ThemedText>
           <View style={styles.navActionPlaceholder} />
         </View>
       </View>
@@ -192,7 +186,7 @@ export default function BleScanScreen() {
             <ThemedText
               style={[styles.noticeText, { color: palette.noticeText }]}
             >
-              Couldn&apos;t connect: {ble.connectionError}
+              {t("scan.connectError", { error: ble.connectionError })}
             </ThemedText>
           </View>
         ) : null}
@@ -201,7 +195,7 @@ export default function BleScanScreen() {
           <ThemedText
             style={[styles.sectionHeader, { color: palette.sectionLabel }]}
           >
-            COMPATIBLE DEVICES ({supportedDevices.length})
+            {t("scan.section", { count: supportedDevices.length })}
           </ThemedText>
           {ble.scanning ? (
             <ActivityIndicator size="small" color={palette.accent} />
@@ -210,10 +204,10 @@ export default function BleScanScreen() {
               onPress={() => ble.startScan()}
               hitSlop={8}
               accessibilityRole="button"
-              accessibilityLabel="Scan again"
+              accessibilityLabel={tc("actions.scanAgain")}
             >
               <ThemedText style={[styles.scanAgain, { color: palette.accent }]}>
-                Scan again
+                {tc("actions.scanAgain")}
               </ThemedText>
             </Pressable>
           )}
@@ -224,8 +218,7 @@ export default function BleScanScreen() {
             <ThemedText
               style={[styles.emptyText, { color: palette.sectionLabel }]}
             >
-              No compatible sensors found yet. Make sure your sensor is on and
-              try again.
+              {t("scan.empty")}
             </ThemedText>
           ) : null}
 
@@ -245,7 +238,7 @@ export default function BleScanScreen() {
             <ThemedText
               style={[styles.connectingText, { color: palette.accent }]}
             >
-              Connecting...
+              {t("scan.connecting")}
             </ThemedText>
           </View>
         ) : null}

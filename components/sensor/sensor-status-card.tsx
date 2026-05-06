@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, View } from "react-native";
 
 import { BatteryIndicator } from "@/components/ble/battery-indicator";
@@ -52,18 +53,23 @@ export function SensorStatusCard({
 }: Props) {
   const scheme = useColorScheme() ?? "light";
   const palette = COLORS[scheme];
+  const { t } = useTranslation("sensor");
 
   const iconName = connected
     ? "checkmark.circle.fill"
     : "exclamationmark.triangle.fill";
   const badgeColor = connected ? palette.success : palette.warning;
   const badgeBg = connected ? palette.successBg : palette.warningBg;
-  const valueText = selected ? (deviceLabel ?? "Selected") : "Not selected";
+  const valueText = selected
+    ? (deviceLabel ?? t("status.selected"))
+    : t("status.notSelected");
   const showSubtitle = selected && !connected;
-  const actionText = connected ? "Change" : "Connect";
+  const actionText = connected
+    ? t("status.actionChange")
+    : t("status.actionConnect");
   const accessibilityLabel = connected
-    ? "Change motion sensor"
-    : "Connect motion sensor";
+    ? t("status.a11yChange")
+    : t("status.a11yConnect");
 
   return (
     <View
@@ -80,14 +86,14 @@ export function SensorStatusCard({
       </View>
       <View style={styles.textBlock}>
         <ThemedText style={[styles.label, { color: palette.label }]}>
-          MOTION SENSOR
+          {t("status.label")}
         </ThemedText>
         <ThemedText style={styles.value} numberOfLines={1}>
           {valueText}
         </ThemedText>
         {showSubtitle ? (
           <ThemedText style={[styles.subtitle, { color: palette.warning }]}>
-            Not connected
+            {t("status.notConnected")}
           </ThemedText>
         ) : null}
         {connected && batteryPercent != null ? (

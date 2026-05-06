@@ -1,0 +1,17 @@
+{
+  "actions": {
+    "cancel": "Cancel",
+    "ok": "OK",
+    "done": "Done",
+    "back": "Back",
+    "close": "Close",
+    "reset": "Reset",
+    "save": "Save",
+    "gotIt": "Got it",
+    "dontShowAgain": "Don\u2019t show this again",
+    "scanAgain": "Scan again"
+  },
+  "system": {
+    "auto": "Auto"
+  }
+}

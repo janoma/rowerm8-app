@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { StyleSheet, View } from "react-native";
 
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -48,6 +49,7 @@ export function SignalBars({
 }) {
   const scheme = useColorScheme() ?? "light";
   const palette = COLORS[scheme];
+  const { t } = useTranslation("ble");
   const filled = rssiToBars(rssi);
   const dims = SIZES[size];
 
@@ -55,7 +57,10 @@ export function SignalBars({
     <View
       style={styles.row}
       accessibilityRole="image"
-      accessibilityLabel={`Signal strength ${filled} of ${TOTAL_BARS}`}
+      accessibilityLabel={t("device.a11ySignal", {
+        filled,
+        total: TOTAL_BARS,
+      })}
     >
       {Array.from({ length: TOTAL_BARS }).map((_, i) => {
         const heightPct = ((i + 1) / TOTAL_BARS) * 100;
