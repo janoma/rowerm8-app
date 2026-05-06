@@ -34,6 +34,14 @@ import frRow from "@/locales/fr/row.json";
 import frSensor from "@/locales/fr/sensor.json";
 import frSettings from "@/locales/fr/settings.json";
 import frTabs from "@/locales/fr/tabs.json";
+import itBle from "@/locales/it/ble.json";
+import itCommon from "@/locales/it/common.json";
+import itHome from "@/locales/it/home.json";
+import itModal from "@/locales/it/modal.json";
+import itRow from "@/locales/it/row.json";
+import itSensor from "@/locales/it/sensor.json";
+import itSettings from "@/locales/it/settings.json";
+import itTabs from "@/locales/it/tabs.json";
 
 export const NAMESPACES = [
   "common",
@@ -80,5 +88,15 @@ export const RESOURCES = {
     ble: frBle,
     settings: frSettings,
     modal: frModal,
+  },
+  it: {
+    common: itCommon,
+    tabs: itTabs,
+    home: itHome,
+    row: itRow,
+    sensor: itSensor,
+    ble: itBle,
+    settings: itSettings,
+    modal: itModal,
   },
 } as const;

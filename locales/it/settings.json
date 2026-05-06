@@ -1,0 +1,76 @@
+{
+  "title": "Impostazioni",
+  "sections": {
+    "language": "Lingua",
+    "units": "Unità",
+    "help": "Aiuto"
+  },
+  "language": {
+    "row": {
+      "label": "Lingua",
+      "subtitle": "{language}",
+      "subtitleAuto": "Segui il sistema ({language})"
+    },
+    "pickerTitle": "Lingua",
+    "pickerFooter": "Scegli la lingua usata in tutta l’app. Passare a o da una lingua da destra a sinistra richiede il riavvio.",
+    "rtlReloadAlert": {
+      "title": "Riavvio richiesto",
+      "message": "Passare a una lingua {direction, select, rtl {da destra a sinistra} other {da sinistra a destra}} richiede il riavvio dell’app per aggiornare il layout.",
+      "confirm": "Riavvia ora",
+      "later": "Non ora"
+    }
+  },
+  "languages": {
+    "en": "Inglese",
+    "es": "Spagnolo",
+    "fr": "Francese",
+    "de": "Tedesco",
+    "it": "Italiano",
+    "ja": "Giapponese",
+    "zh-Hans": "Cinese (semplificato)",
+    "ar": "Arabo"
+  },
+  "units": {
+    "system": {
+      "label": "Sistema di misura",
+      "auto": "Segui il sistema ({system})",
+      "metric": "Metrico",
+      "imperialUS": "Imperiale (USA)",
+      "inline": {
+        "metric": "metrico",
+        "imperialUS": "imperiale USA"
+      }
+    },
+    "pace": {
+      "label": "Ritmo di voga",
+      "per500m": "Per 500 m",
+      "perKm": "Per chilometro",
+      "perMile": "Per miglio",
+      "footer": "La convenzione del canottaggio è per 500 m, indipendentemente dalle unità di distanza."
+    },
+    "weight": {
+      "label": "Peso corporeo",
+      "auto": "Segui il sistema di misura",
+      "kg": "Chilogrammi (kg)",
+      "lb": "Libbre (lb)"
+    },
+    "temperature": {
+      "label": "Temperatura",
+      "auto": "Segui il sistema di misura",
+      "C": "Celsius (°C)",
+      "F": "Fahrenheit (°F)"
+    }
+  },
+  "help": {
+    "resetPlacement": {
+      "label": "Ripristina istruzioni di posizionamento",
+      "subtitle": "Mostra la guida al posizionamento del sensore alla prossima selezione",
+      "footer": "Ripristina le finestre di dialogo che hai precedentemente nascosto con «Non mostrare più».",
+      "alert": {
+        "title": "Ripristina istruzioni di posizionamento",
+        "message": "La guida al posizionamento del sensore verrà mostrata di nuovo la prossima volta che selezionerai un sensore.",
+        "confirm": "Ripristina"
+      }
+    }
+  }
+}
