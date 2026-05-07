@@ -16,5 +16,13 @@
     "noDecoderFallback": "Connected to this device, but rowerm8 doesn’t have a decoder for it yet. Live data is unavailable.",
     "connecting": "Connecting to {label}…",
     "connectingFallback": "Connecting to sensor…"
+  },
+  "metrics": {
+    "strokes": "Strokes",
+    "cadence": "Cadence",
+    "cadenceUnit": "spm",
+    "pace": "Pace",
+    "elapsed": "Elapsed",
+    "footer": "{rate, number} Hz · pace estimated from cadence"
   }
 }

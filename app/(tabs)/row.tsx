@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { LiveAccelerationCard } from "@/components/sensor/live-acceleration-card";
+import { RowMetricsCard } from "@/components/row/row-metrics-card";
 import { SensorPickerSheet } from "@/components/sensor/sensor-picker-sheet";
 import { SensorPlacementModal } from "@/components/sensor/sensor-placement-modal";
 import { SensorStatusCard } from "@/components/sensor/sensor-status-card";
@@ -19,6 +19,7 @@ import {
 } from "@/contexts/motion-sensor-context";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useMotionStream } from "@/hooks/use-motion-stream";
+import { useStrokeSession } from "@/hooks/use-stroke-session";
 
 const COLORS = {
   light: {
@@ -53,6 +54,7 @@ export default function RowScreen() {
     clear,
   } = useMotionSensor();
   const stream = useMotionStream();
+  const strokeSession = useStrokeSession();
   const ble = useBle();
   const { t } = useTranslation("row");
   // Phone labels follow the current language; BLE labels are user-visible
@@ -98,6 +100,14 @@ export default function RowScreen() {
     }
   }, [source, ble]);
 
+  const metricsCardProps = {
+    strokeCount: strokeSession.strokeCount,
+    cadenceSpm: strokeSession.cadenceSpm,
+    paceSecondsPer500m: strokeSession.paceSecondsPer500m,
+    elapsedSeconds: strokeSession.elapsedSeconds,
+    sampleRateHz: stream.sampleRateHz,
+  };
+
   const renderDataSection = () => {
     if (source === "none") {
       return (
@@ -124,13 +134,7 @@ export default function RowScreen() {
       if (!stream.isAvailable) {
         return <Notice palette={palette}>{t("phone.noAccelerometer")}</Notice>;
       }
-      return (
-        <LiveAccelerationCard
-          sample={stream.sample}
-          histories={stream.histories}
-          sampleRateHz={stream.sampleRateHz}
-        />
-      );
+      return <RowMetricsCard {...metricsCardProps} />;
     }
 
     if (!ble.activeDevice) {
@@ -163,13 +167,7 @@ export default function RowScreen() {
       );
     }
 
-    return (
-      <LiveAccelerationCard
-        sample={stream.sample}
-        histories={stream.histories}
-        sampleRateHz={stream.sampleRateHz}
-      />
-    );
+    return <RowMetricsCard {...metricsCardProps} />;
   };
 
   return (
