@@ -13,6 +13,12 @@ const COLORS = {
     label: "#687076",
     value: "#11181C",
     accent: "#0a7ea4",
+    // Tinted background + matching label colour for the highlighted
+    // primary metric. The tint is a faint wash of the accent so the
+    // emphasis is unmistakable but the card doesn't read as "selected".
+    primarySurface: "rgba(10, 126, 164, 0.10)",
+    primarySurfaceBorder: "rgba(10, 126, 164, 0.28)",
+    primaryLabel: "#075f7c",
   },
   dark: {
     surface: "#1F2224",
@@ -20,6 +26,9 @@ const COLORS = {
     label: "#9BA1A6",
     value: "#ECEDEE",
     accent: "#3DB7E0",
+    primarySurface: "rgba(61, 183, 224, 0.14)",
+    primarySurfaceBorder: "rgba(61, 183, 224, 0.36)",
+    primaryLabel: "#7FD4EC",
   },
 } as const;
 
@@ -84,32 +93,47 @@ export function RowMetricsCard({
         },
       ]}
     >
-      <View style={styles.row}>
-        <Metric
-          label={t("metrics.strokes")}
-          value={strokeCount.toString()}
-          palette={palette}
-          big
-        />
-        <Metric
-          label={t("metrics.cadence")}
-          value={cadenceString}
-          palette={palette}
-          big
-        />
+      <View
+        style={[
+          styles.primaryMetric,
+          {
+            backgroundColor: palette.primarySurface,
+            borderColor: palette.primarySurfaceBorder,
+          },
+        ]}
+      >
+        <ThemedText
+          style={[styles.primaryLabel, { color: palette.primaryLabel }]}
+        >
+          {t("metrics.cadence")}
+        </ThemedText>
+        <ThemedText
+          style={[
+            styles.primaryValue,
+            { color: palette.accent, fontFamily: monoFont },
+          ]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.6}
+        >
+          {cadenceString}
+        </ThemedText>
       </View>
-      <View style={styles.row}>
-        <Metric
-          label={t("metrics.pace")}
-          value={formatters.pace(boatSpeedMpsForFormatter)}
-          palette={palette}
-        />
-        <Metric
-          label={t("metrics.elapsed")}
-          value={elapsedString}
-          palette={palette}
-        />
-      </View>
+      <Metric
+        label={t("metrics.strokes")}
+        value={strokeCount.toString()}
+        palette={palette}
+      />
+      <Metric
+        label={t("metrics.pace")}
+        value={formatters.pace(boatSpeedMpsForFormatter)}
+        palette={palette}
+      />
+      <Metric
+        label={t("metrics.elapsed")}
+        value={elapsedString}
+        palette={palette}
+      />
       {sampleRateHz > 0 ? (
         <ThemedText style={[styles.footer, { color: palette.label }]}>
           {t("metrics.footer", { rate: sampleRateHz })}
@@ -123,12 +147,10 @@ function Metric({
   label,
   value,
   palette,
-  big,
 }: {
   label: string;
   value: string;
   palette: (typeof COLORS)[keyof typeof COLORS];
-  big?: boolean;
 }) {
   return (
     <View style={styles.metric}>
@@ -137,10 +159,17 @@ function Metric({
       </ThemedText>
       <ThemedText
         style={[
-          big ? styles.metricValueBig : styles.metricValue,
+          styles.metricValue,
           { color: palette.value, fontFamily: monoFont },
         ]}
         numberOfLines={1}
+        // adjustsFontSizeToFit + minimumFontScale lets the value shrink
+        // gracefully on narrow screens (or with very long localized
+        // strings) instead of clipping to "...". The full text remains
+        // visible in normal cases since each metric now spans the entire
+        // card width.
+        adjustsFontSizeToFit
+        minimumFontScale={0.7}
       >
         {value}
       </ThemedText>
@@ -154,15 +183,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 16,
     borderWidth: StyleSheet.hairlineWidth,
-    gap: 16,
+    gap: 14,
   },
-  row: {
-    flexDirection: "row",
-    gap: 16,
+  primaryMetric: {
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    gap: 4,
+  },
+  primaryLabel: {
+    fontSize: 12,
+    fontWeight: "700",
+    letterSpacing: 1.0,
+    textTransform: "uppercase",
+  },
+  primaryValue: {
+    fontSize: 56,
+    fontWeight: "800",
+    lineHeight: 64,
   },
   metric: {
-    flex: 1,
-    gap: 4,
+    gap: 2,
   },
   metricLabel: {
     fontSize: 11,
@@ -170,18 +212,14 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
     textTransform: "uppercase",
   },
-  metricValueBig: {
+  metricValue: {
     fontSize: 36,
     fontWeight: "700",
     lineHeight: 42,
   },
-  metricValue: {
-    fontSize: 22,
-    fontWeight: "600",
-    lineHeight: 28,
-  },
   footer: {
     fontSize: 12,
     lineHeight: 14,
+    marginTop: 4,
   },
 });
