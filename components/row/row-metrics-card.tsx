@@ -80,7 +80,7 @@ export function RowMetricsCard({
 
   const cadenceString =
     cadenceSpm > 0
-      ? `${cadenceSpm.toFixed(1)} ${t("metrics.cadenceUnit")}`
+      ? `${Math.round(cadenceSpm)} ${t("metrics.cadenceUnit")}`
       : "—";
 
   return (

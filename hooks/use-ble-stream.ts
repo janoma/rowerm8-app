@@ -58,7 +58,12 @@ export function useBleStream({
         if (!frame.accel) {
           continue;
         }
-        lastAccel = frame.accel;
+        // Carry the on-device-fused Euler angles through with the accel
+        // sample when the decoder provides them (WitMotion). Downstream
+        // projectors use these to subtract gravity in a stable frame.
+        lastAccel = frame.angle
+          ? { ...frame.accel, angle: frame.angle }
+          : frame.accel;
         count += 1;
         buffers.x.shift();
         buffers.x.push(frame.accel.x);

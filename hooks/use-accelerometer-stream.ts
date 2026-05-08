@@ -8,6 +8,13 @@ export type AccelerometerSample = {
   y: number;
   z: number;
   magnitude: number;
+  /**
+   * Optional Euler angles (degrees) carried alongside the acceleration when
+   * the underlying sensor performs on-device sensor fusion. Used downstream
+   * to subtract gravity in a stable frame. Always undefined for the phone's
+   * raw accelerometer; populated by the BLE WitMotion decoder.
+   */
+  angle?: { roll: number; pitch: number; yaw: number };
 };
 
 export type AxisHistories = {

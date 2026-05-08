@@ -21,7 +21,8 @@
  * can start clean.
  */
 
-import type { Projector, SymMat3, Vec3Sample } from "./types";
+import { gravityFromAngle, subtractGravity } from "./gravity";
+import type { MotionSample, Projector, SymMat3, Vec3Sample } from "./types";
 
 // --- Magnitude projector --------------------------------------------------
 
@@ -54,7 +55,7 @@ export function magnitudeProjector(
   let initialized = false;
 
   return {
-    project(sample: Vec3Sample): number {
+    project(sample: MotionSample): number {
       const m = Math.sqrt(
         sample.x * sample.x + sample.y * sample.y + sample.z * sample.z,
       );
@@ -84,7 +85,7 @@ export type Axis = "x" | "y" | "z";
  */
 export function fixedAxisProjector(axis: Axis): Projector {
   return {
-    project(sample: Vec3Sample): number {
+    project(sample: MotionSample): number {
       return sample[axis];
     },
     reset(): void {
@@ -177,7 +178,7 @@ export function pcaProjector(
     lastFitMs = null;
   }
 
-  function project(sample: Vec3Sample, timestampMs: number): number {
+  function project(sample: MotionSample, timestampMs: number): number {
     sampleCount += 1;
 
     // EMA of the mean. Seed with the first sample so we don't spend N
@@ -235,6 +236,137 @@ export function pcaProjector(
     }
 
     return dx * axis.x + dy * axis.y + dz * axis.z;
+  }
+
+  return { project, reset };
+}
+
+// --- Handle-axis projector ------------------------------------------------
+
+export type HandleAxisProjectorConfig = {
+  /**
+   * When true and `sample.angle` is provided, gravity is subtracted using
+   * the on-device Euler attitude. When false, the projector behaves like
+   * the EMA-rest fallback path even if angle data is present (useful for
+   * A/B comparison in tests).
+   */
+  useGravityCorrection: boolean;
+  /**
+   * PCA stage configuration. Accepts a partial override that is merged
+   * on top of `DEFAULT_PCA_CONFIG`. Same knobs / defaults as the
+   * standalone `pcaProjector`.
+   */
+  pca: Partial<PcaProjectorConfig>;
+  /**
+   * 1st-order IIR low-pass coefficient applied to the projected scalar:
+   *   y[n] = (1 - α) · y[n − 1] + α · x[n]
+   * `α = 0.3` at 50 Hz is roughly a 3 Hz cutoff. The stroke band is
+   * 0.3-1 Hz, so this shaves vibration off the top without smearing the
+   * pulse shape. Set to 1 to disable filtering entirely.
+   */
+  lowPassAlpha: number;
+  /**
+   * EMA coefficient for the magnitude-rest fallback used when no angle
+   * data is available. Same role as `restEmaAlpha` in
+   * `magnitudeProjector`.
+   */
+  fallbackRestEmaAlpha: number;
+};
+
+export const DEFAULT_HANDLE_AXIS_CONFIG: HandleAxisProjectorConfig = {
+  useGravityCorrection: true,
+  pca: { ...DEFAULT_PCA_CONFIG },
+  lowPassAlpha: 0.3,
+  fallbackRestEmaAlpha: 0.02,
+};
+
+/**
+ * WitMotion handle-mounted projector.
+ *
+ * Pipeline (per sample):
+ *
+ *   1. Gravity correction. If the sample carries an `angle` (the BLE
+ *      decoder does), subtract the analytic gravity vector for that
+ *      orientation and feed the resulting linear acceleration vector
+ *      forward. Otherwise — angle missing or `useGravityCorrection`
+ *      disabled — fall back to the same EMA-rest trick the magnitude
+ *      projector uses, scaling the unit-vector of the raw sample by
+ *      `||a|| − rest` so we still hand a 3D vector to PCA. (Without that
+ *      we'd collapse the signal to a scalar before PCA could run.)
+ *   2. PCA. Identical algorithm to `pcaProjector`, just operating on the
+ *      gravity-corrected vector. Within ~30 strokes it locks onto the
+ *      dominant variance direction — which on a handle-mounted IMU is
+ *      the pull axis.
+ *   3. Low-pass IIR. Cleans residual high-frequency noise above the
+ *      stroke band. Disable by setting `lowPassAlpha: 1`.
+ *
+ * Pure: no I/O. State is local to the closure and cleared by `reset()`.
+ */
+export function handleAxisProjector(
+  config: Partial<HandleAxisProjectorConfig> = {},
+): Projector {
+  const cfg: HandleAxisProjectorConfig = {
+    ...DEFAULT_HANDLE_AXIS_CONFIG,
+    ...config,
+    pca: { ...DEFAULT_HANDLE_AXIS_CONFIG.pca, ...(config.pca ?? {}) },
+  };
+
+  // pcaProjector accepts Partial<PcaProjectorConfig> and merges with
+  // DEFAULT_PCA_CONFIG itself. We merge our own DEFAULT_HANDLE_AXIS_CONFIG.pca
+  // first so handle-axis-specific PCA tuning overrides the standalone defaults.
+  const inner = pcaProjector(cfg.pca);
+  let restMagnitude = 0;
+  let restInitialized = false;
+  let lpInitialized = false;
+  let lpValue = 0;
+
+  function correctGravity(sample: MotionSample): Vec3Sample {
+    if (cfg.useGravityCorrection && sample.angle) {
+      return subtractGravity(sample, gravityFromAngle(sample.angle));
+    }
+    // Fallback path: scale the raw direction by the deviation of its
+    // magnitude from a slow EMA "rest" magnitude. Equivalent to the
+    // magnitude projector except we keep the 3-axis structure so PCA
+    // still has a vector to fit.
+    const m = Math.sqrt(
+      sample.x * sample.x + sample.y * sample.y + sample.z * sample.z,
+    );
+    if (!restInitialized) {
+      restMagnitude = m;
+      restInitialized = true;
+      return { x: 0, y: 0, z: 0 };
+    }
+    restMagnitude =
+      (1 - cfg.fallbackRestEmaAlpha) * restMagnitude +
+      cfg.fallbackRestEmaAlpha * m;
+    if (m === 0) {
+      return { x: 0, y: 0, z: 0 };
+    }
+    const scale = (m - restMagnitude) / m;
+    return { x: sample.x * scale, y: sample.y * scale, z: sample.z * scale };
+  }
+
+  function project(sample: MotionSample, timestampMs: number): number {
+    const linear = correctGravity(sample);
+    // Forward as a MotionSample so the inner projector sees the same
+    // shape; angle is intentionally dropped here — the inner projector
+    // already operates on the linear vector we just computed.
+    const projected = inner.project(linear, timestampMs);
+    if (!lpInitialized) {
+      lpValue = projected;
+      lpInitialized = true;
+    } else {
+      lpValue = (1 - cfg.lowPassAlpha) * lpValue + cfg.lowPassAlpha * projected;
+    }
+    return lpValue;
+  }
+
+  function reset(): void {
+    inner.reset();
+    restMagnitude = 0;
+    restInitialized = false;
+    lpInitialized = false;
+    lpValue = 0;
   }
 
   return { project, reset };

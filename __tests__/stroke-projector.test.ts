@@ -1,11 +1,13 @@
 import { GRAVITY_MPS2 } from "@/lib/units";
 
+import { gravityFromAngle } from "@/lib/stroke/gravity";
 import {
   fixedAxisProjector,
+  handleAxisProjector,
   magnitudeProjector,
   pcaProjector,
 } from "@/lib/stroke/projector";
-import type { Vec3Sample } from "@/lib/stroke/types";
+import type { Angle, MotionSample, Vec3Sample } from "@/lib/stroke/types";
 
 function feed(
   projector: ReturnType<typeof magnitudeProjector>,
@@ -192,7 +194,151 @@ describe("pcaProjector", () => {
   });
 });
 
+describe("handleAxisProjector", () => {
+  /** Build a stationary sequence at a given attitude. */
+  function stationaryAt(angle: Angle, n: number): MotionSample[] {
+    const g = gravityFromAngle(angle);
+    return Array.from({ length: n }, () => ({ x: g.x, y: g.y, z: g.z, angle }));
+  }
+
+  it("removes gravity when angle data is provided (stationary → ~0)", () => {
+    const projector = handleAxisProjector({
+      pca: { warmupSamples: 20, refitEveryMs: 100, covarianceAlpha: 0.1 },
+      lowPassAlpha: 1, // no smoothing — read the raw projected scalar
+    });
+    // Run 200 stationary samples at a tilted attitude — accel reads pure
+    // gravity in the body frame. With gravity correction, the linear
+    // acceleration is identically zero, so the projected scalar should
+    // converge to zero.
+    const angle: Angle = { roll: 30, pitch: -45, yaw: 17 };
+    const samples = stationaryAt(angle, 200);
+    let last = 0;
+    samples.forEach((s, i) => {
+      last = projector.project(s, i * 20);
+    });
+    expect(Math.abs(last)).toBeLessThan(1e-6);
+  });
+
+  it("falls back to magnitude-rest when angle is missing", () => {
+    const projector = handleAxisProjector({
+      pca: { warmupSamples: 20, refitEveryMs: 100, covarianceAlpha: 0.1 },
+      lowPassAlpha: 1,
+      fallbackRestEmaAlpha: 0.5, // fast settle for the test
+    });
+    // 200 stationary samples of pure +Z gravity, NO angle field. The
+    // fallback EMA should track the rest magnitude and the projected
+    // scalar should converge to ~zero.
+    let last = 0;
+    for (let i = 0; i < 200; i++) {
+      last = projector.project({ x: 0, y: 0, z: GRAVITY_MPS2 }, i * 20);
+    }
+    expect(Math.abs(last)).toBeLessThan(1e-3);
+  });
+
+  it("recovers a synthetic 3-axis pull axis through the gravity-corrected pipeline", () => {
+    const projector = handleAxisProjector({
+      pca: {
+        warmupSamples: 30,
+        refitEveryMs: 100,
+        covarianceAlpha: 0.05,
+        powerIterationSteps: 32,
+      },
+      lowPassAlpha: 1,
+    });
+    // Static attitude (handle held with some pitch/roll) plus a strong
+    // pulse along (1,2,0) in the body frame. After gravity is removed,
+    // PCA should lock onto that pull direction.
+    const angle: Angle = { roll: 20, pitch: 30, yaw: 0 };
+    const g = gravityFromAngle(angle);
+    const direction = { x: 1, y: 2, z: 0 };
+    const dnorm = Math.sqrt(
+      direction.x ** 2 + direction.y ** 2 + direction.z ** 2,
+    );
+    const u = {
+      x: direction.x / dnorm,
+      y: direction.y / dnorm,
+      z: direction.z / dnorm,
+    };
+    const amps: number[] = [];
+    const projected: number[] = [];
+    for (let i = 0; i < 300; i++) {
+      const a = Math.sin((2 * Math.PI * i) / 25);
+      amps.push(a);
+      projected.push(
+        projector.project(
+          {
+            x: g.x + u.x * a,
+            y: g.y + u.y * a,
+            z: g.z + u.z * a,
+            angle,
+          },
+          i * 20,
+        ),
+      );
+    }
+    const tail = projected.slice(180);
+    const truth = amps.slice(180);
+    expect(absCorrelation(tail, truth)).toBeGreaterThan(0.9);
+  });
+
+  it("low-pass smoother attenuates per-sample noise relative to the raw input", () => {
+    const noisy = handleAxisProjector({
+      pca: { warmupSamples: 20, refitEveryMs: 100, covarianceAlpha: 0.1 },
+      lowPassAlpha: 0.1, // strong smoothing
+    });
+    const unfiltered = handleAxisProjector({
+      pca: { warmupSamples: 20, refitEveryMs: 100, covarianceAlpha: 0.1 },
+      lowPassAlpha: 1, // no smoothing
+    });
+    const angle: Angle = { roll: 0, pitch: 0, yaw: 0 };
+    const g = gravityFromAngle(angle);
+    // Drive both with the same step-noise signal. The smoothed output
+    // should have a strictly smaller stddev than the unfiltered one.
+    const smoothed: number[] = [];
+    const raw: number[] = [];
+    for (let i = 0; i < 400; i++) {
+      const noise = ((i * 9301 + 49297) % 233280) / 233280 - 0.5; // deterministic
+      const sample: MotionSample = {
+        x: g.x + noise * 5,
+        y: g.y,
+        z: g.z,
+        angle,
+      };
+      smoothed.push(noisy.project(sample, i * 20));
+      raw.push(unfiltered.project(sample, i * 20));
+    }
+    const smoothedStd = stddev(smoothed.slice(200));
+    const rawStd = stddev(raw.slice(200));
+    expect(smoothedStd).toBeLessThan(rawStd * 0.6);
+  });
+
+  it("reset() clears the low-pass and PCA state", () => {
+    const projector = handleAxisProjector({
+      pca: { warmupSamples: 10, refitEveryMs: 50, covarianceAlpha: 0.2 },
+      lowPassAlpha: 1,
+    });
+    const angle: Angle = { roll: 0, pitch: 0, yaw: 0 };
+    for (let i = 0; i < 100; i++) {
+      projector.project({ x: Math.sin(i / 5), y: 0, z: 0, angle }, i * 20);
+    }
+    projector.reset();
+    // First post-reset sample seeds the inner mean → centred dx is zero,
+    // and the LP value is initialised to that zero output.
+    expect(projector.project({ x: 7, y: 0, z: 0, angle }, 0)).toBe(0);
+  });
+});
+
 // --- helpers --------------------------------------------------------------
+
+function stddev(values: number[]): number {
+  if (values.length === 0) {
+    return 0;
+  }
+  const mean = values.reduce((s, v) => s + v, 0) / values.length;
+  const variance =
+    values.reduce((s, v) => s + (v - mean) * (v - mean), 0) / values.length;
+  return Math.sqrt(variance);
+}
 
 function rawCorrelation(a: number[], b: number[]): number {
   if (a.length !== b.length || a.length === 0) {

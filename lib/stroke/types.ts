@@ -23,14 +23,36 @@ export type Vec3Sample = {
 };
 
 /**
- * A 3D-to-1D projector turns the live `Vec3Sample` stream into the scalar
+ * Euler attitude in degrees (ZYX intrinsic — the WitMotion convention).
+ * See `lib/stroke/gravity.ts` for the rotation matrix derivation.
+ */
+export type Angle = {
+  roll: number;
+  pitch: number;
+  yaw: number;
+};
+
+/**
+ * A `Vec3Sample` plus the optional sensor-fusion fields some IMUs emit on
+ * device. Today only `angle` is consumed, by `handleAxisProjector` for
+ * gravity subtraction. The phone path leaves it `undefined`.
+ *
+ * Projectors that only need x/y/z keep working unchanged because every
+ * `Vec3Sample` is structurally a `MotionSample` with no optional fields set.
+ */
+export type MotionSample = Vec3Sample & {
+  angle?: Angle;
+};
+
+/**
+ * A 3D-to-1D projector turns the live `MotionSample` stream into the scalar
  * effort signal the detector expects. Implementations may be stateful (PCA
  * needs a rolling buffer; the magnitude projector needs an EMA "rest" value)
  * but must not perform any I/O.
  */
 export type Projector = {
   /** Project one sample at the given timestamp (ms, monotonic). */
-  project: (sample: Vec3Sample, timestampMs: number) => number;
+  project: (sample: MotionSample, timestampMs: number) => number;
   /** Forget all internal state. */
   reset: () => void;
 };
@@ -69,7 +91,50 @@ export type StrokeDetectorConfig = {
   /** Multiplier on the current threshold below which the baseline EMA is
    * allowed to update. The Dart code uses `1.15` (15% headroom). */
   baselineUpdateBelowFactor: number;
+  /**
+   * Fraction of the dynamic threshold a sample must clear to *open* a
+   * candidate stroke window (state goes IDLE → ARMED). Default 0.5 means
+   * "half the dynamic threshold opens the window"; the candidate is then
+   * still subject to peak / duration / impulse gates at end-of-drive.
+   */
+  armThresholdFactor: number;
+  /**
+   * Fraction of the dynamic threshold below which an ARMED candidate is
+   * cancelled (no end-of-drive evaluation). Slightly lower than
+   * `armThresholdFactor` to give us a small hysteresis band so a single
+   * noisy sample doesn't rapidly bounce IDLE↔ARMED.
+   */
+  releaseThresholdFactor: number;
+  /**
+   * Minimum drive duration (peak − arm in ms) for a candidate to count as
+   * a stroke. Rejects sub-200 ms blips that the rising-edge detector
+   * would have happily triggered on. Real rowing drives are 300–700 ms,
+   * comfortably above this floor.
+   */
+  minDriveDurationMs: number;
+  /**
+   * Minimum integrated impulse `∫ max(0, value − baseline) dt` (units:
+   * `value-units · seconds`) for a candidate to count. With the
+   * `handleAxisProjector` (linear acceleration in m/s²) this is roughly
+   * the velocity change along the pull axis, so the unit is m/s.
+   * Empirical placeholder; rejects small jiggles even if they pass the
+   * peak gate.
+   */
+  minStrokeImpulse: number;
 };
+
+/**
+ * Phase of the v2 stroke detector's per-sample state machine.
+ *
+ *   - `IDLE`: no active candidate; waiting for `value ≥ armThreshold`.
+ *   - `ARMED`: a candidate is being collected (peak / impulse accumulators
+ *     are live). The candidate is committed when the drive ends, or
+ *     cancelled when value drops below `releaseThreshold`.
+ *
+ * `END_OF_DRIVE` is not a held state — it is evaluated within a single
+ * sample of leaving `ARMED` and immediately transitions back to `IDLE`.
+ */
+export type StrokeDetectorPhase = "IDLE" | "ARMED";
 
 /** Mutable state of the scalar peak detector, exposed for tests / debugging. */
 export type StrokeDetectorState = {
@@ -82,6 +147,24 @@ export type StrokeDetectorState = {
   cadenceSpm: number;
   /** Most recent unsmoothed cadence sample. */
   instantCadenceSpm: number;
+  /** Current phase of the candidate state machine. */
+  phase: StrokeDetectorPhase;
+  /** Timestamp (ms) at which the current ARMED candidate started. */
+  candidateStartMs: number | null;
+  /** Maximum `value − baseline` observed during the current candidate. */
+  candidatePeak: number;
+  /** Timestamp (ms) of the sample that produced `candidatePeak`. */
+  candidatePeakMs: number | null;
+  /** Integrated impulse `∫ max(0, value − baseline) dt` for the current
+   * candidate, in `value-units · seconds`. */
+  candidateImpulse: number;
+  /** Snapshot of the dynamic threshold at the moment the candidate
+   * armed. Used by the `bigEnough` end-of-drive gate so a threshold that
+   * keeps climbing during the ARMED phase can't retroactively reject a
+   * peak we already armed on. */
+  candidateArmThreshold: number;
+  /** Timestamp (ms) of the most recent sample seen, for `dt` integration. */
+  lastSampleMs: number | null;
 };
 
 /** Per-sample output of the detector. */

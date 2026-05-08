@@ -1,13 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useMotionStream } from "@/hooks/use-motion-stream";
-import { magnitudeProjector } from "@/lib/stroke/projector";
+import {
+  handleAxisProjector,
+  magnitudeProjector,
+} from "@/lib/stroke/projector";
 import { createStrokeSession } from "@/lib/stroke/session";
+import type { Projector } from "@/lib/stroke/types";
 import type {
   PaceEstimateOptions,
   SessionMetrics,
   StrokeDetectorConfig,
+  StrokeSession,
 } from "@/lib/stroke";
+import type { MotionSensorSource } from "@/contexts/motion-sensor-context";
 
 export type UseStrokeSessionOptions = {
   /** Override any subset of detector tuning. */
@@ -40,12 +46,46 @@ const INITIAL_METRICS: SessionMetrics = {
 };
 
 /**
+ * Pick the projector best suited for the active motion source.
+ *
+ *   - `"ble"`: WitMotion handle. Use `handleAxisProjector` so we can
+ *     subtract gravity using the on-device Euler attitude and project
+ *     onto the PCA-fitted pull axis.
+ *   - `"phone"`: phone-on-holder. We currently fall back to
+ *     `magnitudeProjector`; the phone path will get its own gravity
+ *     correction (via `expo-sensors` `DeviceMotion`) when we re-enable
+ *     it for end users.
+ *   - `"none"`: no live source; the projector is unused but we still
+ *     return one so the session is constructable.
+ */
+function projectorForSource(source: MotionSensorSource): Projector {
+  if (source === "ble") {
+    return handleAxisProjector();
+  }
+  return magnitudeProjector();
+}
+
+function buildSession(
+  source: MotionSensorSource,
+  options: UseStrokeSessionOptions,
+): StrokeSession {
+  return createStrokeSession(projectorForSource(source), {
+    detector: options.detector,
+    pace: options.pace,
+  });
+}
+
+/**
  * Drive a {@link createStrokeSession} from the unified motion stream.
  *
  * The session itself is held in a ref so the React tree never re-creates
  * it across renders; only the snapshot returned by the most recent
  * `update()` is reactive state. This avoids tearing the detector's EMA /
  * baseline state every time React re-renders for an unrelated reason.
+ *
+ * The session is rebuilt (with a fresh projector that matches the new
+ * source) whenever the source changes, so a switch from phone to BLE
+ * doesn't carry a stale magnitude-rest baseline into the handle path.
  *
  * Pure-by-construction: there are no side effects (no haptics, no audio).
  * The Row screen will eventually consume `strokeJustDetected` to drive a
@@ -55,31 +95,25 @@ export function useStrokeSession(
   options: UseStrokeSessionOptions = {},
 ): StrokeSessionState {
   const stream = useMotionStream();
-  // Memoize the projector + session so they survive re-renders. Detector
-  // tuning is captured at construction time; if the caller passes a new
-  // `detector` config object on a later render we rebuild — this matches
-  // how `useEffect` deps work and keeps the hook predictable.
-  const sessionRef = useRef(
-    createStrokeSession(magnitudeProjector(), {
-      detector: options.detector,
-      pace: options.pace,
-    }),
+
+  const sessionRef = useRef<StrokeSession>(
+    buildSession(stream.source, options),
   );
-  // Track whether the upstream `options` changed in a way that requires
-  // rebuilding. Compare by reference for objects; if a caller wants
-  // referential stability they can `useMemo` the option block.
+  const sourceRef = useRef(stream.source);
+  // Compare option objects by reference; if a caller wants referential
+  // stability they can `useMemo` the option block.
   const detectorOptionsRef = useRef(options.detector);
   const paceOptionsRef = useRef(options.pace);
-  if (
+
+  const optionsChanged =
     detectorOptionsRef.current !== options.detector ||
-    paceOptionsRef.current !== options.pace
-  ) {
+    paceOptionsRef.current !== options.pace;
+  const sourceChanged = sourceRef.current !== stream.source;
+  if (optionsChanged || sourceChanged) {
     detectorOptionsRef.current = options.detector;
     paceOptionsRef.current = options.pace;
-    sessionRef.current = createStrokeSession(magnitudeProjector(), {
-      detector: options.detector,
-      pace: options.pace,
-    });
+    sourceRef.current = stream.source;
+    sessionRef.current = buildSession(stream.source, options);
   }
 
   const [metrics, setMetrics] = useState<SessionMetrics>(INITIAL_METRICS);
@@ -100,8 +134,10 @@ export function useStrokeSession(
     }
     lastSampleRef.current = sample;
 
+    // Forward the optional `angle` (BLE / WitMotion) so the projector
+    // can subtract gravity properly.
     const next = sessionRef.current.update(
-      { x: sample.x, y: sample.y, z: sample.z },
+      { x: sample.x, y: sample.y, z: sample.z, angle: sample.angle },
       Date.now(),
     );
     setMetrics(next);
@@ -121,16 +157,11 @@ export function useStrokeSession(
     return () => clearTimeout(id);
   }, [strokeJustDetected]);
 
-  // Reset metrics + the underlying session when the source changes (e.g.
-  // user switches from phone to BLE), so the count / elapsed counter
-  // doesn't carry over a previous stream's data.
-  const sourceRef = useRef(stream.source);
+  // When the source changes, the session has already been rebuilt above
+  // (during render). Sync the public counters / "last sample" so we
+  // don't carry stroke counts or stale sample identity into the new
+  // source's stream.
   useEffect(() => {
-    if (sourceRef.current === stream.source) {
-      return;
-    }
-    sourceRef.current = stream.source;
-    sessionRef.current.reset();
     previousStrokeCountRef.current = 0;
     lastSampleRef.current = null;
     setMetrics(INITIAL_METRICS);

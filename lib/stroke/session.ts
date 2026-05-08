@@ -14,10 +14,10 @@ import { estimateBoatSpeedMps, estimatePaceSecondsPer500m } from "./pace";
 import type { PaceEstimateOptions } from "./pace";
 import { magnitudeProjector } from "./projector";
 import type {
+  MotionSample,
   Projector,
   SessionMetrics,
   StrokeDetectorConfig,
-  Vec3Sample,
 } from "./types";
 
 export type StrokeSessionConfig = {
@@ -28,8 +28,12 @@ export type StrokeSessionConfig = {
 };
 
 export type StrokeSession = {
-  /** Feed one sample. Returns the metrics snapshot after the update. */
-  update: (sample: Vec3Sample, timestampMs: number) => SessionMetrics;
+  /**
+   * Feed one sample. Accepts either a plain `Vec3Sample` (phone path) or
+   * a `MotionSample` enriched with optional sensor-fusion fields (BLE
+   * path); the projector decides which fields it cares about.
+   */
+  update: (sample: MotionSample, timestampMs: number) => SessionMetrics;
   /** Most recent metrics snapshot without consuming a sample. */
   getMetrics: () => SessionMetrics;
   /** Forget all internal state and return to the seeded configuration. */
@@ -71,10 +75,12 @@ export function createStrokeSession(
     lastMetrics = { ...ZERO_METRICS };
   }
 
-  function update(sample: Vec3Sample, timestampMs: number): SessionMetrics {
+  function update(sample: MotionSample, timestampMs: number): SessionMetrics {
     if (firstSampleMs == null) {
       firstSampleMs = timestampMs;
     }
+    // Forward the full sample (including any optional `angle` field) to
+    // the projector. Projectors that only need x/y/z ignore the rest.
     const value = projector.project(sample, timestampMs);
     const result = detector.update(value, timestampMs);
 
