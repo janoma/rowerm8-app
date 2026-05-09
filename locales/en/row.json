@@ -47,6 +47,25 @@
   "freeRow": {
     "title": "Free row",
     "back": "Back",
-    "placeholder": "Live sensor data will appear here once data starts flowing."
+    "placeholder": "Live sensor data will appear here once data starts flowing.",
+    "recording": {
+      "armed": "Tap Start to begin recording. Your row will be saved as a FIT file you can upload to Strava, Training Peaks, or Garmin Connect.",
+      "running": "Recording in progress.",
+      "start": "Start",
+      "stop": "Stop",
+      "save": "Save",
+      "discard": "Discard",
+      "share": "Share",
+      "savingTitle": "Saving…",
+      "savingBody": "Encoding your activity to FIT.",
+      "savedTitle": "Activity saved",
+      "savedBody": "Saved {duration} of rowing with {strokes, plural, one {# stroke} other {# strokes}}. Share it to upload to Strava or Training Peaks.",
+      "saveErrorTitle": "Couldn’t save activity",
+      "saveErrorBody": "Something went wrong while saving the FIT file. Try again.",
+      "discardTitle": "Discard activity?",
+      "discardBody": "This will delete the recording without saving. This can’t be undone.",
+      "shareUnavailable": "Sharing isn’t available on this device.",
+      "shareDialogTitle": "Share activity"
+    }
   }
 }

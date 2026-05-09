@@ -13,18 +13,32 @@
 module.exports = {
   testEnvironment: "node",
   testMatch: ["**/__tests__/**/*.test.ts"],
-  moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json"],
+  moduleFileExtensions: ["ts", "tsx", "js", "jsx", "mjs", "json"],
   transform: {
-    "^.+\\.(ts|tsx)$": [
+    "^.+\\.(ts|tsx|js|mjs)$": [
       "ts-jest",
       {
         // tsconfig already enables strict + ESNext target; reuse it so the
-        // test compilation matches the runtime build.
-        tsconfig: "tsconfig.json",
+        // test compilation matches the runtime build, but force CommonJS
+        // output so Jest can require() the resulting modules without
+        // experimental ESM. This also lets ts-jest transpile the
+        // @garmin/fitsdk ESM sources (see transformIgnorePatterns below).
+        tsconfig: {
+          allowJs: true,
+          module: "commonjs",
+          moduleResolution: "node",
+          esModuleInterop: true,
+          target: "ES2020",
+          jsx: "react-native",
+        },
         diagnostics: false,
       },
     ],
   },
+  // By default jest doesn't transform anything under node_modules. The
+  // @garmin/fitsdk package ships as plain ESM .js files, so we make an
+  // exception and run it through the same ts-jest transform.
+  transformIgnorePatterns: ["node_modules/(?!(@garmin/fitsdk)/)"],
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/$1",
   },

@@ -11,6 +11,9 @@ importers:
       '@expo/vector-icons':
         specifier: ^15.0.3
         version: 15.1.1(expo-font@14.0.11(expo@54.0.34)(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
+      '@garmin/fitsdk':
+        specifier: ^21.202.0
+        version: 21.202.0
       '@react-native-async-storage/async-storage':
         specifier: 2.2.0
         version: 2.2.0(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))
@@ -32,6 +35,9 @@ importers:
       expo-dev-client:
         specifier: ^6.0.21
         version: 6.0.21(expo@54.0.34)
+      expo-file-system:
+        specifier: ~19.0.22
+        version: 19.0.22(expo@54.0.34)(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))
       expo-font:
         specifier: ~14.0.11
         version: 14.0.11(expo@54.0.34)(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
@@ -53,6 +59,9 @@ importers:
       expo-sensors:
         specifier: ~15.0.8
         version: 15.0.8(expo@54.0.34)(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))
+      expo-sharing:
+        specifier: ~14.0.8
+        version: 14.0.8(expo@54.0.34)
       expo-splash-screen:
         specifier: ~31.0.13
         version: 31.0.13(expo@54.0.34)(typescript@5.9.3)
@@ -928,6 +937,9 @@ packages:
 
   '@formatjs/icu-skeleton-parser@2.1.6':
     resolution: {integrity: sha512-9f1VQ2kaaLHK0WPU1OrAmiNKCKJwyoDmwNzQXbUa6XtFBOgHZ4YZURE8sSedHmMr0kvpB75OtplB0hMYkfdwfg==}
+
+  '@garmin/fitsdk@21.202.0':
+    resolution: {integrity: sha512-WeveKUCKZSehRdM6JY/n0embblH18z5sY0KkJye5Z9nJ8Qv2S6EEmoSuBrW2ew45OtTGph0bu4/jxlO6VRP+Qw==}
 
   '@humanfs/core@0.19.2':
     resolution: {integrity: sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA==}
@@ -2701,6 +2713,11 @@ packages:
   expo-server@1.0.6:
     resolution: {integrity: sha512-vb5TBtskvEdzYuW79lATXutOEBfW5m6U4EFpNjCVZTnI7S//SAsLQkYEpn+EDfn84m6VQfzSGkIVR6YPaScKFA==}
     engines: {node: '>=20.16.0'}
+
+  expo-sharing@14.0.8:
+    resolution: {integrity: sha512-A1pPr2iBrxypFDCWVAESk532HK+db7MFXbvO2sCV9ienaFXAk7lIBm6bkqgE6vzRd9O3RGdEGzYx80cYlc089Q==}
+    peerDependencies:
+      expo: '*'
 
   expo-splash-screen@31.0.13:
     resolution: {integrity: sha512-1epJLC1cDlwwj089R2h8cxaU5uk4ONVAC+vzGiTZH4YARQhL4Stlz1MbR6yAS173GMosvkE6CAeihR7oIbCkDA==}
@@ -6308,6 +6325,8 @@ snapshots:
 
   '@formatjs/icu-skeleton-parser@2.1.6': {}
 
+  '@garmin/fitsdk@21.202.0': {}
+
   '@humanfs/core@0.19.2':
     dependencies:
       '@humanfs/types': 0.15.0
@@ -8432,6 +8451,10 @@ snapshots:
       react-native: 0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0)
 
   expo-server@1.0.6: {}
+
+  expo-sharing@14.0.8(expo@54.0.34):
+    dependencies:
+      expo: 54.0.34(@babel/core@7.29.0)(@expo/metro-runtime@6.1.2)(expo-router@6.0.23)(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)(typescript@5.9.3)
 
   expo-splash-screen@31.0.13(expo@54.0.34)(typescript@5.9.3):
     dependencies:
