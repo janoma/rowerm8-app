@@ -1,3 +1,10 @@
+// MUST be the very first import: `intl-messageformat` (pulled in by
+// `i18next-icu` below) reads `Intl.Locale` and `Intl.PluralRules` at
+// module load. If those globals aren't patched in before any other
+// import runs, ICU silently falls back to returning the raw template
+// string and the UI shows literal `{count, plural, ...}` placeholders.
+import "./intl-polyfill";
+
 // `use` is aliased because React's `use` hook lint (`react-hooks/rules-of-hooks`)
 // treats any `use*()` call as a hook invocation and would flag the i18next
 // initializer below.

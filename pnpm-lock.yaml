@@ -11,6 +11,15 @@ importers:
       '@expo/vector-icons':
         specifier: ^15.0.3
         version: 15.1.1(expo-font@14.0.11(expo@54.0.34)(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
+      '@formatjs/intl-getcanonicallocales':
+        specifier: ^3.2.6
+        version: 3.2.6
+      '@formatjs/intl-locale':
+        specifier: ^5.3.5
+        version: 5.3.5
+      '@formatjs/intl-pluralrules':
+        specifier: ^6.3.5
+        version: 6.3.5
       '@garmin/fitsdk':
         specifier: ^21.202.0
         version: 21.202.0
@@ -1100,14 +1109,35 @@ packages:
     resolution: {integrity: sha512-wC562eD3gS6vO2tWHToFhlFnmHKfKHgF1oyvojeSkLK/ZYop1bMU+7cOMiF9Sq70CzcsLy/EMRy/uRc76QmNRw==}
     hasBin: true
 
+  '@formatjs/bigdecimal@0.2.3':
+    resolution: {integrity: sha512-d7LpumdsbHueHdlVMos2yROIumyisUJNlFAk3PpN/5YcnXhWnkYmeiaQnOjqmmGx8BbaphoIyaF2CPus3cownw==}
+
   '@formatjs/fast-memoize@3.1.3':
     resolution: {integrity: sha512-Ocd1vPuD68rW6BJDuAOtnnc1GPeVepY5kZXML1psGVFQ+1Q8CfkftT3Tnam+Mxx97Pz08jIEDCotl/GV+Naccg==}
+
+  '@formatjs/fast-memoize@3.1.4':
+    resolution: {integrity: sha512-Lbke1aOrsygKKR09Ux0NrZgbTqpDmiwXOgzyDOJ8Owr1zd5qOKTauf62hH+Seeku3ju77rHWH9I5SfX2CN0vuA==}
 
   '@formatjs/icu-messageformat-parser@3.5.6':
     resolution: {integrity: sha512-04ZjRIeQCnR/h32wBP9/S7rkyy1hLAs2fXJcNwc7hseJd//K9TMBqK0ukb4dXqnALKQ9m5ruZeOD2qqEkK9ixg==}
 
   '@formatjs/icu-skeleton-parser@2.1.6':
     resolution: {integrity: sha512-9f1VQ2kaaLHK0WPU1OrAmiNKCKJwyoDmwNzQXbUa6XtFBOgHZ4YZURE8sSedHmMr0kvpB75OtplB0hMYkfdwfg==}
+
+  '@formatjs/intl-getcanonicallocales@3.2.6':
+    resolution: {integrity: sha512-vHJthiNaPxUnIvzXUGcea770v4Hg2UEDVglusg9l8O7R0k/nJgzbre/pJidohkB0dt1uRcDPD+WwrpAir3hLwQ==}
+
+  '@formatjs/intl-locale@5.3.5':
+    resolution: {integrity: sha512-IeDGhU2nTNTmJbA9aIBKDLjSg4q57LYnb8+d0q7uYXmDBndo4oNufq2t9R7A9eeWngJAysvR3T8AHvPtudk2gQ==}
+
+  '@formatjs/intl-localematcher@0.8.6':
+    resolution: {integrity: sha512-AZRgUxj0q93lyF7Z5lFS85bLINXuBLX4R3tCKicO6fSWo6cvh9GQfoR3B1WlsqQwefZ1QORTivhInx7gM6HUzQ==}
+
+  '@formatjs/intl-pluralrules@6.3.5':
+    resolution: {integrity: sha512-E5Tv6pZL+OGhRqYo7QTzE0jj8Ym7O2HcIb0v7qQG/C70OQACZ5ha7cksI2ZqTouJ6blOAsmBauBFxkTFT7b55A==}
+
+  '@formatjs/intl-supportedvaluesof@2.3.4':
+    resolution: {integrity: sha512-oexqyYumVuwk4Gxm5LNaDOcUV/iHgGNaMc7zzYZaZsegAUPNlTTjwM0swnYyczmzz4Vor43boG5SYt+MbvKWng==}
 
   '@garmin/fitsdk@21.202.0':
     resolution: {integrity: sha512-WeveKUCKZSehRdM6JY/n0embblH18z5sY0KkJye5Z9nJ8Qv2S6EEmoSuBrW2ew45OtTGph0bu4/jxlO6VRP+Qw==}
@@ -6576,13 +6606,37 @@ snapshots:
       chalk: 4.1.2
       js-yaml: 4.1.1
 
+  '@formatjs/bigdecimal@0.2.3': {}
+
   '@formatjs/fast-memoize@3.1.3': {}
+
+  '@formatjs/fast-memoize@3.1.4': {}
 
   '@formatjs/icu-messageformat-parser@3.5.6':
     dependencies:
       '@formatjs/icu-skeleton-parser': 2.1.6
 
   '@formatjs/icu-skeleton-parser@2.1.6': {}
+
+  '@formatjs/intl-getcanonicallocales@3.2.6': {}
+
+  '@formatjs/intl-locale@5.3.5':
+    dependencies:
+      '@formatjs/intl-getcanonicallocales': 3.2.6
+      '@formatjs/intl-supportedvaluesof': 2.3.4
+
+  '@formatjs/intl-localematcher@0.8.6':
+    dependencies:
+      '@formatjs/fast-memoize': 3.1.4
+
+  '@formatjs/intl-pluralrules@6.3.5':
+    dependencies:
+      '@formatjs/bigdecimal': 0.2.3
+      '@formatjs/intl-localematcher': 0.8.6
+
+  '@formatjs/intl-supportedvaluesof@2.3.4':
+    dependencies:
+      '@formatjs/fast-memoize': 3.1.4
 
   '@garmin/fitsdk@21.202.0': {}
 

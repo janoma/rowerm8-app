@@ -35,10 +35,13 @@ module.exports = {
       },
     ],
   },
-  // By default jest doesn't transform anything under node_modules. The
-  // @garmin/fitsdk package ships as plain ESM .js files, so we make an
-  // exception and run it through the same ts-jest transform.
-  transformIgnorePatterns: ["node_modules/(?!(@garmin/fitsdk)/)"],
+  // By default jest doesn't transform anything under node_modules. A
+  // handful of our deps (the Garmin FIT SDK and the FormatJS / ICU stack
+  // pulled in by i18next-icu) ship as plain ESM .js files, so we make
+  // exceptions for them and run them through the same ts-jest transform.
+  transformIgnorePatterns: [
+    "node_modules/(?!(@garmin/fitsdk|intl-messageformat|@formatjs)/)",
+  ],
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/$1",
   },
