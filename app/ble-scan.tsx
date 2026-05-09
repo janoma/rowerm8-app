@@ -71,7 +71,7 @@ export default function BleScanScreen() {
   useEffect(() => {
     if (availability === "on" && !didAutoStartRef.current) {
       didAutoStartRef.current = true;
-      void startScan();
+      void startScan({ role: "motion" });
     }
   }, [availability, startScan]);
 
@@ -83,7 +83,7 @@ export default function BleScanScreen() {
 
   const handlePressDevice = async (device: ScannedDevice) => {
     setPendingId(device.id);
-    const connected = await ble.connect(device.id);
+    const connected = await ble.connect(device.id, "motion");
     setPendingId(null);
     if (connected) {
       const label =
@@ -173,7 +173,7 @@ export default function BleScanScreen() {
           </View>
         ) : null}
 
-        {ble.connectionError && pendingId === null ? (
+        {ble.motion.connectionError && pendingId === null ? (
           <View
             style={[
               styles.notice,
@@ -186,7 +186,7 @@ export default function BleScanScreen() {
             <ThemedText
               style={[styles.noticeText, { color: palette.noticeText }]}
             >
-              {t("scan.connectError", { error: ble.connectionError })}
+              {t("scan.connectError", { error: ble.motion.connectionError })}
             </ThemedText>
           </View>
         ) : null}
@@ -201,7 +201,7 @@ export default function BleScanScreen() {
             <ActivityIndicator size="small" color={palette.accent} />
           ) : (
             <Pressable
-              onPress={() => ble.startScan()}
+              onPress={() => ble.startScan({ role: "motion" })}
               hitSlop={8}
               accessibilityRole="button"
               accessibilityLabel={tc("actions.scanAgain")}

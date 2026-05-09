@@ -27,7 +27,9 @@ export function useBleStream({
   enabled: boolean;
   historyLength?: number;
 }): AccelerometerStream {
-  const { activeDecoder, subscribeData, connectionState } = useBle();
+  const { motion, subscribeData } = useBle();
+  const activeDecoder = motion.activeDecoder;
+  const connectionState = motion.connectionState;
   const [sample, setSample] = useState<AccelerometerSample | null>(null);
   const historiesRef = useRef<AxisHistories>(makeEmptyHistory(historyLength));
   const [historyVersion, setHistoryVersion] = useState(0);
@@ -44,7 +46,7 @@ export function useBleStream({
       return;
     }
 
-    const unsubscribe = subscribeData((bytes) => {
+    const unsubscribe = subscribeData("motion", (bytes) => {
       const frames = activeDecoder.decode(bytes);
       if (!frames.length) {
         return;

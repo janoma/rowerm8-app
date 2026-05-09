@@ -92,11 +92,11 @@ export default function RowScreen() {
   // device.
   const connected =
     (source === "phone" && stream.isAvailable && !stream.permissionDenied) ||
-    (source === "ble" && !!ble.activeDevice && stream.hasDecoder);
+    (source === "ble" && !!ble.motion.activeDevice && stream.hasDecoder);
 
   useEffect(() => {
-    if (source !== "ble" && ble.activeDevice) {
-      ble.disconnect();
+    if (source !== "ble" && ble.motion.activeDevice) {
+      ble.disconnect("motion");
     }
   }, [source, ble]);
 
@@ -137,7 +137,7 @@ export default function RowScreen() {
       return <RowMetricsCard {...metricsCardProps} />;
     }
 
-    if (!ble.activeDevice) {
+    if (!ble.motion.activeDevice) {
       return (
         <Notice palette={palette}>
           {deviceLabel
@@ -182,7 +182,7 @@ export default function RowScreen() {
             selected={source !== "none"}
             connected={connected}
             deviceLabel={deviceLabel}
-            batteryPercent={source === "ble" ? ble.batteryPercent : null}
+            batteryPercent={source === "ble" ? ble.motion.batteryPercent : null}
             onPressAction={() => setPickerOpen(true)}
           />
 

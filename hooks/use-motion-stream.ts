@@ -24,13 +24,13 @@ export function useMotionStream(): MotionStream {
   const { source } = useMotionSensor();
   const phone = useAccelerometerStream({ enabled: source === "phone" });
   const ble = useBleStream({ enabled: source === "ble" });
-  const { activeDecoder } = useBle();
+  const { motion } = useBle();
 
   if (source === "phone") {
     return { ...phone, source, hasDecoder: true };
   }
   if (source === "ble") {
-    return { ...ble, source, hasDecoder: !!activeDecoder };
+    return { ...ble, source, hasDecoder: !!motion.activeDecoder };
   }
   return {
     sample: null,

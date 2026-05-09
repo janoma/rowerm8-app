@@ -64,6 +64,8 @@ function loadBlePlx(): typeof import("react-native-ble-plx") | null {
   }
 }
 
+export type BleRole = "motion" | "hr";
+
 export type ScannedDevice = {
   id: string;
   name: string | null;
@@ -86,23 +88,42 @@ export type ConnectionState =
   | "disconnected"
   | "failed";
 
-export type BleContextValue = {
-  availability: BleAvailability;
-  scanning: boolean;
-  devices: ScannedDevice[];
-  scanError: string | null;
+export type BleSlot = {
   activeDevice: ScannedDevice | null;
   activeDecoder: SensorDecoder | null;
   connectionState: ConnectionState;
   connectionError: string | null;
   /** Last-known battery level for the active device, 0-100. */
   batteryPercent: number | null;
-  startScan: () => Promise<void>;
+};
+
+const EMPTY_SLOT: BleSlot = {
+  activeDevice: null,
+  activeDecoder: null,
+  connectionState: "idle",
+  connectionError: null,
+  batteryPercent: null,
+};
+
+export type StartScanArgs = {
+  role: BleRole;
+};
+
+export type BleContextValue = {
+  availability: BleAvailability;
+  scanning: boolean;
+  /** The role the most recent (or current) scan is targeting. */
+  scanRole: BleRole | null;
+  devices: ScannedDevice[];
+  scanError: string | null;
+  motion: BleSlot;
+  hr: BleSlot;
+  startScan: (args: StartScanArgs) => Promise<void>;
   stopScan: () => void;
-  connect: (deviceId: string) => Promise<ScannedDevice | null>;
-  disconnect: () => Promise<void>;
-  /** Subscribe to raw notification bytes from the active connection. */
-  subscribeData: (cb: (bytes: Uint8Array) => void) => () => void;
+  connect: (deviceId: string, role: BleRole) => Promise<ScannedDevice | null>;
+  disconnect: (role: BleRole) => Promise<void>;
+  /** Subscribe to raw notification bytes from the role's active connection. */
+  subscribeData: (role: BleRole, cb: (bytes: Uint8Array) => void) => () => void;
 };
 
 const BleContext = createContext<BleContextValue | null>(null);
@@ -173,30 +194,56 @@ function bytesToBase64(bytes: Uint8Array): string {
   return globalThis.btoa(binary);
 }
 
+type RoleResources = {
+  device: Device | null;
+  notifySub: Subscription | null;
+  batteryTimer: ReturnType<typeof setInterval> | null;
+  batteryFirstReadTimeout: ReturnType<typeof setTimeout> | null;
+  subscribers: Set<(bytes: Uint8Array) => void>;
+};
+
+function emptyResources(): RoleResources {
+  return {
+    device: null,
+    notifySub: null,
+    batteryTimer: null,
+    batteryFirstReadTimeout: null,
+    subscribers: new Set(),
+  };
+}
+
+const ROLES: BleRole[] = ["motion", "hr"];
+
 export function BleProvider({ children }: { children: React.ReactNode }) {
   const managerRef = useRef<BleManagerType | null>(null);
   const stateSubRef = useRef<Subscription | null>(null);
   const scanTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const notifySubRef = useRef<Subscription | null>(null);
-  const connectedDeviceRef = useRef<Device | null>(null);
-  const subscribersRef = useRef<Set<(bytes: Uint8Array) => void>>(new Set());
-  const batteryTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const batteryFirstReadTimeoutRef = useRef<ReturnType<
-    typeof setTimeout
-  > | null>(null);
+  // Per-role bookkeeping. Refs (not state) so subscriber lists, native
+  // device handles and battery timers survive re-renders without
+  // resubscribing the BLE notify characteristic.
+  const resourcesRef = useRef<Record<BleRole, RoleResources>>({
+    motion: emptyResources(),
+    hr: emptyResources(),
+  });
 
   const [availability, setAvailability] = useState<BleAvailability>("unknown");
   const [scanning, setScanning] = useState(false);
+  const [scanRole, setScanRole] = useState<BleRole | null>(null);
   const [devices, setDevices] = useState<Record<string, ScannedDevice>>({});
   const [scanError, setScanError] = useState<string | null>(null);
-  const [activeDevice, setActiveDevice] = useState<ScannedDevice | null>(null);
-  const [activeDecoder, setActiveDecoder] = useState<SensorDecoder | null>(
-    null,
+  const [motionSlot, setMotionSlot] = useState<BleSlot>(EMPTY_SLOT);
+  const [hrSlot, setHrSlot] = useState<BleSlot>(EMPTY_SLOT);
+
+  const setSlot = useCallback(
+    (role: BleRole, updater: (prev: BleSlot) => BleSlot) => {
+      if (role === "motion") {
+        setMotionSlot(updater);
+      } else {
+        setHrSlot(updater);
+      }
+    },
+    [],
   );
-  const [connectionState, setConnectionState] =
-    useState<ConnectionState>("idle");
-  const [connectionError, setConnectionError] = useState<string | null>(null);
-  const [batteryPercent, setBatteryPercent] = useState<number | null>(null);
 
   const ensureManager = useCallback((): BleManagerType | null => {
     if (managerRef.current) {
@@ -237,114 +284,143 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
     setScanning(false);
   }, []);
 
-  const startScan = useCallback(async () => {
-    const manager = ensureManager();
-    if (!manager) {
-      setScanError("Bluetooth is not available on this device.");
-      return;
+  const startScan = useCallback(
+    async ({ role }: StartScanArgs) => {
+      const manager = ensureManager();
+      if (!manager) {
+        setScanError("Bluetooth is not available on this device.");
+        return;
+      }
+
+      setScanError(null);
+      setDevices({});
+      setScanRole(role);
+      setScanning(true);
+
+      // For hr we'll filter on the standard Heart Rate service so non-HRMs
+      // don't even hit the JS bridge (added in a later milestone). Motion has
+      // no universal advertising signature (each vendor ships a custom service
+      // UUID), so we keep scanning everything and rely on the decoder registry
+      // to identify matches.
+      const filterServices: string[] | null = null;
+
+      try {
+        manager.startDeviceScan(
+          filterServices,
+          { allowDuplicates: false },
+          (error, device) => {
+            if (error) {
+              setScanError(error.message ?? "Scan failed.");
+              setScanning(false);
+              return;
+            }
+            if (!device) {
+              return;
+            }
+            setDevices((prev) => {
+              const existing = prev[device.id];
+              const incoming = toScannedDevice(device);
+              const merged: ScannedDevice = existing
+                ? {
+                    ...existing,
+                    name: incoming.name ?? existing.name,
+                    localName: incoming.localName ?? existing.localName,
+                    rssi: incoming.rssi ?? existing.rssi,
+                    serviceUUIDs:
+                      incoming.serviceUUIDs ?? existing.serviceUUIDs,
+                    decoder: incoming.decoder ?? existing.decoder,
+                  }
+                : incoming;
+              return { ...prev, [device.id]: merged };
+            });
+          },
+        );
+
+        scanTimerRef.current = setTimeout(() => {
+          stopScan();
+        }, SCAN_DURATION_MS);
+      } catch (e) {
+        const message = e instanceof Error ? e.message : "Scan failed.";
+        setScanError(message);
+        setScanning(false);
+      }
+    },
+    [ensureManager, stopScan],
+  );
+
+  const stopBatteryPolling = useCallback((role: BleRole) => {
+    const r = resourcesRef.current[role];
+    if (r.batteryTimer) {
+      clearInterval(r.batteryTimer);
+      r.batteryTimer = null;
     }
-
-    setScanError(null);
-    setDevices({});
-    setScanning(true);
-
-    try {
-      manager.startDeviceScan(
-        null,
-        { allowDuplicates: false },
-        (error, device) => {
-          if (error) {
-            setScanError(error.message ?? "Scan failed.");
-            setScanning(false);
-            return;
-          }
-          if (!device) {
-            return;
-          }
-          setDevices((prev) => {
-            const existing = prev[device.id];
-            const incoming = toScannedDevice(device);
-            const merged: ScannedDevice = existing
-              ? {
-                  ...existing,
-                  name: incoming.name ?? existing.name,
-                  localName: incoming.localName ?? existing.localName,
-                  rssi: incoming.rssi ?? existing.rssi,
-                  serviceUUIDs: incoming.serviceUUIDs ?? existing.serviceUUIDs,
-                  decoder: incoming.decoder ?? existing.decoder,
-                }
-              : incoming;
-            return { ...prev, [device.id]: merged };
-          });
-        },
-      );
-
-      scanTimerRef.current = setTimeout(() => {
-        stopScan();
-      }, SCAN_DURATION_MS);
-    } catch (e) {
-      const message = e instanceof Error ? e.message : "Scan failed.";
-      setScanError(message);
-      setScanning(false);
-    }
-  }, [ensureManager, stopScan]);
-
-  const stopBatteryPolling = useCallback(() => {
-    if (batteryTimerRef.current) {
-      clearInterval(batteryTimerRef.current);
-      batteryTimerRef.current = null;
-    }
-    if (batteryFirstReadTimeoutRef.current) {
-      clearTimeout(batteryFirstReadTimeoutRef.current);
-      batteryFirstReadTimeoutRef.current = null;
+    if (r.batteryFirstReadTimeout) {
+      clearTimeout(r.batteryFirstReadTimeout);
+      r.batteryFirstReadTimeout = null;
     }
   }, []);
 
-  const teardownConnection = useCallback(async () => {
-    stopBatteryPolling();
-    if (notifySubRef.current) {
-      try {
-        notifySubRef.current.remove();
-      } catch {
-        // ignore
+  const teardownConnection = useCallback(
+    async (role: BleRole) => {
+      stopBatteryPolling(role);
+      const r = resourcesRef.current[role];
+      if (r.notifySub) {
+        try {
+          r.notifySub.remove();
+        } catch {
+          // ignore
+        }
+        r.notifySub = null;
       }
-      notifySubRef.current = null;
-    }
-    const device = connectedDeviceRef.current;
-    if (device) {
-      try {
-        await device.cancelConnection();
-      } catch {
-        // ignore disconnect errors
+      const device = r.device;
+      if (device) {
+        try {
+          await device.cancelConnection();
+        } catch {
+          // ignore disconnect errors
+        }
+        r.device = null;
       }
-      connectedDeviceRef.current = null;
-    }
-  }, [stopBatteryPolling]);
+    },
+    [stopBatteryPolling],
+  );
 
-  const disconnect = useCallback(async () => {
-    await teardownConnection();
-    setActiveDevice(null);
-    setActiveDecoder(null);
-    setConnectionState("disconnected");
-    setConnectionError(null);
-    setBatteryPercent(null);
-  }, [teardownConnection]);
+  const disconnect = useCallback(
+    async (role: BleRole) => {
+      await teardownConnection(role);
+      setSlot(role, () => ({
+        activeDevice: null,
+        activeDecoder: null,
+        connectionState: "disconnected",
+        connectionError: null,
+        batteryPercent: null,
+      }));
+    },
+    [setSlot, teardownConnection],
+  );
 
   const connect = useCallback(
-    async (deviceId: string): Promise<ScannedDevice | null> => {
+    async (deviceId: string, role: BleRole): Promise<ScannedDevice | null> => {
       const manager = ensureManager();
       if (!manager) {
-        setConnectionError("Bluetooth is not available on this device.");
-        setConnectionState("failed");
+        setSlot(role, (prev) => ({
+          ...prev,
+          connectionError: "Bluetooth is not available on this device.",
+          connectionState: "failed",
+        }));
         return null;
       }
 
       stopScan();
-      await teardownConnection();
+      await teardownConnection(role);
 
-      setConnectionState("connecting");
-      setConnectionError(null);
-      setBatteryPercent(null);
+      setSlot(role, () => ({
+        activeDevice: null,
+        activeDecoder: null,
+        connectionState: "connecting",
+        connectionError: null,
+        batteryPercent: null,
+      }));
 
       try {
         const connected = await manager.connectToDevice(deviceId, {
@@ -353,29 +429,34 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
         await connected.discoverAllServicesAndCharacteristics();
         const scanned = toScannedDevice(connected);
         const decoder = scanned.decoder;
+        const r = resourcesRef.current[role];
 
         if (decoder) {
-          notifySubRef.current = connected.monitorCharacteristicForService(
+          r.notifySub = connected.monitorCharacteristicForService(
             decoder.serviceUuid,
             decoder.notifyUuid,
             (error, characteristic) => {
               if (error) {
-                setConnectionError(error.message ?? "Connection lost.");
-                setConnectionState("disconnected");
+                setSlot(role, (prev) => ({
+                  ...prev,
+                  connectionError: error.message ?? "Connection lost.",
+                  connectionState: "disconnected",
+                }));
                 return;
               }
               if (!characteristic?.value) {
                 return;
               }
               const bytes = base64ToBytes(characteristic.value);
-              subscribersRef.current.forEach((cb) => cb(bytes));
+              r.subscribers.forEach((cb) => cb(bytes));
               // Pull battery responses out of the same notification stream.
               // We rely on the decoder being closed-over here instead of
               // reading state to avoid a stale-decoder race during reconnects.
               const frames = decoder.decode(bytes);
               const batteryFrame = frames.find((f) => f.batteryPercent != null);
               if (batteryFrame?.batteryPercent != null) {
-                setBatteryPercent(batteryFrame.batteryPercent);
+                const percent = batteryFrame.batteryPercent;
+                setSlot(role, (prev) => ({ ...prev, batteryPercent: percent }));
               }
               if (BLE_TRACE_LOGS) {
                 // Suppress the 25-50 Hz accel chatter: any chunk whose
@@ -391,7 +472,9 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
                   );
                 if (!isAllAccel) {
                   console.log(
-                    "[ble] notif",
+                    "[ble]",
+                    role,
+                    "notif",
                     hexBytes(bytes),
                     "→ frames:",
                     frames.map((f) => Object.keys(f).join(",")).join(" | "),
@@ -402,10 +485,14 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
           );
         }
 
-        connectedDeviceRef.current = connected;
-        setActiveDevice(scanned);
-        setActiveDecoder(decoder);
-        setConnectionState("connected");
+        r.device = connected;
+        setSlot(role, () => ({
+          activeDevice: scanned,
+          activeDecoder: decoder,
+          connectionState: "connected",
+          connectionError: null,
+          batteryPercent: null,
+        }));
 
         // Fire vendor-specific config (e.g. unlock + output rate) AFTER we mark the
         // connection live, so the UI never blocks on these writes. iOS sometimes
@@ -428,10 +515,12 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
                 // WitMotion's controller needs a small gap between register writes.
                 await new Promise((resolve) => setTimeout(resolve, 50));
               } catch (e) {
-                console.warn("[ble] init command failed", e);
+                console.warn("[ble]", role, "init command failed", e);
               }
             }
-          })().catch((e) => console.warn("[ble] init sequence failed", e));
+          })().catch((e) =>
+            console.warn("[ble]", role, "init sequence failed", e),
+          );
         }
 
         // Periodic battery read. We schedule on intervals rather than tying it
@@ -444,7 +533,7 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
           const writeBattery = async () => {
             const t0 = Date.now();
             if (BLE_DEBUG_LOGS) {
-              console.log("[ble] battery read → write", hexBytes(cmd));
+              console.log("[ble]", role, "battery read → write", hexBytes(cmd));
             }
             try {
               await connected.writeCharacteristicWithResponseForService(
@@ -454,20 +543,22 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
               );
               if (BLE_DEBUG_LOGS) {
                 console.log(
-                  "[ble] battery read OK in",
+                  "[ble]",
+                  role,
+                  "battery read OK in",
                   Date.now() - t0,
                   "ms (waiting for response on notify)",
                 );
               }
             } catch (e) {
-              console.warn("[ble] battery read failed", e);
+              console.warn("[ble]", role, "battery read failed", e);
             }
           };
-          batteryFirstReadTimeoutRef.current = setTimeout(() => {
-            batteryFirstReadTimeoutRef.current = null;
+          r.batteryFirstReadTimeout = setTimeout(() => {
+            r.batteryFirstReadTimeout = null;
             writeBattery().catch(() => {});
           }, BATTERY_FIRST_READ_DELAY_MS);
-          batteryTimerRef.current = setInterval(() => {
+          r.batteryTimer = setInterval(() => {
             writeBattery().catch(() => {});
           }, BATTERY_POLL_INTERVAL_MS);
         }
@@ -475,24 +566,30 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
         return scanned;
       } catch (e) {
         const message = e instanceof Error ? e.message : "Failed to connect.";
-        setConnectionError(message);
-        setConnectionState("failed");
-        await teardownConnection();
-        setActiveDevice(null);
-        setActiveDecoder(null);
-        setBatteryPercent(null);
+        await teardownConnection(role);
+        setSlot(role, () => ({
+          activeDevice: null,
+          activeDecoder: null,
+          connectionState: "failed",
+          connectionError: message,
+          batteryPercent: null,
+        }));
         return null;
       }
     },
-    [ensureManager, stopScan, teardownConnection],
+    [ensureManager, setSlot, stopScan, teardownConnection],
   );
 
-  const subscribeData = useCallback((cb: (bytes: Uint8Array) => void) => {
-    subscribersRef.current.add(cb);
-    return () => {
-      subscribersRef.current.delete(cb);
-    };
-  }, []);
+  const subscribeData = useCallback(
+    (role: BleRole, cb: (bytes: Uint8Array) => void) => {
+      const subs = resourcesRef.current[role].subscribers;
+      subs.add(cb);
+      return () => {
+        subs.delete(cb);
+      };
+    },
+    [],
+  );
 
   useEffect(() => {
     // Eagerly create the BleManager so its onStateChange subscription resolves
@@ -503,7 +600,9 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
     ensureManager();
     return () => {
       stopScan();
-      teardownConnection().catch(() => {});
+      ROLES.forEach((role) => {
+        teardownConnection(role).catch(() => {});
+      });
       stateSubRef.current?.remove();
       stateSubRef.current = null;
       const manager = managerRef.current;
@@ -527,13 +626,11 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
     () => ({
       availability,
       scanning,
+      scanRole,
       devices: sortedDevices,
       scanError,
-      activeDevice,
-      activeDecoder,
-      connectionState,
-      connectionError,
-      batteryPercent,
+      motion: motionSlot,
+      hr: hrSlot,
       startScan,
       stopScan,
       connect,
@@ -543,13 +640,11 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
     [
       availability,
       scanning,
+      scanRole,
       sortedDevices,
       scanError,
-      activeDevice,
-      activeDecoder,
-      connectionState,
-      connectionError,
-      batteryPercent,
+      motionSlot,
+      hrSlot,
       startScan,
       stopScan,
       connect,
