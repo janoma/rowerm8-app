@@ -10,12 +10,14 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { PLACEMENT_DONT_SHOW_KEY } from "@/constants/storage-keys";
 import { useLocale } from "@/contexts/locale-context";
+import { useTheme } from "@/lib/design-system";
 import { findLanguage } from "@/lib/i18n";
 
 export default function SettingsScreen() {
   const { t } = useTranslation("settings");
   const { t: tc } = useTranslation("common");
   const { prefs, resolved } = useLocale();
+  const { prefScheme, scheme } = useTheme();
 
   const handleResetPlacement = () => {
     Alert.alert(
@@ -43,6 +45,15 @@ export default function SettingsScreen() {
 
   const unitsSubtitle = describeUnits(prefs, resolved, t);
 
+  // Mirror the language-row pattern: when the user is on "auto", show
+  // what the OS resolves to right now in parens; otherwise just the
+  // pinned value.
+  const appearanceValue = t(`appearance.inline.${scheme}`);
+  const appearanceSubtitle =
+    prefScheme === "auto"
+      ? t("appearance.row.subtitleAuto", { value: appearanceValue })
+      : t("appearance.row.subtitle", { value: appearanceValue });
+
   return (
     <ThemedView style={styles.root}>
       <SafeAreaView edges={["top"]} style={styles.safeArea}>
@@ -55,6 +66,14 @@ export default function SettingsScreen() {
           </ThemedText>
 
           <View style={styles.sections}>
+            <SettingsSection header={t("sections.appearance")}>
+              <SettingsRow
+                label={t("appearance.row.label")}
+                subtitle={appearanceSubtitle}
+                onPress={() => router.push("/settings/appearance")}
+              />
+            </SettingsSection>
+
             <SettingsSection header={t("sections.language")}>
               <SettingsRow
                 label={t("language.row.label")}

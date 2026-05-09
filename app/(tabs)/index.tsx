@@ -19,36 +19,14 @@ import {
   useMotionSensor,
 } from "@/contexts/motion-sensor-context";
 import { useActivities } from "@/hooks/use-activities";
-import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useHeartRateStream } from "@/hooks/use-heart-rate-stream";
 import { useMotionStream } from "@/hooks/use-motion-stream";
-
-const COLORS = {
-  light: {
-    helper: "#687076",
-    sectionLabel: "#687076",
-    accent: "#0a7ea4",
-    cardBg: "#FFFFFF",
-    cardBorder: "#E2E5E8",
-    cardHelper: "#687076",
-    chevron: "#9BA1A6",
-  },
-  dark: {
-    helper: "#9BA1A6",
-    sectionLabel: "#9BA1A6",
-    accent: "#3DB7E0",
-    cardBg: "#181B1F",
-    cardBorder: "#2A2E33",
-    cardHelper: "#9BA1A6",
-    chevron: "#6E7174",
-  },
-} as const;
+import { useTheme } from "@/lib/design-system";
 
 const RECENT_PEEK_LIMIT = 3;
 
 export default function HomeScreen() {
-  const scheme = useColorScheme() ?? "light";
-  const palette = COLORS[scheme];
+  const { tokens } = useTheme();
   const { t } = useTranslation("home");
   const { t: tSensor } = useTranslation("sensor");
   const { t: tRow } = useTranslation("row");
@@ -141,12 +119,17 @@ export default function HomeScreen() {
           <ThemedText type="title" style={styles.title}>
             {t("title")}
           </ThemedText>
-          <ThemedText style={[styles.subtitle, { color: palette.helper }]}>
+          <ThemedText
+            style={[styles.subtitle, { color: tokens.colors.textSecondary }]}
+          >
             {t("subtitle")}
           </ThemedText>
 
           <ThemedText
-            style={[styles.sectionLabel, { color: palette.sectionLabel }]}
+            style={[
+              styles.sectionLabel,
+              { color: tokens.colors.textSecondary },
+            ]}
           >
             {t("devices.header")}
           </ThemedText>
@@ -178,7 +161,9 @@ export default function HomeScreen() {
             onPressAction={() => router.push("/ble-scan?role=hr")}
           />
 
-          <ThemedText style={[styles.helper, { color: palette.helper }]}>
+          <ThemedText
+            style={[styles.helper, { color: tokens.colors.textSecondary }]}
+          >
             {t("devices.helper")}
           </ThemedText>
 
@@ -186,7 +171,10 @@ export default function HomeScreen() {
             <>
               <View style={styles.recentHeaderRow}>
                 <ThemedText
-                  style={[styles.sectionLabel, { color: palette.sectionLabel }]}
+                  style={[
+                    styles.sectionLabel,
+                    { color: tokens.colors.textSecondary },
+                  ]}
                 >
                   {t("recent.header")}
                 </ThemedText>
@@ -197,7 +185,7 @@ export default function HomeScreen() {
                   accessibilityLabel={t("recent.a11ySeeAll")}
                 >
                   <ThemedText
-                    style={[styles.seeAll, { color: palette.accent }]}
+                    style={[styles.seeAll, { color: tokens.colors.accent }]}
                   >
                     {t("recent.seeAll")}
                   </ThemedText>
@@ -207,12 +195,6 @@ export default function HomeScreen() {
                 <ActivityCard
                   key={activity.id}
                   activity={activity}
-                  palette={{
-                    cardBg: palette.cardBg,
-                    cardBorder: palette.cardBorder,
-                    cardHelper: palette.cardHelper,
-                    chevron: palette.chevron,
-                  }}
                   compact
                   onPress={() =>
                     router.push({

@@ -4,17 +4,16 @@ import { useTranslation } from "react-i18next";
 
 import { HapticTab } from "@/components/haptic-tab";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Colors } from "@/constants/theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useTheme } from "@/lib/design-system";
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
+  const { tokens } = useTheme();
   const { t } = useTranslation("tabs");
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? "light"].tint,
+        tabBarActiveTintColor: tokens.colors.accent,
         headerShown: false,
         tabBarButton: HapticTab,
       }}

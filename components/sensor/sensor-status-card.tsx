@@ -3,36 +3,8 @@ import { Pressable, StyleSheet, View } from "react-native";
 
 import { BatteryIndicator } from "@/components/ble/battery-indicator";
 import { ThemedText } from "@/components/themed-text";
-import { IconSymbol } from "@/components/ui/icon-symbol";
 import type { IconSymbolName } from "@/components/ui/icon-symbol";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-
-const COLORS = {
-  light: {
-    surface: "#F2F3F5",
-    surfaceBorder: "#E4E6EA",
-    label: "#687076",
-    accent: "#0a7ea4",
-    success: "#1F9D55",
-    warning: "#E08A1E",
-    warningBg: "rgba(224, 138, 30, 0.15)",
-    successBg: "rgba(31, 157, 85, 0.15)",
-    liveValue: "#11181C",
-    separator: "#C7CACE",
-  },
-  dark: {
-    surface: "#1F2224",
-    surfaceBorder: "#2A2D30",
-    label: "#9BA1A6",
-    accent: "#3DB7E0",
-    success: "#34C759",
-    warning: "#FFB020",
-    warningBg: "rgba(255, 176, 32, 0.18)",
-    successBg: "rgba(52, 199, 89, 0.18)",
-    liveValue: "#ECEDEE",
-    separator: "#3A3D40",
-  },
-} as const;
+import { Card, Divider, Icon, useTheme } from "@/lib/design-system";
 
 export type SensorKind = "motion" | "hr";
 
@@ -72,15 +44,14 @@ export function SensorStatusCard({
   liveValue = null,
   onPressAction,
 }: Props) {
-  const scheme = useColorScheme() ?? "light";
-  const palette = COLORS[scheme];
+  const { tokens } = useTheme();
   const { t } = useTranslation("sensor");
 
   const statusIcon = connected
     ? "checkmark.circle.fill"
     : "exclamationmark.triangle.fill";
-  const badgeColor = connected ? palette.success : palette.warning;
-  const badgeBg = connected ? palette.successBg : palette.warningBg;
+  const badgeColor = connected ? tokens.colors.success : tokens.colors.warning;
+  const badgeBg = connected ? tokens.colors.successBg : tokens.colors.warningBg;
   const valueText = selected
     ? (deviceLabel ?? t("status.selected"))
     : t("status.notSelected");
@@ -97,34 +68,38 @@ export function SensorStatusCard({
   const showBottomRow = showBattery || showLive;
 
   return (
-    <View
-      style={[
-        styles.card,
-        {
-          backgroundColor: palette.surface,
-          borderColor: palette.surfaceBorder,
-        },
-      ]}
-    >
-      <View style={[styles.iconBadge, { backgroundColor: badgeBg }]}>
+    <Card variant="elevated" padding="md" style={styles.card}>
+      <View
+        style={[
+          styles.iconBadge,
+          {
+            backgroundColor: badgeBg,
+            borderRadius: tokens.radius.pill,
+          },
+        ]}
+      >
         {/* Selected = primary kind icon; not selected = warning glyph. The
             badge background already telegraphs status with colour, so the
             kind icon stays useful as a quick "which sensor is this" cue. */}
-        <IconSymbol
+        <Icon
           name={selected ? KIND_ICONS[kind] : statusIcon}
           size={26}
           color={badgeColor}
         />
       </View>
       <View style={styles.textBlock}>
-        <ThemedText style={[styles.label, { color: palette.label }]}>
+        <ThemedText
+          style={[styles.label, { color: tokens.colors.textSecondary }]}
+        >
           {t(`status.${kind}.label`)}
         </ThemedText>
         <ThemedText style={styles.value} numberOfLines={1}>
           {valueText}
         </ThemedText>
         {showSubtitle ? (
-          <ThemedText style={[styles.subtitle, { color: palette.warning }]}>
+          <ThemedText
+            style={[styles.subtitle, { color: tokens.colors.warning }]}
+          >
             {t("status.notConnected")}
           </ThemedText>
         ) : null}
@@ -138,16 +113,11 @@ export function SensorStatusCard({
               />
             ) : null}
             {showBattery && showLive ? (
-              <View
-                style={[
-                  styles.separator,
-                  { backgroundColor: palette.separator },
-                ]}
-              />
+              <Divider style={styles.verticalDivider} />
             ) : null}
             {showLive ? (
               <ThemedText
-                style={[styles.liveValue, { color: palette.liveValue }]}
+                style={[styles.liveValue, { color: tokens.colors.text }]}
               >
                 {liveValue}
               </ThemedText>
@@ -161,11 +131,11 @@ export function SensorStatusCard({
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel}
       >
-        <ThemedText style={[styles.action, { color: palette.accent }]}>
+        <ThemedText style={[styles.action, { color: tokens.colors.accent }]}>
           {actionText}
         </ThemedText>
       </Pressable>
-    </View>
+    </Card>
   );
 }
 
@@ -173,16 +143,11 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 16,
-    borderWidth: StyleSheet.hairlineWidth,
     gap: 14,
   },
   iconBadge: {
     width: 44,
     height: 44,
-    borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -213,7 +178,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
   },
-  separator: {
+  // The Divider primitive is a horizontal hairline by default; here we want a
+  // 1×12 vertical separator between the battery and the live value, so we
+  // override its dimensions.
+  verticalDivider: {
     width: 1,
     height: 12,
   },

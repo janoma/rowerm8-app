@@ -1,78 +1,36 @@
 import { router } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  StyleSheet,
-  View,
-} from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ActivityIndicator, Alert, StyleSheet, View } from "react-native";
 
 import { RowMetricsCard } from "@/components/row/row-metrics-card";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useBle } from "@/contexts/ble-context";
 import { useMotionSensor } from "@/contexts/motion-sensor-context";
-import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useHeartRateStream } from "@/hooks/use-heart-rate-stream";
 import { useMotionStream } from "@/hooks/use-motion-stream";
 import { useStrokeSession } from "@/hooks/use-stroke-session";
 import { createActivityRecorder } from "@/lib/activity/recorder";
 import { shareFitFile } from "@/lib/activity/share";
 import { saveActivity, type StoredActivity } from "@/lib/activity/storage";
+import {
+  AppHeader,
+  Banner,
+  Button,
+  EmptyState,
+  Stack,
+  ZoneBar,
+  useTheme,
+} from "@/lib/design-system";
 import { formatDuration } from "@/lib/format/time";
-
-const COLORS = {
-  light: {
-    accent: "#0a7ea4",
-    helper: "#687076",
-    placeholderBorder: "#D1D5DA",
-    placeholderText: "#9BA1A6",
-    permissionBg: "rgba(224, 138, 30, 0.12)",
-    permissionBorder: "rgba(224, 138, 30, 0.4)",
-    permissionText: "#9C5E0E",
-    primaryBg: "#0a7ea4",
-    primaryText: "#FFFFFF",
-    dangerBg: "#C5283D",
-    dangerText: "#FFFFFF",
-    secondaryBg: "rgba(10, 126, 164, 0.12)",
-    secondaryText: "#0a7ea4",
-    successBg: "rgba(46, 160, 67, 0.12)",
-    successBorder: "rgba(46, 160, 67, 0.4)",
-    successText: "#1F6F2C",
-  },
-  dark: {
-    accent: "#3DB7E0",
-    helper: "#9BA1A6",
-    placeholderBorder: "#2F3236",
-    placeholderText: "#6E7174",
-    permissionBg: "rgba(255, 176, 32, 0.14)",
-    permissionBorder: "rgba(255, 176, 32, 0.45)",
-    permissionText: "#FFB020",
-    primaryBg: "#3DB7E0",
-    primaryText: "#0B1115",
-    dangerBg: "#E94B5E",
-    dangerText: "#0B1115",
-    secondaryBg: "rgba(61, 183, 224, 0.18)",
-    secondaryText: "#7CD3F2",
-    successBg: "rgba(70, 200, 100, 0.16)",
-    successBorder: "rgba(70, 200, 100, 0.45)",
-    successText: "#7BE08F",
-  },
-} as const;
-
-type Palette = (typeof COLORS)[keyof typeof COLORS];
+import { zoneForBpm } from "@/lib/hr/zones";
 
 /** Recording lifecycle states. The UI flips between primary buttons (Start, Stop, Share) and notice content based on this. */
 type RecordingPhase = "armed" | "running" | "saving" | "saved";
 
 export default function FreeRowScreen() {
-  const scheme = useColorScheme() ?? "light";
-  const palette = COLORS[scheme];
-  const insets = useSafeAreaInsets();
+  const { tokens } = useTheme();
   const { source, deviceLabel: rawDeviceLabel } = useMotionSensor();
   const stream = useMotionStream();
   const strokeSession = useStrokeSession();
@@ -237,66 +195,62 @@ export default function FreeRowScreen() {
     sampleRateHz: stream.sampleRateHz,
   };
 
+  const currentZone = zoneForBpm(heartRate.bpm);
+
   const renderDataSection = () => {
     if (source === "none") {
-      return (
-        <View
-          style={[
-            styles.placeholder,
-            { borderColor: palette.placeholderBorder },
-          ]}
-        >
-          <ThemedText
-            style={[styles.placeholderText, { color: palette.placeholderText }]}
-          >
-            {t("freeRow.placeholder")}
-          </ThemedText>
-        </View>
-      );
+      return <EmptyState>{t("freeRow.placeholder")}</EmptyState>;
     }
 
     if (source === "phone") {
       if (stream.permissionDenied) {
-        return <Notice palette={palette}>{t("phone.noPermission")}</Notice>;
+        return <Banner tone="warning">{t("phone.noPermission")}</Banner>;
       }
       if (!stream.isAvailable) {
-        return <Notice palette={palette}>{t("phone.noAccelerometer")}</Notice>;
+        return <Banner tone="warning">{t("phone.noAccelerometer")}</Banner>;
       }
-      return <RowMetricsCard {...metricsCardProps} />;
+      return renderMetrics();
     }
 
     if (!ble.motion.activeDevice) {
       return (
-        <Notice palette={palette}>
+        <Banner tone="warning">
           {deviceLabel
             ? t("ble.reconnect", { label: deviceLabel })
             : t("ble.reconnectFallback")}
-        </Notice>
+        </Banner>
       );
     }
 
     if (!stream.hasDecoder) {
       return (
-        <Notice palette={palette}>
+        <Banner tone="warning">
           {deviceLabel
             ? t("ble.noDecoder", { label: deviceLabel })
             : t("ble.noDecoderFallback")}
-        </Notice>
+        </Banner>
       );
     }
 
     if (!stream.isAvailable) {
       return (
-        <Notice palette={palette}>
+        <Banner tone="warning">
           {deviceLabel
             ? t("ble.connecting", { label: deviceLabel })
             : t("ble.connectingFallback")}
-        </Notice>
+        </Banner>
       );
     }
 
-    return <RowMetricsCard {...metricsCardProps} />;
+    return renderMetrics();
   };
+
+  const renderMetrics = () => (
+    <Stack gap="sm">
+      {heartRate.bpm != null ? <ZoneBar current={currentZone} /> : null}
+      <RowMetricsCard {...metricsCardProps} />
+    </Stack>
+  );
 
   const renderRecordingControls = () => {
     if (!motionReady && phase !== "saved") {
@@ -307,14 +261,20 @@ export default function FreeRowScreen() {
       return (
         <View style={styles.controlsBlock}>
           <ThemedText
-            style={[styles.controlsHelper, { color: palette.helper }]}
+            style={[
+              styles.controlsHelper,
+              { color: tokens.colors.textSecondary },
+            ]}
           >
             {t("freeRow.recording.armed")}
           </ThemedText>
-          <PrimaryButton
-            label={t("freeRow.recording.start")}
+          <Button
+            title={t("freeRow.recording.start")}
             onPress={handleStart}
-            palette={palette}
+            tone="accent"
+            variant="filled"
+            size="lg"
+            block
           />
         </View>
       );
@@ -324,14 +284,20 @@ export default function FreeRowScreen() {
       return (
         <View style={styles.controlsBlock}>
           <ThemedText
-            style={[styles.controlsHelper, { color: palette.helper }]}
+            style={[
+              styles.controlsHelper,
+              { color: tokens.colors.textSecondary },
+            ]}
           >
             {t("freeRow.recording.running")}
           </ThemedText>
-          <DangerButton
-            label={t("freeRow.recording.stop")}
+          <Button
+            title={t("freeRow.recording.stop")}
             onPress={handleStop}
-            palette={palette}
+            tone="danger"
+            variant="filled"
+            size="lg"
+            block
           />
         </View>
       );
@@ -340,9 +306,12 @@ export default function FreeRowScreen() {
     if (phase === "saving") {
       return (
         <View style={styles.controlsBlock}>
-          <ActivityIndicator color={palette.accent} />
+          <ActivityIndicator color={tokens.colors.accent} />
           <ThemedText
-            style={[styles.controlsHelper, { color: palette.helper }]}
+            style={[
+              styles.controlsHelper,
+              { color: tokens.colors.textSecondary },
+            ]}
           >
             {t("freeRow.recording.savingBody")}
           </ThemedText>
@@ -353,44 +322,35 @@ export default function FreeRowScreen() {
     // saved
     return (
       <View style={styles.controlsBlock}>
-        <View
-          style={[
-            styles.savedNotice,
-            {
-              backgroundColor: palette.successBg,
-              borderColor: palette.successBorder,
-            },
-          ]}
-        >
-          <ThemedText
-            style={[styles.savedTitle, { color: palette.successText }]}
-          >
-            {t("freeRow.recording.savedTitle")}
-          </ThemedText>
-          {savedActivity ? (
-            <ThemedText
-              style={[styles.savedBody, { color: palette.successText }]}
-            >
-              {t("freeRow.recording.savedBody", {
+        <Banner tone="success" title={t("freeRow.recording.savedTitle")}>
+          {savedActivity
+            ? t("freeRow.recording.savedBody", {
                 duration: formatDuration(savedActivity.summary.durationS),
                 strokes: savedActivity.summary.strokeCount,
-              })}
-            </ThemedText>
-          ) : null}
-        </View>
+              })
+            : ""}
+        </Banner>
         <View style={styles.savedActions}>
-          <PrimaryButton
-            label={t("freeRow.recording.share")}
-            onPress={handleShare}
-            palette={palette}
-            style={styles.savedActionFlex}
-          />
-          <SecondaryButton
-            label={t("freeRow.back")}
-            onPress={handleAcknowledgeSaved}
-            palette={palette}
-            style={styles.savedActionFlex}
-          />
+          <View style={styles.savedActionFlex}>
+            <Button
+              title={t("freeRow.recording.share")}
+              onPress={handleShare}
+              tone="accent"
+              variant="filled"
+              size="lg"
+              block
+            />
+          </View>
+          <View style={styles.savedActionFlex}>
+            <Button
+              title={t("freeRow.back")}
+              onPress={handleAcknowledgeSaved}
+              tone="neutral"
+              variant="tinted"
+              size="lg"
+              block
+            />
+          </View>
         </View>
       </View>
     );
@@ -398,25 +358,11 @@ export default function FreeRowScreen() {
 
   return (
     <ThemedView style={styles.root}>
-      <View style={[styles.safeTop, { paddingTop: Math.max(insets.top, 12) }]}>
-        <View style={styles.navBar}>
-          <Pressable
-            onPress={handleBack}
-            hitSlop={12}
-            accessibilityRole="button"
-            accessibilityLabel={t("freeRow.back")}
-            style={styles.backButton}
-          >
-            <IconSymbol name="chevron.left" size={20} color={palette.accent} />
-            <ThemedText style={[styles.backLabel, { color: palette.accent }]}>
-              {t("freeRow.back")}
-            </ThemedText>
-          </Pressable>
-          <ThemedText style={styles.navTitle}>{t("freeRow.title")}</ThemedText>
-          <View style={styles.navActionPlaceholder} />
-        </View>
-      </View>
-
+      <AppHeader
+        title={t("freeRow.title")}
+        onBack={handleBack}
+        backLabel={t("freeRow.back")}
+      />
       <View style={styles.body}>
         {renderDataSection()}
         {renderRecordingControls()}
@@ -425,175 +371,15 @@ export default function FreeRowScreen() {
   );
 }
 
-function Notice({
-  palette,
-  children,
-}: {
-  palette: Palette;
-  children: React.ReactNode;
-}) {
-  return (
-    <View
-      style={[
-        styles.notice,
-        {
-          backgroundColor: palette.permissionBg,
-          borderColor: palette.permissionBorder,
-        },
-      ]}
-    >
-      <ThemedText
-        style={[styles.noticeText, { color: palette.permissionText }]}
-      >
-        {children}
-      </ThemedText>
-    </View>
-  );
-}
-
-function PrimaryButton({
-  label,
-  onPress,
-  palette,
-  style,
-}: {
-  label: string;
-  onPress: () => void;
-  palette: Palette;
-  style?: object;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      style={({ pressed }) => [
-        styles.button,
-        { backgroundColor: palette.primaryBg, opacity: pressed ? 0.85 : 1 },
-        style,
-      ]}
-    >
-      <ThemedText style={[styles.buttonLabel, { color: palette.primaryText }]}>
-        {label}
-      </ThemedText>
-    </Pressable>
-  );
-}
-
-function DangerButton({
-  label,
-  onPress,
-  palette,
-  style,
-}: {
-  label: string;
-  onPress: () => void;
-  palette: Palette;
-  style?: object;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      style={({ pressed }) => [
-        styles.button,
-        { backgroundColor: palette.dangerBg, opacity: pressed ? 0.85 : 1 },
-        style,
-      ]}
-    >
-      <ThemedText style={[styles.buttonLabel, { color: palette.dangerText }]}>
-        {label}
-      </ThemedText>
-    </Pressable>
-  );
-}
-
-function SecondaryButton({
-  label,
-  onPress,
-  palette,
-  style,
-}: {
-  label: string;
-  onPress: () => void;
-  palette: Palette;
-  style?: object;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      style={({ pressed }) => [
-        styles.button,
-        { backgroundColor: palette.secondaryBg, opacity: pressed ? 0.85 : 1 },
-        style,
-      ]}
-    >
-      <ThemedText
-        style={[styles.buttonLabel, { color: palette.secondaryText }]}
-      >
-        {label}
-      </ThemedText>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-  },
-  safeTop: {
-    paddingHorizontal: 16,
-  },
-  navBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    height: 44,
-  },
-  backButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    minWidth: 60,
-  },
-  backLabel: {
-    fontSize: 17,
-    fontWeight: "500",
-  },
-  navTitle: {
-    fontSize: 17,
-    fontWeight: "600",
-  },
-  navActionPlaceholder: {
-    width: 60,
   },
   body: {
     flex: 1,
     paddingHorizontal: 20,
     paddingTop: 12,
     gap: 14,
-  },
-  placeholder: {
-    borderWidth: 1,
-    borderStyle: "dashed",
-    borderRadius: 14,
-    paddingVertical: 28,
-    paddingHorizontal: 18,
-    alignItems: "center",
-  },
-  placeholderText: {
-    fontSize: 14,
-    lineHeight: 18,
-    textAlign: "center",
-  },
-  notice: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  noticeText: {
-    fontSize: 14,
-    lineHeight: 18,
   },
   controlsBlock: {
     gap: 12,
@@ -603,32 +389,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     textAlign: "center",
-  },
-  button: {
-    paddingVertical: 14,
-    paddingHorizontal: 18,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  buttonLabel: {
-    fontSize: 17,
-    fontWeight: "600",
-  },
-  savedNotice: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    gap: 6,
-  },
-  savedTitle: {
-    fontSize: 15,
-    fontWeight: "600",
-  },
-  savedBody: {
-    fontSize: 14,
-    lineHeight: 18,
   },
   savedActions: {
     flexDirection: "row",

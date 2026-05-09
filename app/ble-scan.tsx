@@ -7,9 +7,9 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Text,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { DeviceCard } from "@/components/ble/device-card";
 import { ScanHero } from "@/components/ble/scan-hero";
@@ -19,33 +19,12 @@ import type { BleRole, ScannedDevice } from "@/contexts/ble-context";
 import { useBle } from "@/contexts/ble-context";
 import { useHeartRate } from "@/contexts/heart-rate-context";
 import { useMotionSensor } from "@/contexts/motion-sensor-context";
-import { useColorScheme } from "@/hooks/use-color-scheme";
+import { AppHeader, Banner, Stack, useTheme } from "@/lib/design-system";
 
 function parseRoleParam(raw: string | string[] | undefined): BleRole {
   const value = Array.isArray(raw) ? raw[0] : raw;
   return value === "hr" ? "hr" : "motion";
 }
-
-const COLORS = {
-  light: {
-    sectionLabel: "#687076",
-    accent: "#0a7ea4",
-    danger: "#D02E1F",
-    border: "#E4E6EA",
-    notice: "rgba(224, 138, 30, 0.12)",
-    noticeBorder: "rgba(224, 138, 30, 0.4)",
-    noticeText: "#9C5E0E",
-  },
-  dark: {
-    sectionLabel: "#9BA1A6",
-    accent: "#3DB7E0",
-    danger: "#FF6369",
-    border: "#2A2D30",
-    notice: "rgba(255, 176, 32, 0.14)",
-    noticeBorder: "rgba(255, 176, 32, 0.45)",
-    noticeText: "#FFB020",
-  },
-} as const;
 
 type HeroState =
   | "off"
@@ -56,9 +35,7 @@ type HeroState =
   | "complete";
 
 export default function BleScanScreen() {
-  const scheme = useColorScheme() ?? "light";
-  const palette = COLORS[scheme];
-  const insets = useSafeAreaInsets();
+  const { tokens } = useTheme();
   const ble = useBle();
   const motionSelection = useMotionSensor();
   const hrSelection = useHeartRate();
@@ -147,24 +124,21 @@ export default function BleScanScreen() {
 
   return (
     <ThemedView style={styles.root}>
-      <View style={[styles.safeTop, { paddingTop: Math.max(insets.top, 12) }]}>
-        <View style={styles.navBar}>
+      <AppHeader
+        title={t(`scan.navTitle.${role}`)}
+        leading={
           <Pressable
             onPress={close}
             hitSlop={12}
             accessibilityRole="button"
             accessibilityLabel={tc("actions.cancel")}
           >
-            <ThemedText style={[styles.navAction, { color: palette.accent }]}>
+            <Text style={[styles.cancelLabel, { color: tokens.colors.accent }]}>
               {tc("actions.cancel")}
-            </ThemedText>
+            </Text>
           </Pressable>
-          <ThemedText style={styles.navTitle}>
-            {t(`scan.navTitle.${role}`)}
-          </ThemedText>
-          <View style={styles.navActionPlaceholder} />
-        </View>
-      </View>
+        }
+      />
 
       <ScrollView
         style={styles.body}
@@ -177,50 +151,25 @@ export default function BleScanScreen() {
           subtitle={heroSubtitle}
         />
 
-        {ble.scanError ? (
-          <View
-            style={[
-              styles.notice,
-              {
-                backgroundColor: palette.notice,
-                borderColor: palette.noticeBorder,
-              },
-            ]}
-          >
-            <ThemedText
-              style={[styles.noticeText, { color: palette.noticeText }]}
-            >
-              {ble.scanError}
-            </ThemedText>
-          </View>
-        ) : null}
+        {ble.scanError ? <Banner tone="warning">{ble.scanError}</Banner> : null}
 
         {slot.connectionError && pendingId === null ? (
-          <View
-            style={[
-              styles.notice,
-              {
-                backgroundColor: palette.notice,
-                borderColor: palette.noticeBorder,
-              },
-            ]}
-          >
-            <ThemedText
-              style={[styles.noticeText, { color: palette.noticeText }]}
-            >
-              {t("scan.connectError", { error: slot.connectionError })}
-            </ThemedText>
-          </View>
+          <Banner tone="warning">
+            {t("scan.connectError", { error: slot.connectionError })}
+          </Banner>
         ) : null}
 
         <View style={styles.sectionHeaderRow}>
           <ThemedText
-            style={[styles.sectionHeader, { color: palette.sectionLabel }]}
+            style={[
+              styles.sectionHeader,
+              { color: tokens.colors.textSecondary },
+            ]}
           >
             {t(`scan.section.${role}`, { count: supportedDevices.length })}
           </ThemedText>
           {ble.scanning ? (
-            <ActivityIndicator size="small" color={palette.accent} />
+            <ActivityIndicator size="small" color={tokens.colors.accent} />
           ) : (
             <Pressable
               onPress={() => ble.startScan({ role })}
@@ -228,17 +177,19 @@ export default function BleScanScreen() {
               accessibilityRole="button"
               accessibilityLabel={tc("actions.scanAgain")}
             >
-              <ThemedText style={[styles.scanAgain, { color: palette.accent }]}>
+              <ThemedText
+                style={[styles.scanAgain, { color: tokens.colors.accent }]}
+              >
                 {tc("actions.scanAgain")}
               </ThemedText>
             </Pressable>
           )}
         </View>
 
-        <View style={styles.deviceList}>
+        <Stack gap="xs">
           {supportedDevices.length === 0 && !ble.scanning ? (
             <ThemedText
-              style={[styles.emptyText, { color: palette.sectionLabel }]}
+              style={[styles.emptyText, { color: tokens.colors.textSecondary }]}
             >
               {t(`scan.empty.${role}`)}
             </ThemedText>
@@ -252,13 +203,13 @@ export default function BleScanScreen() {
               onPress={handlePressDevice}
             />
           ))}
-        </View>
+        </Stack>
 
         {pendingId ? (
           <View style={styles.connectingFooter}>
-            <ActivityIndicator size="small" color={palette.accent} />
+            <ActivityIndicator size="small" color={tokens.colors.accent} />
             <ThemedText
-              style={[styles.connectingText, { color: palette.accent }]}
+              style={[styles.connectingText, { color: tokens.colors.accent }]}
             >
               {t("scan.connecting")}
             </ThemedText>
@@ -273,25 +224,9 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
   },
-  safeTop: {
-    paddingHorizontal: 16,
-  },
-  navBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    height: 44,
-  },
-  navAction: {
+  cancelLabel: {
     fontSize: 17,
     fontWeight: "500",
-  },
-  navActionPlaceholder: {
-    width: 60,
-  },
-  navTitle: {
-    fontSize: 17,
-    fontWeight: "600",
   },
   body: {
     flex: 1,
@@ -317,23 +252,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "500",
   },
-  deviceList: {
-    gap: 10,
-  },
   emptyText: {
     fontSize: 14,
     textAlign: "center",
     paddingVertical: 20,
-  },
-  notice: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  noticeText: {
-    fontSize: 14,
-    lineHeight: 18,
   },
   connectingFooter: {
     flexDirection: "row",

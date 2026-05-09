@@ -10,31 +10,7 @@ import Animated, {
 } from "react-native-reanimated";
 
 import { ThemedText } from "@/components/themed-text";
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-
-const COLORS = {
-  light: {
-    accent: "#0a7ea4",
-    iconColor: "#0a7ea4",
-    title: "#11181C",
-    subtitle: "#687076",
-    coreBg: "rgba(10, 126, 164, 0.18)",
-    inactiveBg: "#E4E6EA",
-    inactiveTitle: "#11181C",
-    inactiveIcon: "#687076",
-  },
-  dark: {
-    accent: "#3DB7E0",
-    iconColor: "#3DB7E0",
-    title: "#ECEDEE",
-    subtitle: "#9BA1A6",
-    coreBg: "rgba(61, 183, 224, 0.22)",
-    inactiveBg: "#2A2D30",
-    inactiveTitle: "#ECEDEE",
-    inactiveIcon: "#9BA1A6",
-  },
-} as const;
+import { Icon, useTheme } from "@/lib/design-system";
 
 const RING_COUNT = 3;
 const PULSE_DURATION_MS = 1800;
@@ -46,8 +22,7 @@ type Props = {
 };
 
 export function ScanHero({ scanning, title, subtitle }: Props) {
-  const scheme = useColorScheme() ?? "light";
-  const palette = COLORS[scheme];
+  const { tokens } = useTheme();
 
   const ringDelays = useMemo(
     () =>
@@ -63,27 +38,33 @@ export function ScanHero({ scanning, title, subtitle }: Props) {
       <View style={styles.ringStage}>
         {scanning
           ? ringDelays.map((delay, i) => (
-              <PulseRing key={i} delay={delay} accent={palette.accent} />
+              <PulseRing key={i} delay={delay} accent={tokens.colors.accent} />
             ))
           : null}
         <View
           style={[
             styles.core,
-            { backgroundColor: scanning ? palette.coreBg : palette.inactiveBg },
+            {
+              backgroundColor: scanning
+                ? tokens.colors.accentSubtle
+                : tokens.colors.surfaceElevated,
+            },
           ]}
         >
-          <IconSymbol
+          <Icon
             name="dot.radiowaves.right"
             size={28}
-            color={scanning ? palette.iconColor : palette.inactiveIcon}
+            tone={scanning ? "accent" : "textSecondary"}
           />
         </View>
       </View>
-      <ThemedText style={[styles.title, { color: palette.title }]}>
+      <ThemedText style={[styles.title, { color: tokens.colors.text }]}>
         {title}
       </ThemedText>
       {subtitle ? (
-        <ThemedText style={[styles.subtitle, { color: palette.subtitle }]}>
+        <ThemedText
+          style={[styles.subtitle, { color: tokens.colors.textSecondary }]}
+        >
           {subtitle}
         </ThemedText>
       ) : null}

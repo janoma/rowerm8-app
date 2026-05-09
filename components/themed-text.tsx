@@ -1,6 +1,6 @@
 import { StyleSheet, Text, type TextProps } from "react-native";
 
-import { useThemeColor } from "@/hooks/use-theme-color";
+import { useTheme } from "@/lib/design-system";
 
 export type ThemedTextProps = TextProps & {
   lightColor?: string;
@@ -8,6 +8,16 @@ export type ThemedTextProps = TextProps & {
   type?: "default" | "title" | "defaultSemiBold" | "subtitle" | "link";
 };
 
+/**
+ * Drop-in themed `<Text>` that resolves its color from the design-system
+ * theme. The `lightColor` / `darkColor` overrides are kept for backward
+ * compatibility with screens that haven't migrated to the design-system
+ * primitives yet — they take precedence over the token-derived color.
+ *
+ * New code should prefer the typography helpers + `useTheme()` directly,
+ * but this component is intentionally cheap to keep in place because 10+
+ * existing screens import it.
+ */
 export function ThemedText({
   style,
   lightColor,
@@ -15,7 +25,11 @@ export function ThemedText({
   type = "default",
   ...rest
 }: ThemedTextProps) {
-  const color = useThemeColor({ light: lightColor, dark: darkColor }, "text");
+  const { scheme, tokens } = useTheme();
+
+  const override = scheme === "dark" ? darkColor : lightColor;
+  const baseColor = type === "link" ? tokens.colors.link : tokens.colors.text;
+  const color = override ?? baseColor;
 
   return (
     <Text
@@ -55,6 +69,5 @@ const styles = StyleSheet.create({
   link: {
     lineHeight: 30,
     fontSize: 16,
-    color: "#0a7ea4",
   },
 });

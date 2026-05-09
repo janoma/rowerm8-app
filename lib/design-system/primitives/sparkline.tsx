@@ -1,29 +1,40 @@
 /**
- * Tiny "bar sparkline" rendered with vanilla `View` primitives.
+ * Sparkline — tiny "bar sparkline" rendered with vanilla View
+ * primitives.
  *
- * We deliberately avoid pulling in `react-native-svg` or a charting
- * library: rowing detail charts only need to communicate shape (cadence
- * climbed, HR plateaued, etc.) and a vertical-bars sparkline does that
- * well at small sizes with zero native deps.
+ * Originally written for the activity-detail charts; promoted to
+ * `lib/design-system/primitives/` so any future chart surface can
+ * reuse it without depending on the activity feature.
+ *
+ * No SVG / charting library: rowing detail charts only need to
+ * communicate shape (cadence climbed, HR plateaued) and a
+ * vertical-bars sparkline does that well at small sizes with zero
+ * native deps.
  *
  * Behaviour:
  *   - Pass `values` already downsampled to your desired bar count
  *     (use `downsampleMean` from lib/activity/fit-reader).
- *   - `null` entries render as gaps so HR pre-pickup or paused samples
- *     don't artificially anchor the chart at zero.
+ *   - `null` entries render as gaps so HR pre-pickup or paused
+ *     samples don't artificially anchor the chart at zero.
  *   - The y-axis is auto-scaled to the [min, max] of the non-null
- *     values, with a small padding so flat data still produces visible
- *     bars.
+ *     values, with a small padding so flat data still produces
+ *     visible bars.
+ *   - `color` and `trackColor` default to the design-system `chart`
+ *     tokens (`chart.cadence` and `chart.track`). Override per-call
+ *     for HR (use `tokens.chart.heart`).
  */
+
 import { StyleSheet, View } from "react-native";
+
+import { useTheme } from "../provider";
 
 export type SparklineProps = {
   values: (number | null)[];
   /** Total chart height in dp. Bars stretch from the baseline to this height. */
   height: number;
-  /** Bar fill color. */
-  color: string;
-  /** Optional gap fill (low-emphasis baseline track). */
+  /** Bar fill color. Defaults to `tokens.chart.cadence`. */
+  color?: string;
+  /** Optional gap fill (low-emphasis baseline track). Defaults to `tokens.chart.track`. */
   trackColor?: string;
 };
 
@@ -33,6 +44,10 @@ export function Sparkline({
   color,
   trackColor,
 }: SparklineProps) {
+  const { tokens } = useTheme();
+  const barColor = color ?? tokens.chart.cadence;
+  const trackFill = trackColor ?? tokens.chart.track;
+
   if (values.length === 0) {
     return <View style={[styles.root, { height }]} />;
   }
@@ -63,17 +78,15 @@ export function Sparkline({
         const barHeight = isNull ? 0 : Math.max(2, Math.round(ratio * height));
         return (
           <View key={idx} style={styles.column}>
-            {trackColor ? (
-              <View
-                style={[styles.track, { backgroundColor: trackColor, height }]}
-              />
-            ) : null}
+            <View
+              style={[styles.track, { backgroundColor: trackFill, height }]}
+            />
             {!isNull ? (
               <View
                 style={[
                   styles.bar,
                   {
-                    backgroundColor: color,
+                    backgroundColor: barColor,
                     height: barHeight,
                   },
                 ]}

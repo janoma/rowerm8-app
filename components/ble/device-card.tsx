@@ -3,32 +3,8 @@ import { Pressable, StyleSheet, View } from "react-native";
 
 import { SignalBars } from "@/components/ble/signal-bars";
 import { ThemedText } from "@/components/themed-text";
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { useColorScheme } from "@/hooks/use-color-scheme";
 import type { ScannedDevice } from "@/contexts/ble-context";
-
-const COLORS = {
-  light: {
-    surface: "#F2F3F5",
-    surfaceBorder: "#E4E6EA",
-    accentBar: "#0a7ea4",
-    iconActive: "#0a7ea4",
-    iconActiveBg: "rgba(10, 126, 164, 0.18)",
-    title: "#11181C",
-    subtitle: "#687076",
-    chevron: "#9BA1A6",
-  },
-  dark: {
-    surface: "#1F2224",
-    surfaceBorder: "#2A2D30",
-    accentBar: "#3DB7E0",
-    iconActive: "#3DB7E0",
-    iconActiveBg: "rgba(61, 183, 224, 0.22)",
-    title: "#ECEDEE",
-    subtitle: "#9BA1A6",
-    chevron: "#7C8186",
-  },
-} as const;
+import { Icon, useTheme } from "@/lib/design-system";
 
 type Props = {
   device: ScannedDevice;
@@ -37,8 +13,7 @@ type Props = {
 };
 
 export function DeviceCard({ device, busy = false, onPress }: Props) {
-  const scheme = useColorScheme() ?? "light";
-  const palette = COLORS[scheme];
+  const { tokens } = useTheme();
   const { t } = useTranslation("ble");
 
   const displayName =
@@ -57,34 +32,38 @@ export function DeviceCard({ device, busy = false, onPress }: Props) {
       style={({ pressed }) => [
         styles.card,
         {
-          backgroundColor: palette.surface,
-          borderColor: palette.surfaceBorder,
+          backgroundColor: tokens.colors.surfaceElevated,
+          borderColor: tokens.colors.border,
+          borderRadius: tokens.radius.lg,
           opacity: busy ? 0.5 : pressed ? 0.85 : 1,
-          borderStartColor: palette.accentBar,
+          // RTL-safe: borderStartColor flips to the right edge under Arabic.
+          borderStartColor: tokens.colors.accent,
           borderStartWidth: 3,
         },
       ]}
     >
       <View
-        style={[styles.iconBadge, { backgroundColor: palette.iconActiveBg }]}
+        style={[
+          styles.iconBadge,
+          {
+            backgroundColor: tokens.colors.accentSubtle,
+            borderRadius: tokens.radius.pill,
+          },
+        ]}
       >
-        <IconSymbol
-          name="dot.radiowaves.right"
-          size={22}
-          color={palette.iconActive}
-        />
+        <Icon name="dot.radiowaves.right" size={22} tone="accent" />
       </View>
 
       <View style={styles.bodyRow}>
         <View style={styles.textColumn}>
           <ThemedText
-            style={[styles.title, { color: palette.title }]}
+            style={[styles.title, { color: tokens.colors.text }]}
             numberOfLines={1}
           >
             {displayName}
           </ThemedText>
           <ThemedText
-            style={[styles.subtitle, { color: palette.subtitle }]}
+            style={[styles.subtitle, { color: tokens.colors.textSecondary }]}
             numberOfLines={1}
           >
             {subtitle}
@@ -99,7 +78,7 @@ export function DeviceCard({ device, busy = false, onPress }: Props) {
         </View>
       </View>
 
-      <IconSymbol name="chevron.right" size={18} color={palette.chevron} />
+      <Icon name="chevron.right" size={18} tone="textTertiary" />
     </Pressable>
   );
 }
@@ -111,13 +90,11 @@ const styles = StyleSheet.create({
     gap: 14,
     paddingVertical: 12,
     paddingHorizontal: 14,
-    borderRadius: 14,
     borderWidth: StyleSheet.hairlineWidth,
   },
   iconBadge: {
     width: 40,
     height: 40,
-    borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
   },

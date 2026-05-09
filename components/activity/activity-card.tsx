@@ -5,25 +5,21 @@
  * activities" peek. The visual weight is light — date as the primary
  * line, then a single helper line with duration, stroke count, and
  * (optionally) avg cadence + HR.
+ *
+ * Reads colors from the design-system theme via `useTheme()`. The
+ * old `palette` prop has been removed — see the design-system plan
+ * Risks section ("ActivityCard palette migration is breaking-API").
  */
 import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, View } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
-import { IconSymbol } from "@/components/ui/icon-symbol";
 import type { StoredActivity } from "@/lib/activity/storage";
+import { Icon, useTheme } from "@/lib/design-system";
 import { useFormatters } from "@/lib/format/use-formatters";
-
-export type ActivityCardPalette = {
-  cardBg: string;
-  cardBorder: string;
-  cardHelper: string;
-  chevron: string;
-};
 
 export type ActivityCardProps = {
   activity: StoredActivity;
-  palette: ActivityCardPalette;
   onPress: () => void;
   /** When true, drops the secondary cadence/HR row to keep the card
    * height tight (used by the Home peek). */
@@ -32,10 +28,10 @@ export type ActivityCardProps = {
 
 export function ActivityCard({
   activity,
-  palette,
   onPress,
   compact = false,
 }: ActivityCardProps) {
+  const { tokens } = useTheme();
   const { t } = useTranslation("history");
   const formatters = useFormatters();
   const { summary } = activity;
@@ -59,8 +55,9 @@ export function ActivityCard({
       style={({ pressed }) => [
         styles.card,
         {
-          backgroundColor: palette.cardBg,
-          borderColor: palette.cardBorder,
+          backgroundColor: tokens.colors.surfaceElevated,
+          borderColor: tokens.colors.border,
+          borderRadius: tokens.radius.lg,
           opacity: pressed ? 0.85 : 1,
         },
       ]}
@@ -69,15 +66,17 @@ export function ActivityCard({
         <ThemedText style={styles.cardDate}>{dateLabel}</ThemedText>
         <View style={styles.cardRow}>
           <ThemedText
-            style={[styles.cardPrimary, { color: palette.cardHelper }]}
+            style={[styles.cardPrimary, { color: tokens.colors.textSecondary }]}
           >
             {durationLabel}
           </ThemedText>
-          <ThemedText style={[styles.cardDot, { color: palette.cardHelper }]}>
+          <ThemedText
+            style={[styles.cardDot, { color: tokens.colors.textSecondary }]}
+          >
             ·
           </ThemedText>
           <ThemedText
-            style={[styles.cardPrimary, { color: palette.cardHelper }]}
+            style={[styles.cardPrimary, { color: tokens.colors.textSecondary }]}
           >
             {strokesLabel}
           </ThemedText>
@@ -86,21 +85,27 @@ export function ActivityCard({
           <View style={styles.cardRow}>
             {cadenceLabel ? (
               <ThemedText
-                style={[styles.cardSecondary, { color: palette.cardHelper }]}
+                style={[
+                  styles.cardSecondary,
+                  { color: tokens.colors.textSecondary },
+                ]}
               >
                 {cadenceLabel}
               </ThemedText>
             ) : null}
             {cadenceLabel && hrLabel ? (
               <ThemedText
-                style={[styles.cardDot, { color: palette.cardHelper }]}
+                style={[styles.cardDot, { color: tokens.colors.textSecondary }]}
               >
                 ·
               </ThemedText>
             ) : null}
             {hrLabel ? (
               <ThemedText
-                style={[styles.cardSecondary, { color: palette.cardHelper }]}
+                style={[
+                  styles.cardSecondary,
+                  { color: tokens.colors.textSecondary },
+                ]}
               >
                 {hrLabel}
               </ThemedText>
@@ -108,7 +113,7 @@ export function ActivityCard({
           </View>
         ) : null}
       </View>
-      <IconSymbol name="chevron.right" size={18} color={palette.chevron} />
+      <Icon name="chevron.right" size={18} tone="textTertiary" />
     </Pressable>
   );
 }
@@ -119,7 +124,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 14,
     paddingVertical: 12,
-    borderRadius: 14,
     borderWidth: StyleSheet.hairlineWidth,
     gap: 10,
   },

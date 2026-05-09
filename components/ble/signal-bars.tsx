@@ -1,20 +1,9 @@
 import { useTranslation } from "react-i18next";
 import { StyleSheet, View } from "react-native";
 
-import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useTheme } from "@/lib/design-system";
 
 const TOTAL_BARS = 4;
-
-const COLORS = {
-  light: {
-    active: "#11181C",
-    inactive: "#D1D5DA",
-  },
-  dark: {
-    active: "#ECEDEE",
-    inactive: "#3A3D40",
-  },
-} as const;
 
 /**
  * Map an RSSI (dBm) value to a 0..TOTAL_BARS bucket.
@@ -47,8 +36,7 @@ export function SignalBars({
   rssi: number | null;
   size?: "sm" | "md" | "lg";
 }) {
-  const scheme = useColorScheme() ?? "light";
-  const palette = COLORS[scheme];
+  const { tokens } = useTheme();
   const { t } = useTranslation("ble");
   const filled = rssiToBars(rssi);
   const dims = SIZES[size];
@@ -73,7 +61,9 @@ export function SignalBars({
               {
                 width: dims.barWidth,
                 height: dims.maxHeight * (heightPct / 100),
-                backgroundColor: isActive ? palette.active : palette.inactive,
+                backgroundColor: isActive
+                  ? tokens.colors.text
+                  : tokens.colors.borderStrong,
               },
             ]}
           />

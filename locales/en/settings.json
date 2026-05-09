@@ -1,9 +1,28 @@
 {
   "title": "Settings",
   "sections": {
+    "appearance": "Appearance",
     "language": "Language",
     "units": "Units",
     "help": "Help"
+  },
+  "appearance": {
+    "row": {
+      "label": "Theme",
+      "subtitle": "{value}",
+      "subtitleAuto": "Follow system ({value})"
+    },
+    "pickerTitle": "Theme",
+    "pickerFooter": "Choose how the app should look. Following the system switches between light and dark when your device does.",
+    "options": {
+      "auto": "Follow system",
+      "light": "Light",
+      "dark": "Dark"
+    },
+    "inline": {
+      "light": "light",
+      "dark": "dark"
+    }
   },
   "language": {
     "row": {

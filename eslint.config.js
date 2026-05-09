@@ -40,4 +40,30 @@ module.exports = defineConfig([
       ],
     },
   },
+  {
+    // The design-tokens package must stay framework-agnostic so a future
+    // Next.js site can consume it without dragging React Native along.
+    // Block any `react-native` / `react-native-web` import — including
+    // sub-paths (e.g. `react-native/Libraries/...`).
+    files: ["packages/design-tokens/**/*.{ts,tsx,js,mjs,cjs}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: [
+                "react-native",
+                "react-native/*",
+                "react-native-web",
+                "react-native-web/*",
+              ],
+              message:
+                "@rowerm8/design-tokens must remain pure data — no React Native imports.",
+            },
+          ],
+        },
+      ],
+    },
+  },
 ]);

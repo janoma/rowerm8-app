@@ -1,38 +1,10 @@
 import { useTranslation } from "react-i18next";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
-import { Fonts } from "@/constants/theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useFormatters } from "@/lib/format";
-
-const COLORS = {
-  light: {
-    surface: "#F2F3F5",
-    surfaceBorder: "#E4E6EA",
-    label: "#687076",
-    value: "#11181C",
-    accent: "#0a7ea4",
-    // Tinted background + matching label colour for the highlighted
-    // primary metric. The tint is a faint wash of the accent so the
-    // emphasis is unmistakable but the card doesn't read as "selected".
-    primarySurface: "rgba(10, 126, 164, 0.10)",
-    primarySurfaceBorder: "rgba(10, 126, 164, 0.28)",
-    primaryLabel: "#075f7c",
-  },
-  dark: {
-    surface: "#1F2224",
-    surfaceBorder: "#2A2D30",
-    label: "#9BA1A6",
-    value: "#ECEDEE",
-    accent: "#3DB7E0",
-    primarySurface: "rgba(61, 183, 224, 0.14)",
-    primarySurfaceBorder: "rgba(61, 183, 224, 0.36)",
-    primaryLabel: "#7FD4EC",
-  },
-} as const;
-
-const monoFont = Fonts.mono;
+import { Card, Stat, ZonePill, useTheme } from "@/lib/design-system";
+import { zoneForBpm } from "@/lib/hr/zones";
 
 type Props = {
   strokeCount: number;
@@ -53,11 +25,17 @@ type Props = {
 /**
  * Glanceable rowing metrics: stroke count, cadence (smoothed), pace
  * estimate, and elapsed time. The cadence and elapsed values use the
- * existing app-wide formatters so locale-specific number / time formatting
- * stays consistent with the rest of the app. Pace is rendered through
- * `formatPace` and respects the user's pace-unit preference; before the
- * first stroke the boat speed is zero, so `formatPace` renders the em-dash
- * placeholder for us.
+ * existing app-wide formatters so locale-specific number / time
+ * formatting stays consistent with the rest of the app. Pace is
+ * rendered through `formatPace` and respects the user's pace-unit
+ * preference; before the first stroke the boat speed is zero, so
+ * `formatPace` renders the em-dash placeholder for us.
+ *
+ * When `heartRateBpm` is provided, the HR row's value is tinted with
+ * the corresponding zone color (via `zoneForBpm()`) and a small
+ * `<ZonePill>` is rendered beside it. Until the user-configurable
+ * max-HR setting lands (deferred to a follow-up PR — see plan Risks),
+ * `zoneForBpm` falls back to a hard-coded default of 190 bpm.
  */
 export function RowMetricsCard({
   strokeCount,
@@ -67,8 +45,7 @@ export function RowMetricsCard({
   heartRateBpm = null,
   sampleRateHz = 0,
 }: Props) {
-  const scheme = useColorScheme() ?? "light";
-  const palette = COLORS[scheme];
+  const { tokens } = useTheme();
   const { t } = useTranslation("row");
   const formatters = useFormatters();
 
@@ -90,146 +67,49 @@ export function RowMetricsCard({
       ? `${Math.round(cadenceSpm)} ${t("metrics.cadenceUnit")}`
       : "—";
 
+  const heartRateZone = zoneForBpm(heartRateBpm);
+  const heartRateString =
+    heartRateBpm != null
+      ? `${Math.round(heartRateBpm)} ${t("metrics.heartRateUnit")}`
+      : null;
+
   return (
-    <View
-      style={[
-        styles.card,
-        {
-          backgroundColor: palette.surface,
-          borderColor: palette.surfaceBorder,
-        },
-      ]}
-    >
-      <View
-        style={[
-          styles.primaryMetric,
-          {
-            backgroundColor: palette.primarySurface,
-            borderColor: palette.primarySurfaceBorder,
-          },
-        ]}
-      >
-        <ThemedText
-          style={[styles.primaryLabel, { color: palette.primaryLabel }]}
-        >
-          {t("metrics.cadence")}
-        </ThemedText>
-        <ThemedText
-          style={[
-            styles.primaryValue,
-            { color: palette.accent, fontFamily: monoFont },
-          ]}
-          numberOfLines={1}
-          adjustsFontSizeToFit
-          minimumFontScale={0.6}
-        >
-          {cadenceString}
-        </ThemedText>
-      </View>
-      <Metric
-        label={t("metrics.strokes")}
-        value={strokeCount.toString()}
-        palette={palette}
+    <Card variant="elevated" padding="md" style={styles.card}>
+      <Stat
+        label={t("metrics.cadence")}
+        value={cadenceString}
+        emphasis="primary"
       />
-      <Metric
+      <Stat label={t("metrics.strokes")} value={strokeCount.toString()} />
+      <Stat
         label={t("metrics.pace")}
         value={formatters.pace(boatSpeedMpsForFormatter)}
-        palette={palette}
       />
-      <Metric
-        label={t("metrics.elapsed")}
-        value={elapsedString}
-        palette={palette}
-      />
-      {heartRateBpm != null ? (
-        <Metric
+      <Stat label={t("metrics.elapsed")} value={elapsedString} />
+      {heartRateString ? (
+        <Stat
           label={t("metrics.heartRate")}
-          value={`${Math.round(heartRateBpm)} ${t("metrics.heartRateUnit")}`}
-          palette={palette}
+          value={heartRateString}
+          accent={
+            heartRateZone ? tokens.hrZones[heartRateZone].text : undefined
+          }
+          trailing={heartRateZone ? <ZonePill zone={heartRateZone} /> : null}
         />
       ) : null}
       {sampleRateHz > 0 ? (
-        <ThemedText style={[styles.footer, { color: palette.label }]}>
+        <ThemedText
+          style={[styles.footer, { color: tokens.colors.textSecondary }]}
+        >
           {t("metrics.footer", { rate: sampleRateHz })}
         </ThemedText>
       ) : null}
-    </View>
-  );
-}
-
-function Metric({
-  label,
-  value,
-  palette,
-}: {
-  label: string;
-  value: string;
-  palette: (typeof COLORS)[keyof typeof COLORS];
-}) {
-  return (
-    <View style={styles.metric}>
-      <ThemedText style={[styles.metricLabel, { color: palette.label }]}>
-        {label}
-      </ThemedText>
-      <ThemedText
-        style={[
-          styles.metricValue,
-          { color: palette.value, fontFamily: monoFont },
-        ]}
-        numberOfLines={1}
-        // adjustsFontSizeToFit + minimumFontScale lets the value shrink
-        // gracefully on narrow screens (or with very long localized
-        // strings) instead of clipping to "...". The full text remains
-        // visible in normal cases since each metric now spans the entire
-        // card width.
-        adjustsFontSizeToFit
-        minimumFontScale={0.7}
-      >
-        {value}
-      </ThemedText>
-    </View>
+    </Card>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderRadius: 16,
-    borderWidth: StyleSheet.hairlineWidth,
     gap: 14,
-  },
-  primaryMetric: {
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-    gap: 4,
-  },
-  primaryLabel: {
-    fontSize: 12,
-    fontWeight: "700",
-    letterSpacing: 1.0,
-    textTransform: "uppercase",
-  },
-  primaryValue: {
-    fontSize: 56,
-    fontWeight: "800",
-    lineHeight: 64,
-  },
-  metric: {
-    gap: 2,
-  },
-  metricLabel: {
-    fontSize: 11,
-    fontWeight: "600",
-    letterSpacing: 0.8,
-    textTransform: "uppercase",
-  },
-  metricValue: {
-    fontSize: 36,
-    fontWeight: "700",
-    lineHeight: 42,
   },
   footer: {
     fontSize: 12,

@@ -2,35 +2,30 @@ import { useTranslation } from "react-i18next";
 import { StyleSheet, View } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
-import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useTheme } from "@/lib/design-system";
 
-const COLORS = {
-  light: {
-    label: "#11181C",
-    body: "#A1A6AB",
-    fill: "#34C759",
-    fillLow: "#FF9F0A",
-    fillCritical: "#FF3B30",
+/**
+ * Pick the battery-fill color for a percentage. Uses the design-system
+ * status colors so the icon stays consistent with the rest of the app:
+ *   ≤ 15% — danger red,
+ *   ≤ 35% — warning orange,
+ *   else  — success green.
+ */
+function fillColorFor(
+  percent: number,
+  colors: {
+    success: string;
+    warning: string;
+    danger: string;
   },
-  dark: {
-    label: "#ECEDEE",
-    body: "#7C8186",
-    fill: "#30D158",
-    fillLow: "#FFD60A",
-    fillCritical: "#FF6961",
-  },
-} as const;
-
-type Palette = (typeof COLORS)[keyof typeof COLORS];
-
-function fillColorFor(percent: number, palette: Palette) {
+) {
   if (percent <= 15) {
-    return palette.fillCritical;
+    return colors.danger;
   }
   if (percent <= 35) {
-    return palette.fillLow;
+    return colors.warning;
   }
-  return palette.fill;
+  return colors.success;
 }
 
 /**
@@ -47,11 +42,10 @@ export function BatteryIndicator({
   height?: number;
   fontSize?: number;
 }) {
-  const scheme = useColorScheme() ?? "light";
-  const palette = COLORS[scheme];
+  const { tokens } = useTheme();
   const { t } = useTranslation("ble");
   const clamped = Math.max(0, Math.min(100, Math.round(percent)));
-  const fillColor = fillColorFor(clamped, palette);
+  const fillColor = fillColorFor(clamped, tokens.colors);
 
   // All measurements derive from `height` so the icon scales cleanly. Layout
   // uses padding (instead of absolute positioning) for the fill so the
@@ -84,7 +78,7 @@ export function BatteryIndicator({
             {
               width: bodyWidth,
               height: bodyHeight,
-              borderColor: palette.body,
+              borderColor: tokens.colors.textTertiary,
               borderWidth,
               borderRadius,
               padding,
@@ -104,14 +98,14 @@ export function BatteryIndicator({
           style={{
             width: nubWidth,
             height: nubHeight,
-            backgroundColor: palette.body,
+            backgroundColor: tokens.colors.textTertiary,
             borderTopRightRadius: 1,
             borderBottomRightRadius: 1,
           }}
         />
       </View>
       <ThemedText
-        style={[styles.label, { color: palette.label, fontSize }]}
+        style={[styles.label, { color: tokens.colors.text, fontSize }]}
         numberOfLines={1}
       >
         {clamped}%

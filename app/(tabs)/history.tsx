@@ -8,33 +8,11 @@ import { ActivityCard } from "@/components/activity/activity-card";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useActivities } from "@/hooks/use-activities";
-import { useColorScheme } from "@/hooks/use-color-scheme";
 import type { StoredActivity } from "@/lib/activity/storage";
-
-const COLORS = {
-  light: {
-    helper: "#687076",
-    cardBg: "#FFFFFF",
-    cardBorder: "#E2E5E8",
-    cardHelper: "#687076",
-    chevron: "#9BA1A6",
-    emptyBorder: "#D1D5DA",
-    emptyText: "#9BA1A6",
-  },
-  dark: {
-    helper: "#9BA1A6",
-    cardBg: "#181B1F",
-    cardBorder: "#2A2E33",
-    cardHelper: "#9BA1A6",
-    chevron: "#6E7174",
-    emptyBorder: "#2F3236",
-    emptyText: "#6E7174",
-  },
-} as const;
+import { EmptyState, useTheme } from "@/lib/design-system";
 
 export default function HistoryScreen() {
-  const scheme = useColorScheme() ?? "light";
-  const palette = COLORS[scheme];
+  const { tokens } = useTheme();
   const { t } = useTranslation("history");
   const { activities, isLoading, refresh } = useActivities();
 
@@ -42,7 +20,6 @@ export default function HistoryScreen() {
     ({ item }: { item: StoredActivity }) => (
       <ActivityCard
         activity={item}
-        palette={palette}
         onPress={() =>
           router.push({
             pathname: "/activity/[id]",
@@ -51,7 +28,7 @@ export default function HistoryScreen() {
         }
       />
     ),
-    [palette],
+    [],
   );
 
   const renderEmpty = useCallback(() => {
@@ -59,19 +36,11 @@ export default function HistoryScreen() {
       return null;
     }
     return (
-      <View
-        style={[styles.empty, { borderColor: palette.emptyBorder }]}
-        accessibilityRole="text"
-      >
-        <ThemedText style={[styles.emptyTitle, { color: palette.emptyText }]}>
-          {t("empty.title")}
-        </ThemedText>
-        <ThemedText style={[styles.emptyBody, { color: palette.emptyText }]}>
-          {t("empty.body")}
-        </ThemedText>
-      </View>
+      <EmptyState title={t("empty.title")} style={styles.empty}>
+        {t("empty.body")}
+      </EmptyState>
     );
-  }, [isLoading, palette, t]);
+  }, [isLoading, t]);
 
   return (
     <ThemedView style={styles.root}>
@@ -85,7 +54,12 @@ export default function HistoryScreen() {
               <ThemedText type="title" style={styles.title}>
                 {t("title")}
               </ThemedText>
-              <ThemedText style={[styles.subtitle, { color: palette.helper }]}>
+              <ThemedText
+                style={[
+                  styles.subtitle,
+                  { color: tokens.colors.textSecondary },
+                ]}
+              >
                 {t("subtitle")}
               </ThemedText>
             </View>
@@ -126,22 +100,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   empty: {
-    borderWidth: 1,
-    borderStyle: "dashed",
-    borderRadius: 14,
-    paddingVertical: 28,
-    paddingHorizontal: 18,
-    gap: 6,
-    alignItems: "center",
     marginTop: 4,
-  },
-  emptyTitle: {
-    fontSize: 15,
-    fontWeight: "600",
-  },
-  emptyBody: {
-    fontSize: 13,
-    lineHeight: 18,
-    textAlign: "center",
   },
 });

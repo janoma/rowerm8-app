@@ -2,12 +2,12 @@ import { useTranslation } from "react-i18next";
 import { StyleSheet, View } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
-import { Fonts } from "@/constants/theme";
 import type {
   AccelerometerSample,
   AxisHistories,
 } from "@/hooks/use-accelerometer-stream";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useTheme } from "@/lib/design-system";
 
 const COLORS = {
   light: {
@@ -38,8 +38,6 @@ const COLORS = {
   },
 } as const;
 
-const monoFont = Fonts.mono;
-
 type AxisKey = "x" | "y" | "z";
 
 const AXES: { key: AxisKey; label: string }[] = [
@@ -61,6 +59,8 @@ export function LiveAccelerationCard({
 }: Props) {
   const scheme = useColorScheme() ?? "light";
   const palette = COLORS[scheme];
+  const { fonts } = useTheme();
+  const monoFont = fonts.mono;
   const { t } = useTranslation("sensor");
 
   return (
@@ -98,6 +98,7 @@ export function LiveAccelerationCard({
             valueColor={palette.value}
             sparkBg={palette.sparkBg}
             sparkAxisColor={palette.sparkAxis}
+            monoFont={monoFont}
           />
         ))}
       </View>
@@ -118,6 +119,7 @@ function AxisRow({
   valueColor,
   sparkBg,
   sparkAxisColor,
+  monoFont,
 }: {
   label: string;
   value: number | undefined;
@@ -127,6 +129,7 @@ function AxisRow({
   valueColor: string;
   sparkBg: string;
   sparkAxisColor: string;
+  monoFont: string;
 }) {
   const display =
     value === undefined || Number.isNaN(value) ? "   —  " : formatValue(value);

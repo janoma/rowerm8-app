@@ -2,24 +2,7 @@ import { Children, Fragment, isValidElement, ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-
-const COLORS = {
-  light: {
-    header: "#687076",
-    footer: "#687076",
-    card: "#FFFFFF",
-    cardBorder: "#E4E6EA",
-    divider: "#E4E6EA",
-  },
-  dark: {
-    header: "#9BA1A6",
-    footer: "#9BA1A6",
-    card: "#1B1D1F",
-    cardBorder: "#2F3236",
-    divider: "#2F3236",
-  },
-} as const;
+import { Card, Divider, useTheme } from "@/lib/design-system";
 
 type Props = {
   header?: string;
@@ -28,37 +11,31 @@ type Props = {
 };
 
 export function SettingsSection({ header, footer, children }: Props) {
-  const scheme = useColorScheme() ?? "light";
-  const palette = COLORS[scheme];
+  const { tokens } = useTheme();
 
   const items = Children.toArray(children).filter(isValidElement);
 
   return (
     <View style={styles.section}>
       {header ? (
-        <ThemedText style={[styles.header, { color: palette.header }]}>
+        <ThemedText
+          style={[styles.header, { color: tokens.colors.textSecondary }]}
+        >
           {header.toUpperCase()}
         </ThemedText>
       ) : null}
-      <View
-        style={[
-          styles.card,
-          { backgroundColor: palette.card, borderColor: palette.cardBorder },
-        ]}
-      >
+      <Card variant="surface" padding="none">
         {items.map((child, index) => (
           <Fragment key={index}>
-            {index > 0 ? (
-              <View
-                style={[styles.divider, { backgroundColor: palette.divider }]}
-              />
-            ) : null}
+            {index > 0 ? <Divider inset={16} /> : null}
             {child}
           </Fragment>
         ))}
-      </View>
+      </Card>
       {footer ? (
-        <ThemedText style={[styles.footer, { color: palette.footer }]}>
+        <ThemedText
+          style={[styles.footer, { color: tokens.colors.textSecondary }]}
+        >
           {footer}
         </ThemedText>
       ) : null}
@@ -75,15 +52,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     letterSpacing: 0.5,
     paddingHorizontal: 16,
-  },
-  card: {
-    borderRadius: 14,
-    borderWidth: StyleSheet.hairlineWidth,
-    overflow: "hidden",
-  },
-  divider: {
-    height: StyleSheet.hairlineWidth,
-    marginStart: 16,
   },
   footer: {
     fontSize: 13,

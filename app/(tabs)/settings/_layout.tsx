@@ -14,6 +14,10 @@ export default function SettingsLayout() {
         options={{ headerShown: false, title: t("title") }}
       />
       <Stack.Screen
+        name="appearance"
+        options={{ title: t("sections.appearance") }}
+      />
+      <Stack.Screen
         name="language"
         options={{ title: t("sections.language") }}
       />
