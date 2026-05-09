@@ -39,6 +39,12 @@ type Props = {
   cadenceSpm: number;
   paceSecondsPer500m: number;
   elapsedSeconds: number;
+  /**
+   * Live heart rate in bpm. Pass `null`/`undefined` when no HR source is
+   * connected or the monitor hasn't reported a reading yet — the row is
+   * hidden in that case so users without an HRM don't see a stale "—".
+   */
+  heartRateBpm?: number | null;
   /** Optional rate-of-data-arrival (Hz) to surface in the footer for
    * parity with the previous accelerometer card; pass 0 to hide. */
   sampleRateHz?: number;
@@ -58,6 +64,7 @@ export function RowMetricsCard({
   cadenceSpm,
   paceSecondsPer500m,
   elapsedSeconds,
+  heartRateBpm = null,
   sampleRateHz = 0,
 }: Props) {
   const scheme = useColorScheme() ?? "light";
@@ -134,6 +141,13 @@ export function RowMetricsCard({
         value={elapsedString}
         palette={palette}
       />
+      {heartRateBpm != null ? (
+        <Metric
+          label={t("metrics.heartRate")}
+          value={`${Math.round(heartRateBpm)} ${t("metrics.heartRateUnit")}`}
+          palette={palette}
+        />
+      ) : null}
       {sampleRateHz > 0 ? (
         <ThemedText style={[styles.footer, { color: palette.label }]}>
           {t("metrics.footer", { rate: sampleRateHz })}

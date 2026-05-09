@@ -10,6 +10,7 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useBle } from "@/contexts/ble-context";
 import { useMotionSensor } from "@/contexts/motion-sensor-context";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useHeartRateStream } from "@/hooks/use-heart-rate-stream";
 import { useMotionStream } from "@/hooks/use-motion-stream";
 import { useStrokeSession } from "@/hooks/use-stroke-session";
 
@@ -41,6 +42,7 @@ export default function FreeRowScreen() {
   const { source, deviceLabel: rawDeviceLabel } = useMotionSensor();
   const stream = useMotionStream();
   const strokeSession = useStrokeSession();
+  const heartRate = useHeartRateStream();
   const ble = useBle();
   const { t } = useTranslation("row");
 
@@ -52,6 +54,7 @@ export default function FreeRowScreen() {
     cadenceSpm: strokeSession.cadenceSpm,
     paceSecondsPer500m: strokeSession.paceSecondsPer500m,
     elapsedSeconds: strokeSession.elapsedSeconds,
+    heartRateBpm: heartRate.bpm,
     sampleRateHz: stream.sampleRateHz,
   };
 
