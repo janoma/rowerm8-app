@@ -1,173 +1,82 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { router } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Alert, Pressable, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { RowMetricsCard } from "@/components/row/row-metrics-card";
-import { SensorPickerSheet } from "@/components/sensor/sensor-picker-sheet";
-import { SensorPlacementModal } from "@/components/sensor/sensor-placement-modal";
-import { SensorStatusCard } from "@/components/sensor/sensor-status-card";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { PLACEMENT_DONT_SHOW_KEY } from "@/constants/storage-keys";
 import { useBle } from "@/contexts/ble-context";
-import {
-  type MotionSensorSource,
-  useMotionSensor,
-} from "@/contexts/motion-sensor-context";
+import { useMotionSensor } from "@/contexts/motion-sensor-context";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useMotionStream } from "@/hooks/use-motion-stream";
-import { useStrokeSession } from "@/hooks/use-stroke-session";
 
 const COLORS = {
   light: {
     helper: "#687076",
-    placeholderBorder: "#D1D5DA",
-    placeholderText: "#9BA1A6",
-    primaryBg: "#0a7ea4",
-    primaryText: "#FFFFFF",
-    permissionBg: "rgba(224, 138, 30, 0.12)",
-    permissionBorder: "rgba(224, 138, 30, 0.4)",
-    permissionText: "#9C5E0E",
+    surface: "#F2F3F5",
+    surfaceBorder: "#E4E6EA",
+    title: "#11181C",
+    accent: "#0a7ea4",
+    accentSoft: "rgba(10, 126, 164, 0.10)",
+    accentSoftBorder: "rgba(10, 126, 164, 0.28)",
+    secondary: "#687076",
+    secondarySoft: "rgba(104, 112, 118, 0.12)",
+    secondarySoftBorder: "rgba(104, 112, 118, 0.30)",
+    success: "#1F9D55",
+    successBg: "rgba(31, 157, 85, 0.15)",
+    warning: "#9C5E0E",
+    warningBg: "rgba(224, 138, 30, 0.12)",
+    warningBorder: "rgba(224, 138, 30, 0.4)",
+    chevron: "#9BA1A6",
   },
   dark: {
     helper: "#9BA1A6",
-    placeholderBorder: "#2F3236",
-    placeholderText: "#6E7174",
-    primaryBg: "#0a7ea4",
-    primaryText: "#FFFFFF",
-    permissionBg: "rgba(255, 176, 32, 0.14)",
-    permissionBorder: "rgba(255, 176, 32, 0.45)",
-    permissionText: "#FFB020",
+    surface: "#1F2224",
+    surfaceBorder: "#2A2D30",
+    title: "#ECEDEE",
+    accent: "#3DB7E0",
+    accentSoft: "rgba(61, 183, 224, 0.14)",
+    accentSoftBorder: "rgba(61, 183, 224, 0.36)",
+    secondary: "#9BA1A6",
+    secondarySoft: "rgba(155, 161, 166, 0.16)",
+    secondarySoftBorder: "rgba(155, 161, 166, 0.34)",
+    success: "#34C759",
+    successBg: "rgba(52, 199, 89, 0.18)",
+    warning: "#FFB020",
+    warningBg: "rgba(255, 176, 32, 0.14)",
+    warningBorder: "rgba(255, 176, 32, 0.45)",
+    chevron: "#7C8186",
   },
 } as const;
 
 export default function RowScreen() {
   const scheme = useColorScheme() ?? "light";
   const palette = COLORS[scheme];
-  const {
-    source,
-    deviceLabel: rawDeviceLabel,
-    selectPhone,
-    clear,
-  } = useMotionSensor();
-  const stream = useMotionStream();
-  const strokeSession = useStrokeSession();
-  const ble = useBle();
   const { t } = useTranslation("row");
-  // Phone labels follow the current language; BLE labels are user-visible
-  // device names so we keep them as-is.
-  const deviceLabel =
-    source === "phone" ? t("phone.label") : (rawDeviceLabel ?? null);
-  const [pickerOpen, setPickerOpen] = useState(false);
-  const [placementVisible, setPlacementVisible] = useState(false);
-  const prevSource = useRef<MotionSensorSource>(source);
+  const { source, deviceLabel: rawDeviceLabel } = useMotionSensor();
+  const stream = useMotionStream();
+  const ble = useBle();
 
-  useEffect(() => {
-    const prev = prevSource.current;
-    prevSource.current = source;
-    if (prev !== "none" || (source !== "phone" && source !== "ble")) {
-      return;
-    }
-    AsyncStorage.getItem(PLACEMENT_DONT_SHOW_KEY).then((v) => {
-      if (v !== "true") {
-        setPlacementVisible(true);
-      }
-    });
-  }, [source]);
-
-  const handlePlacementDismiss = useCallback((dontShowAgain: boolean) => {
-    setPlacementVisible(false);
-    if (dontShowAgain) {
-      AsyncStorage.setItem(PLACEMENT_DONT_SHOW_KEY, "true").catch(() => {});
-    }
-  }, []);
-
-  // "Connected" means data is actually flowing right now, not just that a source
-  // has been persisted. After cold start the persisted selection hydrates
-  // immediately, but the BLE link has to be re-established from scratch — so we
-  // need this distinction to avoid showing a green check next to an inactive
-  // device.
-  const connected =
+  const motionReady =
     (source === "phone" && stream.isAvailable && !stream.permissionDenied) ||
     (source === "ble" && !!ble.motion.activeDevice && stream.hasDecoder);
 
-  useEffect(() => {
-    if (source !== "ble" && ble.motion.activeDevice) {
-      ble.disconnect("motion");
-    }
-  }, [source, ble]);
+  const deviceLabel =
+    source === "phone" ? t("phone.label") : (rawDeviceLabel ?? null);
 
-  const metricsCardProps = {
-    strokeCount: strokeSession.strokeCount,
-    cadenceSpm: strokeSession.cadenceSpm,
-    paceSecondsPer500m: strokeSession.paceSecondsPer500m,
-    elapsedSeconds: strokeSession.elapsedSeconds,
-    sampleRateHz: stream.sampleRateHz,
+  const handleFreeRow = () => {
+    router.push("/free-row");
   };
 
-  const renderDataSection = () => {
-    if (source === "none") {
-      return (
-        <View
-          style={[
-            styles.placeholder,
-            { borderColor: palette.placeholderBorder },
-          ]}
-          accessibilityElementsHidden
-        >
-          <ThemedText
-            style={[styles.placeholderText, { color: palette.placeholderText }]}
-          >
-            {t("placeholder")}
-          </ThemedText>
-        </View>
-      );
-    }
+  const handleWorkout = () => {
+    Alert.alert(t("workout.comingSoonTitle"), t("workout.comingSoonBody"));
+  };
 
-    if (source === "phone") {
-      if (stream.permissionDenied) {
-        return <Notice palette={palette}>{t("phone.noPermission")}</Notice>;
-      }
-      if (!stream.isAvailable) {
-        return <Notice palette={palette}>{t("phone.noAccelerometer")}</Notice>;
-      }
-      return <RowMetricsCard {...metricsCardProps} />;
-    }
-
-    if (!ble.motion.activeDevice) {
-      return (
-        <Notice palette={palette}>
-          {deviceLabel
-            ? t("ble.reconnect", { label: deviceLabel })
-            : t("ble.reconnectFallback")}
-        </Notice>
-      );
-    }
-
-    if (!stream.hasDecoder) {
-      return (
-        <Notice palette={palette}>
-          {deviceLabel
-            ? t("ble.noDecoder", { label: deviceLabel })
-            : t("ble.noDecoderFallback")}
-        </Notice>
-      );
-    }
-
-    if (!stream.isAvailable) {
-      return (
-        <Notice palette={palette}>
-          {deviceLabel
-            ? t("ble.connecting", { label: deviceLabel })
-            : t("ble.connectingFallback")}
-        </Notice>
-      );
-    }
-
-    return <RowMetricsCard {...metricsCardProps} />;
+  const handleGoHome = () => {
+    // Tabs are anchored at "/" so this jumps to the Home tab without
+    // pushing a new stack entry.
+    router.navigate("/");
   };
 
   return (
@@ -177,94 +86,146 @@ export default function RowScreen() {
           <ThemedText type="title" style={styles.title}>
             {t("title")}
           </ThemedText>
+          <ThemedText style={[styles.subtitle, { color: palette.helper }]}>
+            {t("launcher.subtitle")}
+          </ThemedText>
 
-          <SensorStatusCard
-            selected={source !== "none"}
-            connected={connected}
-            deviceLabel={deviceLabel}
-            batteryPercent={source === "ble" ? ble.motion.batteryPercent : null}
-            onPressAction={() => setPickerOpen(true)}
-          />
-
-          {source === "none" ? (
-            <>
-              <Pressable
-                onPress={() => setPickerOpen(true)}
-                accessibilityRole="button"
-                accessibilityLabel={t("a11ySelectSensor")}
-                style={({ pressed }) => [
-                  styles.primaryButton,
-                  {
-                    backgroundColor: palette.primaryBg,
-                    opacity: pressed ? 0.85 : 1,
-                  },
-                ]}
+          {motionReady ? (
+            <View
+              style={[
+                styles.statusPill,
+                {
+                  backgroundColor: palette.successBg,
+                },
+              ]}
+            >
+              <IconSymbol
+                name="checkmark.circle.fill"
+                size={18}
+                color={palette.success}
+              />
+              <ThemedText
+                style={[styles.statusPillText, { color: palette.success }]}
+                numberOfLines={1}
               >
-                <IconSymbol
-                  name="dot.radiowaves.left.and.right"
-                  size={20}
-                  color={palette.primaryText}
-                />
+                {t("launcher.ready", {
+                  label: deviceLabel ?? "",
+                })}
+              </ThemedText>
+            </View>
+          ) : (
+            <View
+              style={[
+                styles.notice,
+                {
+                  backgroundColor: palette.warningBg,
+                  borderColor: palette.warningBorder,
+                },
+              ]}
+            >
+              <ThemedText
+                style={[styles.noticeText, { color: palette.warning }]}
+              >
+                {t("launcher.notReady")}
+              </ThemedText>
+              <Pressable
+                onPress={handleGoHome}
+                accessibilityRole="button"
+                accessibilityLabel={t("launcher.a11yGoHome")}
+                hitSlop={6}
+              >
                 <ThemedText
-                  style={[
-                    styles.primaryButtonText,
-                    { color: palette.primaryText },
-                  ]}
+                  style={[styles.noticeAction, { color: palette.accent }]}
                 >
-                  {t("selectSensor")}
+                  {t("launcher.goHome")}
                 </ThemedText>
               </Pressable>
-              <ThemedText style={[styles.helper, { color: palette.helper }]}>
-                {t("selectHelper")}
-              </ThemedText>
-            </>
-          ) : null}
+            </View>
+          )}
 
-          {renderDataSection()}
+          <LauncherButton
+            kind="primary"
+            iconName="play.fill"
+            title={t("launcher.freeRow.title")}
+            subtitle={t("launcher.freeRow.subtitle")}
+            disabled={!motionReady}
+            onPress={handleFreeRow}
+            a11y={t("launcher.freeRow.a11y")}
+            palette={palette}
+          />
+          <LauncherButton
+            kind="secondary"
+            iconName="list.bullet"
+            title={t("launcher.workout.title")}
+            subtitle={t("launcher.workout.subtitle")}
+            disabled={false}
+            onPress={handleWorkout}
+            a11y={t("launcher.workout.a11y")}
+            palette={palette}
+          />
         </View>
       </SafeAreaView>
-
-      <SensorPickerSheet
-        visible={pickerOpen}
-        onClose={() => setPickerOpen(false)}
-        onSelectPhone={selectPhone}
-        onDisconnect={source !== "none" ? clear : undefined}
-      />
-
-      {source !== "none" && (
-        <SensorPlacementModal
-          visible={placementVisible}
-          onDismiss={handlePlacementDismiss}
-          source={source}
-        />
-      )}
     </ThemedView>
   );
 }
 
-function Notice({
-  palette,
-  children,
-}: {
+type LauncherButtonProps = {
+  kind: "primary" | "secondary";
+  iconName: Parameters<typeof IconSymbol>[0]["name"];
+  title: string;
+  subtitle: string;
+  disabled: boolean;
+  onPress: () => void;
+  a11y: string;
   palette: (typeof COLORS)[keyof typeof COLORS];
-  children: React.ReactNode;
-}) {
+};
+
+function LauncherButton({
+  kind,
+  iconName,
+  title,
+  subtitle,
+  disabled,
+  onPress,
+  a11y,
+  palette,
+}: LauncherButtonProps) {
+  const accentColor = kind === "primary" ? palette.accent : palette.secondary;
+  const accentBg =
+    kind === "primary" ? palette.accentSoft : palette.secondarySoft;
+  const accentBorder =
+    kind === "primary" ? palette.accentSoftBorder : palette.secondarySoftBorder;
   return (
-    <View
-      style={[
-        styles.notice,
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityLabel={a11y}
+      accessibilityState={{ disabled }}
+      style={({ pressed }) => [
+        styles.launcherCard,
         {
-          backgroundColor: palette.permissionBg,
-          borderColor: palette.permissionBorder,
+          backgroundColor: accentBg,
+          borderColor: accentBorder,
+          opacity: disabled ? 0.4 : pressed ? 0.85 : 1,
         },
       ]}
     >
-      <ThemedText
-        style={[styles.noticeText, { color: palette.permissionText }]}
-      >
-        {children}
-      </ThemedText>
-    </View>
+      <View style={[styles.launcherIcon, { backgroundColor: palette.surface }]}>
+        <IconSymbol name={iconName} size={28} color={accentColor} />
+      </View>
+      <View style={styles.launcherText}>
+        <ThemedText style={[styles.launcherTitle, { color: palette.title }]}>
+          {title}
+        </ThemedText>
+        <ThemedText
+          style={[styles.launcherSubtitle, { color: palette.helper }]}
+        >
+          {subtitle}
+        </ThemedText>
+      </View>
+      <IconSymbol name="chevron.right" size={20} color={palette.chevron} />
+    </Pressable>
   );
 }
 
@@ -279,49 +240,72 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
     paddingTop: 12,
-    gap: 18,
+    gap: 14,
   },
   title: {
+    marginBottom: 0,
+  },
+  subtitle: {
+    fontSize: 15,
+    lineHeight: 20,
     marginBottom: 4,
   },
-  primaryButton: {
+  statusPill: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-    paddingVertical: 14,
-    paddingHorizontal: 18,
-    borderRadius: 12,
+    alignSelf: "flex-start",
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
   },
-  primaryButtonText: {
-    fontSize: 17,
+  statusPillText: {
+    fontSize: 13,
     fontWeight: "600",
-  },
-  helper: {
-    fontSize: 14,
-    lineHeight: 18,
-    marginTop: -6,
-  },
-  placeholder: {
-    borderWidth: 1,
-    borderStyle: "dashed",
-    borderRadius: 14,
-    paddingVertical: 28,
-    paddingHorizontal: 18,
-    alignItems: "center",
-  },
-  placeholderText: {
-    fontSize: 14,
-    lineHeight: 18,
-    textAlign: "center",
+    flexShrink: 1,
   },
   notice: {
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
+    gap: 8,
   },
   noticeText: {
+    fontSize: 14,
+    lineHeight: 18,
+    fontWeight: "500",
+  },
+  noticeAction: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  launcherCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  launcherIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  launcherText: {
+    flex: 1,
+    gap: 2,
+  },
+  launcherTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    lineHeight: 22,
+  },
+  launcherSubtitle: {
     fontSize: 14,
     lineHeight: 18,
   },

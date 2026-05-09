@@ -22,14 +22,22 @@
     }
   },
   "status": {
-    "label": "MOTION SENSOR",
     "selected": "Selected",
     "notSelected": "Not selected",
     "notConnected": "Not connected",
     "actionConnect": "Connect",
     "actionChange": "Change",
-    "a11yConnect": "Connect motion sensor",
-    "a11yChange": "Change motion sensor"
+    "motion": {
+      "label": "MOTION SENSOR",
+      "a11yConnect": "Connect motion sensor",
+      "a11yChange": "Change motion sensor"
+    },
+    "hr": {
+      "label": "HEART-RATE MONITOR",
+      "a11yConnect": "Connect heart-rate monitor",
+      "a11yChange": "Change heart-rate monitor",
+      "live": "{bpm, number} bpm"
+    }
   },
   "live": {
     "header": "LIVE ACCELERATION (m/s²)",

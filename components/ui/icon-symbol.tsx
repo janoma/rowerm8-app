@@ -9,7 +9,7 @@ type IconMapping = Record<
   SymbolViewProps["name"],
   ComponentProps<typeof MaterialIcons>["name"]
 >;
-type IconSymbolName = keyof typeof MAPPING;
+export type IconSymbolName = keyof typeof MAPPING;
 
 /**
  * Add your SF Symbols to Material Icons mappings here.
@@ -20,6 +20,7 @@ const MAPPING = {
   "house.fill": "home",
   "figure.indoor.rowing": "rowing",
   "chevron.right": "chevron-right",
+  "chevron.left": "chevron-left",
   "chevron.down": "expand-more",
   "checkmark.circle.fill": "check-circle",
   "exclamationmark.triangle.fill": "warning",
@@ -31,6 +32,9 @@ const MAPPING = {
   square: "check-box-outline-blank",
   "gearshape.fill": "settings",
   checkmark: "check",
+  "heart.fill": "favorite",
+  "play.fill": "play-arrow",
+  "list.bullet": "list",
 } as IconMapping;
 
 /**

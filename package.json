@@ -13,8 +13,9 @@
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "gen:routes": "node ./scripts/regenerate-router-types.mjs",
     "test": "jest",
-    "precommit": "pnpm run typecheck && pnpm run lint && pnpm run format:check"
+    "precommit": "pnpm run gen:routes && pnpm run typecheck && pnpm run lint && pnpm run format:check"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",

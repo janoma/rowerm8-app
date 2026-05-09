@@ -1,9 +1,26 @@
 {
   "title": "Row",
-  "selectSensor": "Select motion sensor",
-  "a11ySelectSensor": "Select motion sensor",
-  "selectHelper": "Choose how you want to track stroke motion.",
-  "placeholder": "Live sensor data will appear here once you select a source.",
+  "launcher": {
+    "subtitle": "Choose how you want to row.",
+    "freeRow": {
+      "title": "Free row",
+      "subtitle": "Row without a target. Save the activity when you’re done.",
+      "a11y": "Start a free-row session"
+    },
+    "workout": {
+      "title": "Workout",
+      "subtitle": "Follow a structured plan with intervals.",
+      "a11y": "Start a workout session"
+    },
+    "ready": "Ready: {label}",
+    "notReady": "Pair a motion sensor on Home to start.",
+    "goHome": "Go to Home",
+    "a11yGoHome": "Open the Home tab to pair a motion sensor"
+  },
+  "workout": {
+    "comingSoonTitle": "Workouts coming soon",
+    "comingSoonBody": "Structured workouts aren’t available yet. Stay tuned!"
+  },
   "phone": {
     "noPermission": "Motion permission was denied. Enable Motion & Fitness for rowerm8 in Settings to see live data.",
     "noAccelerometer": "No accelerometer detected on this device.",
@@ -23,6 +40,13 @@
     "cadenceUnit": "spm",
     "pace": "Pace",
     "elapsed": "Elapsed",
+    "heartRate": "Heart rate",
+    "heartRateUnit": "bpm",
     "footer": "{rate, number} Hz · pace estimated from cadence"
+  },
+  "freeRow": {
+    "title": "Free row",
+    "back": "Back",
+    "placeholder": "Live sensor data will appear here once data starts flowing."
   }
 }

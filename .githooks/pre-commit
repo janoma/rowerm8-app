@@ -4,6 +4,9 @@
 
 set -e
 
+echo "[pre-commit] gen:routes..."
+pnpm run --silent gen:routes >/dev/null
+
 echo "[pre-commit] typecheck..."
 pnpm run --silent typecheck
 
