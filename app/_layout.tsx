@@ -53,6 +53,10 @@ export default function RootLayout() {
                     name="free-row"
                     options={{ headerShown: false }}
                   />
+                  <Stack.Screen
+                    name="activity/[id]"
+                    options={{ headerShown: false }}
+                  />
                 </Stack>
                 <StatusBar style="auto" />
               </ThemeProvider>

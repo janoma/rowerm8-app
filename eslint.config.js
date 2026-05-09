@@ -7,10 +7,15 @@ const prettierConfig = require("eslint-config-prettier");
 const tsEslintPlugin = require("@typescript-eslint/eslint-plugin");
 
 module.exports = defineConfig([
+  // A flat-config block with only `ignores` is treated as a global ignore.
+  // We pull these out of the rules block below so files like the
+  // expo-router-generated `.expo/types/router.d.ts` aren't linted at all
+  // (otherwise the boilerplate `/* eslint-disable */` they ship with
+  // becomes an unused-disable warning under our --max-warnings 0 rule).
+  { ignores: ["dist/**", ".expo/**"] },
   expoConfig,
   prettierConfig,
   {
-    ignores: ["dist/*"],
     plugins: {
       // Re-register the plugin in this config block so we can override its
       // rules below. Flat config scopes plugins per block — our overrides

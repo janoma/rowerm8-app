@@ -1,0 +1,38 @@
+{
+  "title": "History",
+  "subtitle": "Your saved rowing activities.",
+  "empty": {
+    "title": "No activities yet",
+    "body": "Tap Start on Free Row to record your first activity. Saved rows appear here as FIT files you can share to Strava, Training Peaks, or Garmin Connect."
+  },
+  "card": {
+    "duration": "Duration",
+    "strokes": "{count, plural, one {# stroke} other {# strokes}}",
+    "avgCadence": "{cadence, number} spm avg",
+    "avgHeartRate": "{bpm, number} bpm avg",
+    "noPace": "—"
+  },
+  "detail": {
+    "headerTitle": "Activity",
+    "summary": {
+      "duration": "Duration",
+      "strokes": "Strokes",
+      "avgCadence": "Avg cadence",
+      "avgPace": "Avg pace",
+      "avgHeartRate": "Avg HR",
+      "maxHeartRate": "Max HR",
+      "started": "Started",
+      "ended": "Ended"
+    },
+    "share": "Share",
+    "shareDialogTitle": "Share activity",
+    "shareUnavailable": "Sharing isn’t available on this device.",
+    "delete": "Delete",
+    "deleteTitle": "Delete activity?",
+    "deleteBody": "This will remove the FIT file and the entry from your history. This can’t be undone.",
+    "deleteConfirm": "Delete",
+    "deleteCancel": "Cancel",
+    "notFoundTitle": "Activity not found",
+    "notFoundBody": "This activity may have been deleted."
+  }
+}

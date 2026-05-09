@@ -28,6 +28,7 @@ import deSettings from "@/locales/de/settings.json";
 import deTabs from "@/locales/de/tabs.json";
 import enBle from "@/locales/en/ble.json";
 import enCommon from "@/locales/en/common.json";
+import enHistory from "@/locales/en/history.json";
 import enHome from "@/locales/en/home.json";
 import enModal from "@/locales/en/modal.json";
 import enRow from "@/locales/en/row.json";
@@ -84,6 +85,7 @@ export const NAMESPACES = [
   "ble",
   "settings",
   "modal",
+  "history",
 ] as const;
 
 export type Namespace = (typeof NAMESPACES)[number];
@@ -100,6 +102,7 @@ export const RESOURCES = {
     ble: enBle,
     settings: enSettings,
     modal: enModal,
+    history: enHistory,
   },
   es: {
     common: esCommon,

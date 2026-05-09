@@ -35,6 +35,9 @@ const MAPPING = {
   "heart.fill": "favorite",
   "play.fill": "play-arrow",
   "list.bullet": "list",
+  "clock.fill": "history",
+  "square.and.arrow.up": "ios-share",
+  trash: "delete",
 } as IconMapping;
 
 /**
