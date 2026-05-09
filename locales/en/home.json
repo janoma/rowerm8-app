@@ -4,5 +4,10 @@
   "devices": {
     "header": "DEVICES",
     "helper": "A motion sensor is required to row. Heart-rate monitors are optional."
+  },
+  "recent": {
+    "header": "RECENT",
+    "seeAll": "See all",
+    "a11ySeeAll": "Open the History tab"
   }
 }

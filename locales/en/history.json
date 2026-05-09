@@ -24,6 +24,18 @@
       "started": "Started",
       "ended": "Ended"
     },
+    "charts": {
+      "cadence": {
+        "title": "Cadence over time",
+        "subtitle": "{avg, number} spm avg · {max, number} spm peak",
+        "noData": "Not enough cadence data to chart."
+      },
+      "heartRate": {
+        "title": "Heart rate over time",
+        "subtitle": "{avg, number} bpm avg · {max, number} bpm peak",
+        "noData": "No heart-rate data was recorded for this activity."
+      }
+    },
     "share": "Share",
     "shareDialogTitle": "Share activity",
     "shareUnavailable": "Sharing isn’t available on this device.",
@@ -33,6 +45,8 @@
     "deleteConfirm": "Delete",
     "deleteCancel": "Cancel",
     "notFoundTitle": "Activity not found",
-    "notFoundBody": "This activity may have been deleted."
+    "notFoundBody": "This activity may have been deleted.",
+    "loadFailedTitle": "Couldn’t open this activity",
+    "loadFailedBody": "The FIT file couldn’t be read. It may be corrupted."
   }
 }

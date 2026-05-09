@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from "expo-router";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
@@ -11,11 +11,15 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { Sparkline } from "@/components/activity/sparkline";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { useActivity, useActivities } from "@/hooks/use-activities";
+import { useActivities, useActivity } from "@/hooks/use-activities";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useFitRecords } from "@/hooks/use-fit-records";
+import type { DecodedActivityRecord } from "@/lib/activity/fit-reader";
+import { downsampleMean } from "@/lib/activity/fit-reader";
 import { shareFitFile } from "@/lib/activity/share";
 import { useFormatters } from "@/lib/format/use-formatters";
 
@@ -32,6 +36,9 @@ const COLORS = {
     dangerText: "#C5283D",
     emptyBorder: "#D1D5DA",
     emptyText: "#9BA1A6",
+    chartTrack: "rgba(10, 126, 164, 0.10)",
+    cadenceBar: "#0a7ea4",
+    heartRateBar: "#C5283D",
   },
   dark: {
     accent: "#3DB7E0",
@@ -45,8 +52,16 @@ const COLORS = {
     dangerText: "#E94B5E",
     emptyBorder: "#2F3236",
     emptyText: "#6E7174",
+    chartTrack: "rgba(61, 183, 224, 0.16)",
+    cadenceBar: "#3DB7E0",
+    heartRateBar: "#E94B5E",
   },
 } as const;
+
+/** Number of bars in each sparkline. ~80 looks dense without overflowing
+ * on a phone-width card; matches the resolution of typical Strava charts. */
+const SPARKLINE_BUCKETS = 80;
+const SPARKLINE_HEIGHT = 64;
 
 type Palette = (typeof COLORS)[keyof typeof COLORS];
 
@@ -61,6 +76,7 @@ export default function ActivityDetailScreen() {
 
   const { activity, isLoading } = useActivity(id);
   const { remove } = useActivities();
+  const fit = useFitRecords(activity?.fitFileUri);
 
   const handleBack = useCallback(() => {
     router.back();
@@ -141,6 +157,9 @@ export default function ActivityDetailScreen() {
             activity={activity}
             palette={palette}
             formatters={formatters}
+            fitRecords={fit.decoded?.records ?? []}
+            isFitLoading={fit.isLoading}
+            fitError={fit.error}
             onShare={handleShare}
             onDelete={handleDelete}
           />
@@ -170,12 +189,18 @@ function DetailBody({
   activity,
   palette,
   formatters,
+  fitRecords,
+  isFitLoading,
+  fitError,
   onShare,
   onDelete,
 }: {
   activity: NonNullable<ReturnType<typeof useActivity>["activity"]>;
   palette: Palette;
   formatters: ReturnType<typeof useFormatters>;
+  fitRecords: DecodedActivityRecord[];
+  isFitLoading: boolean;
+  fitError: Error | null;
   onShare: () => void;
   onDelete: () => void;
 }) {
@@ -271,6 +296,13 @@ function DetailBody({
         ))}
       </View>
 
+      <ChartsSection
+        records={fitRecords}
+        isLoading={isFitLoading}
+        error={fitError}
+        palette={palette}
+      />
+
       <Pressable
         onPress={onShare}
         accessibilityRole="button"
@@ -314,6 +346,165 @@ function DetailBody({
       </Pressable>
     </View>
   );
+}
+
+function ChartsSection({
+  records,
+  isLoading,
+  error,
+  palette,
+}: {
+  records: DecodedActivityRecord[];
+  isLoading: boolean;
+  error: Error | null;
+  palette: Palette;
+}) {
+  const { t } = useTranslation("history");
+
+  // Compute the bucketed series + headline stats once per record stream.
+  // The detail screen otherwise re-renders on focus events that don't
+  // change the FIT data; redoing the bucket math wastes ~ms per render.
+  const cadence = useMemo(
+    () => bucketAndStats(records.map((r) => r.cadenceSpm)),
+    [records],
+  );
+  const heartRate = useMemo(
+    () => bucketAndStats(records.map((r) => r.heartRateBpm)),
+    [records],
+  );
+
+  if (isLoading) {
+    return (
+      <View
+        style={[
+          styles.chartCard,
+          {
+            backgroundColor: palette.cardBg,
+            borderColor: palette.cardBorder,
+          },
+        ]}
+      >
+        <ActivityIndicator color={palette.accent} />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View
+        style={[
+          styles.chartCard,
+          {
+            backgroundColor: palette.cardBg,
+            borderColor: palette.cardBorder,
+          },
+        ]}
+      >
+        <ThemedText style={[styles.chartTitle, { color: palette.dangerText }]}>
+          {t("detail.loadFailedTitle")}
+        </ThemedText>
+        <ThemedText style={[styles.chartSubtitle, { color: palette.helper }]}>
+          {t("detail.loadFailedBody")}
+        </ThemedText>
+      </View>
+    );
+  }
+
+  return (
+    <>
+      <ChartCard
+        title={t("detail.charts.cadence.title")}
+        subtitle={
+          cadence.count > 0
+            ? t("detail.charts.cadence.subtitle", {
+                avg: cadence.avg,
+                max: cadence.max,
+              })
+            : t("detail.charts.cadence.noData")
+        }
+        values={cadence.buckets}
+        barColor={palette.cadenceBar}
+        trackColor={palette.chartTrack}
+        palette={palette}
+      />
+      <ChartCard
+        title={t("detail.charts.heartRate.title")}
+        subtitle={
+          heartRate.count > 0
+            ? t("detail.charts.heartRate.subtitle", {
+                avg: heartRate.avg,
+                max: heartRate.max,
+              })
+            : t("detail.charts.heartRate.noData")
+        }
+        values={heartRate.buckets}
+        barColor={palette.heartRateBar}
+        trackColor={palette.chartTrack}
+        palette={palette}
+      />
+    </>
+  );
+}
+
+function ChartCard({
+  title,
+  subtitle,
+  values,
+  barColor,
+  trackColor,
+  palette,
+}: {
+  title: string;
+  subtitle: string;
+  values: (number | null)[];
+  barColor: string;
+  trackColor: string;
+  palette: Palette;
+}) {
+  return (
+    <View
+      style={[
+        styles.chartCard,
+        {
+          backgroundColor: palette.cardBg,
+          borderColor: palette.cardBorder,
+        },
+      ]}
+    >
+      <ThemedText style={styles.chartTitle}>{title}</ThemedText>
+      <ThemedText style={[styles.chartSubtitle, { color: palette.helper }]}>
+        {subtitle}
+      </ThemedText>
+      <Sparkline
+        values={values}
+        height={SPARKLINE_HEIGHT}
+        color={barColor}
+        trackColor={trackColor}
+      />
+    </View>
+  );
+}
+
+/** Compute headline stats and a bucketed series for a single channel.
+ * Returns a `count` of 0 when no values were observed so the caller can
+ * render the "no data" stub instead of a flat empty chart. */
+function bucketAndStats(values: (number | null)[]): {
+  buckets: (number | null)[];
+  avg: number;
+  max: number;
+  count: number;
+} {
+  const finite = values.filter(
+    (v): v is number => v != null && Number.isFinite(v),
+  );
+  if (finite.length === 0) {
+    return { buckets: [], avg: 0, max: 0, count: 0 };
+  }
+  const buckets = downsampleMean(values, SPARKLINE_BUCKETS);
+  const sum = finite.reduce((a, b) => a + b, 0);
+  const avg = Math.round(sum / finite.length);
+  const max = Math.round(Math.max(...finite));
+  return { buckets, avg, max, count: finite.length };
 }
 
 const styles = StyleSheet.create({
@@ -393,6 +584,22 @@ const styles = StyleSheet.create({
   summaryValue: {
     fontSize: 15,
     fontWeight: "600",
+  },
+  chartCard: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    gap: 8,
+  },
+  chartTitle: {
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  chartSubtitle: {
+    fontSize: 13,
+    lineHeight: 17,
+    marginBottom: 4,
   },
   primaryButton: {
     flexDirection: "row",

@@ -2,9 +2,10 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ScrollView, StyleSheet } from "react-native";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { ActivityCard } from "@/components/activity/activity-card";
 import { SensorPickerSheet } from "@/components/sensor/sensor-picker-sheet";
 import { SensorPlacementModal } from "@/components/sensor/sensor-placement-modal";
 import { SensorStatusCard } from "@/components/sensor/sensor-status-card";
@@ -17,6 +18,7 @@ import {
   type MotionSensorSource,
   useMotionSensor,
 } from "@/contexts/motion-sensor-context";
+import { useActivities } from "@/hooks/use-activities";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useHeartRateStream } from "@/hooks/use-heart-rate-stream";
 import { useMotionStream } from "@/hooks/use-motion-stream";
@@ -25,12 +27,24 @@ const COLORS = {
   light: {
     helper: "#687076",
     sectionLabel: "#687076",
+    accent: "#0a7ea4",
+    cardBg: "#FFFFFF",
+    cardBorder: "#E2E5E8",
+    cardHelper: "#687076",
+    chevron: "#9BA1A6",
   },
   dark: {
     helper: "#9BA1A6",
     sectionLabel: "#9BA1A6",
+    accent: "#3DB7E0",
+    cardBg: "#181B1F",
+    cardBorder: "#2A2E33",
+    cardHelper: "#9BA1A6",
+    chevron: "#6E7174",
   },
 } as const;
+
+const RECENT_PEEK_LIMIT = 3;
 
 export default function HomeScreen() {
   const scheme = useColorScheme() ?? "light";
@@ -44,6 +58,8 @@ export default function HomeScreen() {
   const ble = useBle();
   const motionStream = useMotionStream();
   const heartRateStream = useHeartRateStream();
+  const { activities } = useActivities();
+  const recentActivities = activities.slice(0, RECENT_PEEK_LIMIT);
 
   const [pickerOpen, setPickerOpen] = useState(false);
   const [placementVisible, setPlacementVisible] = useState(false);
@@ -165,6 +181,49 @@ export default function HomeScreen() {
           <ThemedText style={[styles.helper, { color: palette.helper }]}>
             {t("devices.helper")}
           </ThemedText>
+
+          {recentActivities.length > 0 ? (
+            <>
+              <View style={styles.recentHeaderRow}>
+                <ThemedText
+                  style={[styles.sectionLabel, { color: palette.sectionLabel }]}
+                >
+                  {t("recent.header")}
+                </ThemedText>
+                <Pressable
+                  onPress={() => router.push("/history")}
+                  hitSlop={8}
+                  accessibilityRole="link"
+                  accessibilityLabel={t("recent.a11ySeeAll")}
+                >
+                  <ThemedText
+                    style={[styles.seeAll, { color: palette.accent }]}
+                  >
+                    {t("recent.seeAll")}
+                  </ThemedText>
+                </Pressable>
+              </View>
+              {recentActivities.map((activity) => (
+                <ActivityCard
+                  key={activity.id}
+                  activity={activity}
+                  palette={{
+                    cardBg: palette.cardBg,
+                    cardBorder: palette.cardBorder,
+                    cardHelper: palette.cardHelper,
+                    chevron: palette.chevron,
+                  }}
+                  compact
+                  onPress={() =>
+                    router.push({
+                      pathname: "/activity/[id]",
+                      params: { id: activity.id },
+                    })
+                  }
+                />
+              ))}
+            </>
+          ) : null}
         </ScrollView>
       </SafeAreaView>
 
@@ -220,5 +279,15 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     marginTop: 4,
+  },
+  recentHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 12,
+  },
+  seeAll: {
+    fontSize: 13,
+    fontWeight: "600",
   },
 });
