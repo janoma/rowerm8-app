@@ -11,6 +11,14 @@ export type DecodedFrame = {
   angle?: { roll: number; pitch: number; yaw: number };
   /** Battery state of charge in [0, 100]. Only present in response frames. */
   batteryPercent?: number;
+  /** Heart rate in beats per minute. Emitted by HR decoders. */
+  heartRateBpm?: number;
+  /**
+   * R-R intervals in milliseconds (time between consecutive heartbeats).
+   * Optional — only some HRMs emit them, and only when their flags bit 4
+   * is set. Used by HRV calculations.
+   */
+  rrIntervalsMs?: number[];
 };
 
 export type DecoderDeviceHint = {
@@ -19,8 +27,12 @@ export type DecoderDeviceHint = {
   serviceUUIDs?: string[] | null;
 };
 
+export type DecoderRole = "motion" | "hr";
+
 export type SensorDecoder = {
   key: string;
+  /** Which device slot the decoder feeds into. */
+  role: DecoderRole;
   displayName: string;
   vendorDescription: string;
   recommended: boolean;

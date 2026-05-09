@@ -1,8 +1,17 @@
 {
   "scan": {
-    "navTitle": "Bluetooth sensors",
-    "section": "COMPATIBLE DEVICES ({count, number})",
-    "empty": "No compatible sensors found yet. Make sure your sensor is on and try again.",
+    "navTitle": {
+      "motion": "Motion sensor",
+      "hr": "Heart-rate monitor"
+    },
+    "section": {
+      "motion": "COMPATIBLE MOTION SENSORS ({count, number})",
+      "hr": "COMPATIBLE HEART-RATE MONITORS ({count, number})"
+    },
+    "empty": {
+      "motion": "No compatible motion sensors found yet. Make sure your sensor is on and try again.",
+      "hr": "No compatible heart-rate monitors found yet. Make sure your monitor is on, worn, and within range."
+    },
     "connecting": "Connecting…",
     "connectError": "Couldn’t connect: {error}",
     "hero": {

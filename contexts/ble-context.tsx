@@ -148,7 +148,14 @@ function mapState(s: State | null): BleAvailability {
   }
 }
 
-function toScannedDevice(device: Device): ScannedDevice {
+// Standard BLE Heart Rate Service. We pass it as a scan filter so iOS/Android
+// only surface HR-capable peripherals during an HR-targeted scan, instead of
+// flooding the JS layer with every nearby device. Must stay in sync with
+// `decoders/heart-rate-standard.ts`. Uses the canonical BLE base UUID
+// (...-00805f9b34fb).
+const HR_SERVICE_UUID_FILTER = "0000180d-0000-1000-8000-00805f9b34fb";
+
+function toScannedDevice(device: Device, role: BleRole): ScannedDevice {
   const hint = {
     name: device.name,
     localName: device.localName,
@@ -160,7 +167,7 @@ function toScannedDevice(device: Device): ScannedDevice {
     localName: device.localName,
     rssi: device.rssi ?? null,
     serviceUUIDs: device.serviceUUIDs ?? null,
-    decoder: findDecoder(hint),
+    decoder: findDecoder(hint, role),
   };
 }
 
@@ -297,12 +304,13 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
       setScanRole(role);
       setScanning(true);
 
-      // For hr we'll filter on the standard Heart Rate service so non-HRMs
-      // don't even hit the JS bridge (added in a later milestone). Motion has
-      // no universal advertising signature (each vendor ships a custom service
-      // UUID), so we keep scanning everything and rely on the decoder registry
-      // to identify matches.
-      const filterServices: string[] | null = null;
+      // For hr we filter on the standard Heart Rate service so non-HRMs
+      // don't even hit the JS bridge. Motion has no universal advertising
+      // signature (each vendor ships a custom service UUID), so we keep
+      // scanning everything and rely on the decoder registry to identify
+      // matches.
+      const filterServices: string[] | null =
+        role === "hr" ? [HR_SERVICE_UUID_FILTER] : null;
 
       try {
         manager.startDeviceScan(
@@ -319,7 +327,7 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
             }
             setDevices((prev) => {
               const existing = prev[device.id];
-              const incoming = toScannedDevice(device);
+              const incoming = toScannedDevice(device, role);
               const merged: ScannedDevice = existing
                 ? {
                     ...existing,
@@ -427,7 +435,7 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
           timeout: CONNECT_TIMEOUT_MS,
         });
         await connected.discoverAllServicesAndCharacteristics();
-        const scanned = toScannedDevice(connected);
+        const scanned = toScannedDevice(connected, role);
         const decoder = scanned.decoder;
         const r = resourcesRef.current[role];
 

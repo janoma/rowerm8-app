@@ -12,6 +12,7 @@ import {
 import "react-native-reanimated";
 
 import { BleProvider } from "@/contexts/ble-context";
+import { HeartRateProvider } from "@/contexts/heart-rate-context";
 import { LocaleProvider } from "@/contexts/locale-context";
 import { MotionSensorProvider } from "@/contexts/motion-sensor-context";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -27,27 +28,32 @@ export default function RootLayout() {
     <SafeAreaProvider initialMetrics={initialWindowMetrics}>
       <LocaleProvider>
         <MotionSensorProvider>
-          <BleProvider>
-            <ThemeProvider
-              value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
-            >
-              <Stack>
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen
-                  name="modal"
-                  options={{ presentation: "modal", title: "Modal" }}
-                />
-                <Stack.Screen
-                  name="ble-scan"
-                  options={{
-                    presentation: "fullScreenModal",
-                    headerShown: false,
-                  }}
-                />
-              </Stack>
-              <StatusBar style="auto" />
-            </ThemeProvider>
-          </BleProvider>
+          <HeartRateProvider>
+            <BleProvider>
+              <ThemeProvider
+                value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
+              >
+                <Stack>
+                  <Stack.Screen
+                    name="(tabs)"
+                    options={{ headerShown: false }}
+                  />
+                  <Stack.Screen
+                    name="modal"
+                    options={{ presentation: "modal", title: "Modal" }}
+                  />
+                  <Stack.Screen
+                    name="ble-scan"
+                    options={{
+                      presentation: "fullScreenModal",
+                      headerShown: false,
+                    }}
+                  />
+                </Stack>
+                <StatusBar style="auto" />
+              </ThemeProvider>
+            </BleProvider>
+          </HeartRateProvider>
         </MotionSensorProvider>
       </LocaleProvider>
     </SafeAreaProvider>

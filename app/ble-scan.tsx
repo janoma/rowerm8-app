@@ -1,4 +1,4 @@
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -15,10 +15,16 @@ import { DeviceCard } from "@/components/ble/device-card";
 import { ScanHero } from "@/components/ble/scan-hero";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import type { ScannedDevice } from "@/contexts/ble-context";
+import type { BleRole, ScannedDevice } from "@/contexts/ble-context";
 import { useBle } from "@/contexts/ble-context";
+import { useHeartRate } from "@/contexts/heart-rate-context";
 import { useMotionSensor } from "@/contexts/motion-sensor-context";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+
+function parseRoleParam(raw: string | string[] | undefined): BleRole {
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  return value === "hr" ? "hr" : "motion";
+}
 
 const COLORS = {
   light: {
@@ -54,7 +60,10 @@ export default function BleScanScreen() {
   const palette = COLORS[scheme];
   const insets = useSafeAreaInsets();
   const ble = useBle();
-  const { selectBle } = useMotionSensor();
+  const motionSelection = useMotionSensor();
+  const hrSelection = useHeartRate();
+  const params = useLocalSearchParams<{ role?: string }>();
+  const role = parseRoleParam(params.role);
   const { t } = useTranslation("ble");
   const { t: tc } = useTranslation("common");
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -62,18 +71,24 @@ export default function BleScanScreen() {
   const { availability, startScan, stopScan } = ble;
 
   // Devices we don't have a decoder for can't actually be used, so we hide
-  // them entirely instead of cluttering the list.
+  // them entirely instead of cluttering the list. The decoder match is
+  // already role-aware (set inside the BLE context based on the active
+  // scan), so a stray motion sensor won't appear here during an HR scan.
   const supportedDevices = useMemo(
     () => ble.devices.filter((d) => d.decoder),
     [ble.devices],
   );
 
+  // Pick the slot that matches the active scan so notices and "connecting"
+  // copy reflect the right connection attempt.
+  const slot = role === "hr" ? ble.hr : ble.motion;
+
   useEffect(() => {
     if (availability === "on" && !didAutoStartRef.current) {
       didAutoStartRef.current = true;
-      void startScan({ role: "motion" });
+      void startScan({ role });
     }
-  }, [availability, startScan]);
+  }, [availability, role, startScan]);
 
   useEffect(() => {
     return () => {
@@ -83,18 +98,23 @@ export default function BleScanScreen() {
 
   const handlePressDevice = async (device: ScannedDevice) => {
     setPendingId(device.id);
-    const connected = await ble.connect(device.id, "motion");
+    const connected = await ble.connect(device.id, role);
     setPendingId(null);
     if (connected) {
       const label =
         connected.name ??
         connected.localName ??
         t("device.fallbackLabel", { suffix: connected.id.slice(-5) });
-      selectBle({
+      const args = {
         deviceLabel: label,
         bleDeviceId: connected.id,
         decoderKey: connected.decoder?.key ?? null,
-      });
+      };
+      if (role === "hr") {
+        hrSelection.selectBle(args);
+      } else {
+        motionSelection.selectBle(args);
+      }
       router.dismiss();
     }
   };
@@ -139,7 +159,9 @@ export default function BleScanScreen() {
               {tc("actions.cancel")}
             </ThemedText>
           </Pressable>
-          <ThemedText style={styles.navTitle}>{t("scan.navTitle")}</ThemedText>
+          <ThemedText style={styles.navTitle}>
+            {t(`scan.navTitle.${role}`)}
+          </ThemedText>
           <View style={styles.navActionPlaceholder} />
         </View>
       </View>
@@ -173,7 +195,7 @@ export default function BleScanScreen() {
           </View>
         ) : null}
 
-        {ble.motion.connectionError && pendingId === null ? (
+        {slot.connectionError && pendingId === null ? (
           <View
             style={[
               styles.notice,
@@ -186,7 +208,7 @@ export default function BleScanScreen() {
             <ThemedText
               style={[styles.noticeText, { color: palette.noticeText }]}
             >
-              {t("scan.connectError", { error: ble.motion.connectionError })}
+              {t("scan.connectError", { error: slot.connectionError })}
             </ThemedText>
           </View>
         ) : null}
@@ -195,13 +217,13 @@ export default function BleScanScreen() {
           <ThemedText
             style={[styles.sectionHeader, { color: palette.sectionLabel }]}
           >
-            {t("scan.section", { count: supportedDevices.length })}
+            {t(`scan.section.${role}`, { count: supportedDevices.length })}
           </ThemedText>
           {ble.scanning ? (
             <ActivityIndicator size="small" color={palette.accent} />
           ) : (
             <Pressable
-              onPress={() => ble.startScan({ role: "motion" })}
+              onPress={() => ble.startScan({ role })}
               hitSlop={8}
               accessibilityRole="button"
               accessibilityLabel={tc("actions.scanAgain")}
@@ -218,7 +240,7 @@ export default function BleScanScreen() {
             <ThemedText
               style={[styles.emptyText, { color: palette.sectionLabel }]}
             >
-              {t("scan.empty")}
+              {t(`scan.empty.${role}`)}
             </ThemedText>
           ) : null}
 

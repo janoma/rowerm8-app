@@ -85,6 +85,7 @@ function voltageToPercent(volts: number): number {
  */
 export const witmotionBwt901: SensorDecoder = {
   key: "witmotion-bwt901",
+  role: "motion",
   displayName: "WitMotion 9-axis IMU",
   vendorDescription: "WT9011DCL / BWT901BLE5.0",
   recommended: true,
