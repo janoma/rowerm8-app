@@ -240,6 +240,10 @@ export default function FreeRowScreen() {
     cadenceSpm: strokeSession.cadenceSpm,
     paceSecondsPer500m: strokeSession.paceSecondsPer500m,
     elapsedSeconds: displayTotalTimeSeconds,
+    // The Lap button plumbing that turns this into a real value lands
+    // in C6 of the row-fixes plan. Until then we always render the
+    // single-column Total time layout.
+    lapElapsedSeconds: null,
     heartRateBpm: heartRate.bpm,
   };
 

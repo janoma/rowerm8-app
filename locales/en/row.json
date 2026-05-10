@@ -39,7 +39,8 @@
     "cadence": "Cadence",
     "cadenceUnit": "spm",
     "pace": "Pace",
-    "elapsed": "Elapsed",
+    "totalTime": "Total time",
+    "lapTime": "Lap time",
     "heartRate": "Heart rate",
     "heartRateUnit": "bpm"
   },
