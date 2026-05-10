@@ -1,23 +1,21 @@
 {
   "features": {
-    "skip": "Skip",
     "next": "Next",
     "getStarted": "Get started",
     "a11yPager": "Page {current, number} of {total, number}",
     "slides": {
       "live": {
-        "title": "Row live with accurate metrics",
-        "body": "Stream stroke-by-stroke power, pace, and heart rate while you row."
+        "title": "Row with live metrics",
+        "body": "See your rowing rate, pace, time, and heart rate update with every stroke."
       },
       "track": {
-        "title": "Track pace and stroke rate",
-        "body": "See split times, stroke rate, distance, and split deltas as you go."
+        "title": "Tuned to your stroke",
+        "body": "A quick calibration teaches the app your rowing rhythm, so every stroke is counted accurately."
       },
       "review": {
-        "title": "Save and review your performance",
-        "body": "Every row is saved on your device as a FIT file, so you can compare and share."
+        "title": "Save, review, share",
+        "body": "Each row is saved as a FIT file, which you can share to Strava, Garmin and other training apps."
       }
-    },
-    "credit": "Photos courtesy of Unsplash"
+    }
   }
 }

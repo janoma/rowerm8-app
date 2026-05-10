@@ -5,7 +5,6 @@ import {
   FlatList,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
-  Pressable,
   StyleSheet,
   useWindowDimensions,
   View,
@@ -23,7 +22,7 @@ import {
 } from "./features-images";
 
 type Props = {
-  /** Called when the user dismisses (Skip on any slide, or Get started on the last). */
+  /** Called when the user finishes (taps Get started on the last slide). */
   onComplete: () => void;
 };
 
@@ -31,12 +30,12 @@ const VIEWABILITY_CONFIG = { itemVisiblePercentThreshold: 60 };
 
 /**
  * First-install features carousel: 3 paged slides with hero image, headline,
- * body copy, page indicator, and Skip / Next / Get started controls.
+ * body copy, page indicator, and Next / Get started control.
  *
  * Re-uses the FlatList paging pattern from `SensorPlacementModal` but takes
  * the full screen rather than a centered card. We don't show a "Don't show
- * again" checkbox — the user-confirmed product behavior is "first install
- * only", so dismissing in any way (Skip or Get started) marks the carousel
+ * again" checkbox or a Skip control — the user-confirmed product behavior is
+ * "first install only", so completing the carousel (Get started) marks it
  * as seen via the orchestrator.
  */
 export function FeaturesCarousel({ onComplete }: Props) {
@@ -113,22 +112,6 @@ export function FeaturesCarousel({ onComplete }: Props) {
       edges={["top", "bottom"]}
       style={[styles.root, { backgroundColor: tokens.colors.surface }]}
     >
-      <View style={styles.skipRow}>
-        {!isLast ? (
-          <Pressable
-            onPress={onComplete}
-            hitSlop={12}
-            accessibilityRole="button"
-          >
-            <ThemedText
-              style={[styles.skipLabel, { color: tokens.colors.accent }]}
-            >
-              {t("features.skip")}
-            </ThemedText>
-          </Pressable>
-        ) : null}
-      </View>
-
       <FlatList
         ref={listRef}
         data={FEATURES_SLIDES}
@@ -177,11 +160,6 @@ export function FeaturesCarousel({ onComplete }: Props) {
           size="lg"
           block
         />
-        <ThemedText
-          style={[styles.credit, { color: tokens.colors.textTertiary }]}
-        >
-          {t("features.credit")}
-        </ThemedText>
       </View>
     </SafeAreaView>
   );
@@ -209,6 +187,7 @@ function SlideView({ slide, slideWidth, translationT: t }: SlideProps) {
           source={{ uri: imageUrl }}
           style={styles.image}
           contentFit="cover"
+          contentPosition="center"
           transition={200}
           cachePolicy="memory-disk"
           accessibilityIgnoresInvertColors
@@ -235,20 +214,8 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
   },
-  skipRow: {
-    minHeight: 32,
-    paddingHorizontal: 20,
-    paddingTop: 4,
-    flexDirection: "row",
-    justifyContent: "flex-end",
-  },
-  skipLabel: {
-    fontSize: 16,
-    fontWeight: "600",
-  },
   list: {
-    flexGrow: 0,
-    flexShrink: 1,
+    flex: 1,
   },
   slide: {
     flex: 1,
@@ -257,8 +224,8 @@ const styles = StyleSheet.create({
     gap: 24,
   },
   imageWrap: {
+    flex: 1,
     width: "100%",
-    aspectRatio: 4 / 3,
     borderRadius: 24,
     overflow: "hidden",
   },
@@ -271,8 +238,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   headline: {
-    fontSize: 26,
-    lineHeight: 32,
+    fontSize: 22,
+    lineHeight: 28,
     textAlign: "center",
   },
   body: {
@@ -295,9 +262,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 12,
     gap: 12,
-  },
-  credit: {
-    fontSize: 12,
-    textAlign: "center",
   },
 });
