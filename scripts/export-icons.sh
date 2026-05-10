@@ -22,10 +22,16 @@
 # It also produces an iOS .icon bundle (Icon Composer / Liquid Glass format,
 # Xcode 26+, supported by Expo SDK 54) at:
 #   assets/AppIcon.icon/icon.json
-#   assets/AppIcon.icon/Assets/Foreground.svg       (default / light)
-#   assets/AppIcon.icon/Assets/Foreground-Dark.svg  (dark appearance)
-#   assets/AppIcon.icon/Assets/Foreground-Mono.svg  (tinted appearance)
+#   assets/AppIcon.icon/Assets/Foreground.svg
 # Reference it from app.json as ios.icon: "./assets/AppIcon.icon".
+#
+# We only emit a single foreground SVG and let Icon Composer / iOS derive
+# the dark and tinted variants automatically from it. icon.json is the
+# minimal canonical form Icon Composer 1.4 itself emits when you save
+# from its GUI, so re-running this script is byte-stable with the GUI
+# (any per-layer tweaks you make in Icon Composer survive a re-run only
+# if you mirror them back into the heredoc below — Icon Composer is the
+# source of truth for icon.json, this script just (re)scaffolds it).
 
 set -euo pipefail
 
@@ -35,12 +41,10 @@ OUT="${OUT:-$ROOT/assets/images}"
 ICON_BUNDLE="${ICON_BUNDLE:-$ROOT/assets/AppIcon.icon}"
 
 # --- color tokens (kept in sync with packages/design-tokens/src) -------
-BRAND_HEX='#0A7EA4'        # accent.light from colors.ts
-BRAND_HEX_DARK='#3DB7E0'   # accent.dark from colors.ts
-ACCENT_HEX='#F5C518'       # Z3 yellow from hr-zones.ts (theme-independent)
-SURFACE_HEX='#FFFFFF'      # surface.light from colors.ts
-SURFACE_HEX_DARK='#151718' # surface.dark from colors.ts
-SAFE_ZONE_PCT=66           # Android adaptive icon "always-visible" inner area
+BRAND_HEX='#0A7EA4'   # accent.light from colors.ts
+ACCENT_HEX='#F5C518'  # Z3 yellow from hr-zones.ts (theme-independent)
+SURFACE_HEX='#FFFFFF' # surface.light from colors.ts (iOS legacy + .icon platter)
+SAFE_ZONE_PCT=66      # Android adaptive icon "always-visible" inner area
 
 # Layer scale for the iOS .icon bundle. The source SVG centers the rower
 # inside its 1024² viewBox with intrinsic padding, so at scale 1.0 the
@@ -166,35 +170,29 @@ render_with_safezone "$WORK/color.svg" 1024 "$SAFE_ZONE_PCT" \
   "$OUT/splash-icon.png"
 
 # --- 7. iOS .icon bundle (Icon Composer / Liquid Glass) ----------------
-# Bundle layout per the Icon Composer file format (Xcode 26+, Icon
-# Composer 1.4):
+# Bundle layout for Icon Composer 1.4 (Xcode 26+):
 #   AppIcon.icon/
-#     icon.json    # manifest — pretty-printed JSON, kebab-case keys
-#     Assets/      # layer art referenced by `image-name` (+ extras)
-#       Foreground.svg          (the layer that icon.json references)
-#       Foreground-Dark.svg     (alt — wire into Icon Composer manually
-#                                if you want a different dark-mode art)
-#       Foreground-Mono.svg     (alt — for tinted/themed appearance)
+#     icon.json           # manifest — kebab-case JSON
+#     Assets/
+#       Foreground.svg    # the only art file Icon Composer needs
 #
-# The manifest is intentionally minimal so it round-trips through Icon
-# Composer 1.4 cleanly. Schema reverse-engineered from a real Icon
-# Composer output (jasonlong/octodot@11b455b/AppIcon.icon/icon.json).
-# Per-appearance background color is varied via `fill-specializations`.
-# Per-appearance foreground art (dark/mono) cannot be expressed reliably
-# in 1.4 without invoking GUI-only fields — open the bundle in Icon
-# Composer and drag in Foreground-Dark.svg / Foreground-Mono.svg if you
-# want that, or just let the system derive Dark/Tinted from the single
-# foreground (which it does fine).
+# The system handles dark and tinted variants automatically from the
+# single foreground (the dark fill specialization Icon Composer also
+# strips on save, so we don't emit it either). The manifest below is
+# byte-identical to what Icon Composer 1.4 writes when you open this
+# bundle, "Save", and quit — confirmed by round-trip on this machine.
+# Format details that matter for byte-stability:
+#   * compact JSON (no spaces around `:`, simple arrays inline)
+#   * trailing zeros stripped from numbers (1.3, not 1.30)
+#   * group field order: layers, name, shadow, translucency
+#   * Liquid Glass material defaults (shadow + translucency) live on
+#     the group; Icon Composer adds them automatically and we match
 ASSETS_DIR="$ICON_BUNDLE/Assets"
 mkdir -p "$ASSETS_DIR"
 
-# Light: brand teal + yellow accent — this is the layer Icon Composer
-# loads. The dark and mono variants ship alongside but are not wired in
-# by default (see note above). All three are flat-fill SVGs (no CSS
-# classes / no <defs>) so Icon Composer's parser accepts them.
-flatten_svg "$BRAND_HEX"      "$ACCENT_HEX" "$ASSETS_DIR/Foreground.svg"
-flatten_svg "$BRAND_HEX_DARK" "$ACCENT_HEX" "$ASSETS_DIR/Foreground-Dark.svg"
-flatten_svg "#000000"         "#000000"     "$ASSETS_DIR/Foreground-Mono.svg"
+# Single flat-fill foreground (no CSS classes / no <defs>) — Icon
+# Composer's SVG parser doesn't evaluate <style> blocks.
+flatten_svg "$BRAND_HEX" "$ACCENT_HEX" "$ASSETS_DIR/Foreground.svg"
 
 # Convert "#RRGGBB" -> "srgb:r,g,b,1.00000" matching the precision Icon
 # Composer itself emits (5 fractional digits).
@@ -207,44 +205,42 @@ hex_to_srgb() {
     'BEGIN{ printf "srgb:%.5f,%.5f,%.5f,1.00000", r/255, g/255, b/255 }'
 }
 LIGHT_FILL=$(hex_to_srgb "$SURFACE_HEX")
-DARK_FILL=$(hex_to_srgb "$SURFACE_HEX_DARK")
+
+# Normalize the layer scale to its shortest decimal form (1.30 -> 1.3,
+# 1 -> 1, 1.5 -> 1.5) so the JSON matches what Icon Composer writes.
+SCALE_NORM=$(awk -v s="$ICON_LAYER_SCALE" 'BEGIN{ printf "%g", s }')
 
 cat > "$ICON_BUNDLE/icon.json" <<EOF
 {
-  "fill" : {
-    "solid" : "$LIGHT_FILL"
+  "fill": {
+    "solid": "$LIGHT_FILL"
   },
-  "fill-specializations" : [
+  "groups": [
     {
-      "appearance" : "dark",
-      "value" : {
-        "solid" : "$DARK_FILL"
+      "layers": [
+        {
+          "image-name": "Foreground.svg",
+          "name": "Rower",
+          "position": {
+            "scale": $SCALE_NORM,
+            "translation-in-points": [0, 0]
+          }
+        }
+      ],
+      "name": "Rower",
+      "shadow": {
+        "kind": "neutral",
+        "opacity": 0.5
+      },
+      "translucency": {
+        "enabled": true,
+        "value": 0.5
       }
     }
   ],
-  "groups" : [
-    {
-      "name" : "Rower",
-      "layers" : [
-        {
-          "image-name" : "Foreground.svg",
-          "name" : "Rower",
-          "position" : {
-            "scale" : $ICON_LAYER_SCALE,
-            "translation-in-points" : [
-              0,
-              0
-            ]
-          }
-        }
-      ]
-    }
-  ],
-  "supported-platforms" : {
-    "circles" : [
-      "watchOS"
-    ],
-    "squares" : "shared"
+  "supported-platforms": {
+    "circles": ["watchOS"],
+    "squares": "shared"
   }
 }
 EOF
@@ -259,8 +255,7 @@ for f in icon android-icon-foreground android-icon-background \
 done
 
 echo "wrote .icon bundle:"
-for f in "icon.json" "Assets/Foreground.svg" "Assets/Foreground-Dark.svg" \
-         "Assets/Foreground-Mono.svg"; do
+for f in "icon.json" "Assets/Foreground.svg"; do
   bytes=$(wc -c < "$ICON_BUNDLE/$f" | tr -d ' ')
   printf "  AppIcon.icon/%-30s %8s bytes\n" "$f" "$bytes"
 done
