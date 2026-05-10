@@ -12,10 +12,23 @@ declare module "@garmin/fitsdk" {
    * inspects shape at runtime against its profile. */
   type FitMesg = Record<string, unknown> & { mesgNum?: number };
 
+  type DeveloperFieldDescription = {
+    developerDataIdMesg: FitMesg;
+    fieldDescriptionMesg: FitMesg;
+  };
+
   export class Encoder {
-    constructor(options?: { fieldDescriptions?: Record<string, unknown> });
+    constructor(options?: {
+      fieldDescriptions?: Record<string, DeveloperFieldDescription>;
+    });
     writeMesg(mesg: FitMesg): void;
     onMesg(mesgNum: number, mesg: FitMesg): void;
+    /** Register a developer field after construction. */
+    addDeveloperField(
+      key: string,
+      developerDataIdMesg: FitMesg,
+      fieldDescriptionMesg: FitMesg,
+    ): this;
     /** Flushes the file footer (CRC, etc.) and returns the encoded bytes. */
     close(): Uint8Array;
   }

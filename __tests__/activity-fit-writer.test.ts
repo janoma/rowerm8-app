@@ -3,7 +3,10 @@
  */
 import { Decoder, Stream } from "@garmin/fitsdk";
 
-import { encodeActivityToFit } from "@/lib/activity/fit-writer";
+import {
+  encodeActivityToFit,
+  SPEED_ESTIMATION_DISCLOSURE,
+} from "@/lib/activity/fit-writer";
 import type { RecordedActivity } from "@/lib/activity/types";
 
 function fixtureActivity(): RecordedActivity {
@@ -34,6 +37,15 @@ function fixtureActivity(): RecordedActivity {
       cadenceSpm: 24,
     })),
   };
+}
+
+function decodeMessages(activity: RecordedActivity) {
+  const bytes = encodeActivityToFit(activity);
+  const stream = Stream.fromByteArray(bytes);
+  const decoder = new Decoder(stream);
+  const { messages, errors } = decoder.read();
+  expect(errors).toEqual([]);
+  return messages;
 }
 
 describe("FIT writer", () => {
@@ -100,5 +112,108 @@ describe("FIT writer", () => {
     expect(Decoder.isFIT(stream)).toBe(true);
     const decoder = new Decoder(stream);
     expect(decoder.checkIntegrity()).toBe(true);
+    const { messages } = decoder.read();
+    const session = messages.sessionMesgs?.[0] as Record<string, unknown>;
+    expect(session.totalDistance ?? 0).toBe(0);
+  });
+
+  it("writes a cumulative distance on every record", () => {
+    const messages = decodeMessages(fixtureActivity());
+    const records = (messages.recordMesgs ?? []) as Record<string, unknown>[];
+    expect(records.length).toBe(600);
+
+    let prev = -Infinity;
+    for (const r of records) {
+      const d = r.distance as number;
+      expect(typeof d).toBe("number");
+      expect(d).toBeGreaterThanOrEqual(prev);
+      prev = d;
+    }
+    expect(records[0].distance).toBe(0);
+    expect(prev).toBeGreaterThan(1000);
+  });
+
+  it("syncs totalDistance on LAP and SESSION with the final record distance", () => {
+    const messages = decodeMessages(fixtureActivity());
+    const records = (messages.recordMesgs ?? []) as Record<string, unknown>[];
+    const finalDistance = records[records.length - 1].distance as number;
+    const session = messages.sessionMesgs?.[0] as Record<string, unknown>;
+    const lap = messages.lapMesgs?.[0] as Record<string, unknown>;
+    expect(session.totalDistance).toBeCloseTo(finalDistance, 1);
+    expect(lap.totalDistance).toBeCloseTo(finalDistance, 1);
+  });
+
+  it("contributes zero distance when every record has zero speed", () => {
+    const startedAtMs = Date.UTC(2026, 4, 8, 14, 0, 0);
+    const records = Array.from({ length: 30 }, (_, i) => ({
+      elapsedS: i,
+      cadenceSpm: 0,
+      paceSecondsPer500m: 0,
+      strokeCount: 0,
+      heartRateBpm: null,
+    }));
+    const activity: RecordedActivity = {
+      id: "still",
+      summary: {
+        startedAtMs,
+        endedAtMs: startedAtMs + 30_000,
+        durationS: 30,
+        strokeCount: 0,
+        avgCadenceSpm: 0,
+        avgPaceSecondsPer500m: 0,
+        avgHeartRateBpm: null,
+        maxHeartRateBpm: null,
+      },
+      records,
+      strokes: [],
+    };
+    const messages = decodeMessages(activity);
+    const recs = (messages.recordMesgs ?? []) as Record<string, unknown>[];
+    for (const r of recs) {
+      expect(r.distance ?? 0).toBe(0);
+    }
+    const session = messages.sessionMesgs?.[0] as Record<string, unknown>;
+    expect(session.totalDistance ?? 0).toBe(0);
+  });
+
+  it("identifies the recorder as RowerM8 (est. pace)", () => {
+    const messages = decodeMessages(fixtureActivity());
+    const deviceInfo = (messages.deviceInfoMesgs ?? []) as Record<
+      string,
+      unknown
+    >[];
+    const creator =
+      deviceInfo.find((d) => d.deviceIndex === "creator") ?? deviceInfo[0];
+    expect(creator?.productName).toBe("RowerM8 (est. pace)");
+  });
+
+  it("emits an estimation-note developer field on the SESSION", () => {
+    const messages = decodeMessages(fixtureActivity());
+    expect(messages.developerDataIdMesgs?.length).toBeGreaterThanOrEqual(1);
+    expect(messages.fieldDescriptionMesgs?.length).toBeGreaterThanOrEqual(1);
+
+    const fieldDesc = (messages.fieldDescriptionMesgs ?? [])[0] as Record<
+      string,
+      unknown
+    >;
+    const fieldName = Array.isArray(fieldDesc.fieldName)
+      ? fieldDesc.fieldName[0]
+      : fieldDesc.fieldName;
+    expect(fieldName).toBe("estimation_note");
+
+    const session = messages.sessionMesgs?.[0] as Record<string, unknown>;
+    const devFields = session.developerFields as
+      | Record<string, unknown>
+      | undefined;
+    expect(devFields).toBeDefined();
+    // The decoder keys developer fields by an internal counter rather than
+    // the human-readable field name; assert the value round-trips under any
+    // key.
+    expect(Object.values(devFields ?? {})).toContain(
+      SPEED_ESTIMATION_DISCLOSURE,
+    );
+    expect(SPEED_ESTIMATION_DISCLOSURE).toBe(
+      "Speed and pace estimated by RowerM8.",
+    );
   });
 });

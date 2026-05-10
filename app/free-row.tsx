@@ -420,6 +420,14 @@ export default function FreeRowScreen() {
               })
             : ""}
         </Banner>
+        <ThemedText
+          style={[
+            styles.savedDisclosure,
+            { color: tokens.colors.textSecondary },
+          ]}
+        >
+          {t("freeRow.recording.savedDisclosure")}
+        </ThemedText>
         <View style={styles.savedActions}>
           <View style={styles.savedActionFlex}>
             <Button
@@ -486,5 +494,10 @@ const styles = StyleSheet.create({
   },
   savedActionFlex: {
     flex: 1,
+  },
+  savedDisclosure: {
+    fontSize: 13,
+    lineHeight: 18,
+    textAlign: "center",
   },
 });

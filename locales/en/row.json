@@ -63,6 +63,7 @@
       "savingBody": "Encoding your activity to FIT.",
       "savedTitle": "Activity saved",
       "savedBody": "Saved {duration} of rowing with {strokes, plural, one {# stroke} other {# strokes}}. Share it to upload to Strava or Training Peaks.",
+      "savedDisclosure": "Speed and pace are estimated by RowerM8 — feel free to mention this in your Strava description.",
       "saveErrorTitle": "Couldn’t save activity",
       "saveErrorBody": "Something went wrong while saving the FIT file. Try again.",
       "discardTitle": "Discard activity?",
