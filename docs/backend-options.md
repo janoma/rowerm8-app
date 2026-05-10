@@ -1,308 +1,440 @@
-# Backend & SaaS Options for RowerM8
+# Backend & Web Options for RowerM8
 
-> Status: **for review**. The team will evaluate these options before any
-> backend wiring is started. Once a decision is made, the chosen stack will
-> be wired up in a follow-up PR (auth, subscriptions, analytics, etc.).
+> **Status: for review.** This document is for the team to read together
+> and pick a direction. Once we agree, an engineer will wire up the
+> chosen tools. Nothing has been committed to yet.
 
-This document compares three concrete stacks that could power RowerM8's
-backend needs. It is intentionally short on hand-wavy "best practices" and
-heavy on **what you actually pay** at our target scale, **how many SaaS
-accounts you'd be juggling**, and **what each option locks you into**.
+## How to read this document
 
-## What we need to cover
+The goal is to pick a small set of online services ("the stack") that
+together do the things RowerM8 needs:
 
-| Concern                   | Why we need it                                               |
-| ------------------------- | ------------------------------------------------------------ |
-| User accounts (auth)      | Sign-in, sign-up, account recovery, profile metadata         |
-| Subscriptions / IAP       | Premium tier on iOS App Store + Google Play (and web later)  |
-| Product analytics         | Funnels, retention, "users who row > 3x/week", etc.          |
-| Crash & error reporting   | Symbolicated iOS/Android crash dumps with sourcemaps         |
-| Feature flags / A/B tests | Gradual rollouts, premium-feature toggles, experiments       |
-| Data sync (future)        | Sync rowing activities (FIT files / metadata) across devices |
-| Push notifications        | Re-engagement, "your weekly row summary"                     |
+- store user accounts, log them in, and let them recover passwords
+- let people pay for the premium subscription (and one-time sensor)
+- let us see how the app is being used (which screens are popular, etc.)
+- alert us when the app crashes
+- run gradual rollouts of new features (turn a feature on for 10% of
+  users at first)
+- sync each user's rowing activities to the cloud so they see them on
+  every device, and so we can publish each activity at a public link
+  (per the team's plan to make activities shareable)
+- power the website (sensor store, subscriptions, "view my activities")
 
-## Target scale (worst-case for cost modeling)
+A short glossary lives at the bottom. Acronyms are spelled out the first
+time they appear.
 
-- **Up to 100,000 total users** (cumulative).
-- **Up to 10,000 monthly active users (MAU)**.
-- **Small team** (single-digit engineers) — minimizing operational
-  overhead matters more than squeezing the last 10% out of any vendor.
-- **Subscription revenue**: assume a paying-conversion in the 2–5% range,
-  i.e. 200–500 subscribers at $5/mo → $1k–$2.5k MTR
-  (Monthly Tracked Revenue, RevenueCat's term). At launch we likely sit
-  inside RevenueCat's free band; once we're consistently above $2.5k MTR
-  the 1% cut kicks in but is dwarfed by Apple/Google's 15-30% take.
+## Our scale and revenue assumptions
 
-## The non-negotiable: RevenueCat
+These are the numbers we use to estimate every monthly bill below. They
+are deliberately conservative.
 
-Every option below includes **RevenueCat** for App Store / Google Play
-in-app subscription management. There is no integrated "auth + analytics
+- **Up to 100,000 total accounts** (cumulative — every person who has
+  ever signed up).
+- **Up to 10,000 monthly active users** (people who open the app at
+  least once a month — we'll abbreviate this as **MAU**).
+- **Small team** — fewer than five engineers; we want each tool to be
+  low-maintenance.
 
-- IAP" SaaS that handles iOS receipt validation, Google Play Billing, and
-  restore-purchases logic well — and rolling our own is a non-trivial
-  multi-week project we don't want to own. RevenueCat is the de-facto
-  standard for indie/small-team apps and integrates with everything below.
+Pricing model (working assumption, can change):
 
-* **Pricing**: Free up to **$2,500 MTR/month**, then **1% of MTR**.
-  (At $1k MTR → $0/mo. At $5k MTR → $50/mo. At $25k MTR → $250/mo.)
-  Source: <https://www.revenuecat.com/pricing>.
-* **What it gives us**: receipt validation, entitlement checks via SDK,
-  webhook stream of subscription events, paywall A/B testing, and a
-  unified dashboard for cohort/churn metrics on subscribers.
-* **What it doesn't give us**: user accounts, product analytics, crash
-  reports. Those are what the three options below differentiate on.
+- **Sensor package**: $29.99 one-time, includes 30 days of premium.
+- **Premium**: $4.99 / month or $49 / year (saves about 18%).
+- **Free tier**: very limited (free row, basically nothing else).
 
-# Option 1 — Firebase + RevenueCat (most integrated)
+Three illustrative scenarios for the cost tables below. They take the
+average revenue per paying user (about $4.60 / month, after blending
+monthly and annual plans) and add the sensor sales:
 
-**Two SaaS accounts. One Google account, one RevenueCat account.**
+| Scenario   | Total accounts | MAU    | Paying subscribers | Sensors sold / year | Gross monthly revenue |
+| ---------- | -------------- | ------ | ------------------ | ------------------- | --------------------- |
+| **Launch** | 1,000          | 200    | 20                 | 30                  | ~$170                 |
+| **Growth** | 10,000         | 2,000  | 200                | 200                 | ~$1,400               |
+| **Steady** | 50,000         | 10,000 | 1,000              | 500                 | ~$5,900               |
+| **Cap**    | 100,000        | 10,000 | 1,500              | 1,000               | ~$9,500               |
 
-Firebase covers everything except the IAP layer in a single Google Cloud
-project with a single billing relationship.
+> "Gross monthly revenue" is the dollar amount that flows in _before_
+> Apple/Google take their cut on in-app purchases (15–30%) and _before_
+> any of the tools below take their share. It's the number RevenueCat
+> calls "Monthly Tracked Revenue" or **MTR**.
 
-| Capability             | Firebase service                               |
-| ---------------------- | ---------------------------------------------- |
-| Auth                   | Firebase Authentication (email, Apple, Google) |
-| User / activity data   | Cloud Firestore                                |
-| Crash reporting        | Crashlytics                                    |
-| Product analytics      | Google Analytics for Firebase (GA4)            |
-| Feature flags / config | Firebase Remote Config                         |
-| A/B tests              | Firebase A/B Testing                           |
-| Push notifications     | Firebase Cloud Messaging (FCM)                 |
-| Subscriptions          | RevenueCat (separate account)                  |
+## The two required pieces (regardless of the option)
 
-### Approximate monthly cost at our scale
+Every option below includes the same two services to handle in-app
+purchases and global privacy compliance. We don't have a real choice
+about these.
 
-| Volume             | Firebase (Spark)       | RevenueCat | **Total** |
-| ------------------ | ---------------------- | ---------- | --------- |
-| 1k MAU, $0 revenue | $0                     | $0         | **$0**    |
-| 5k MAU, $1k MTR    | $0                     | $0         | **$0**    |
-| 10k MAU, $2.5k MTR | $0                     | $0         | **$0**    |
-| 10k MAU, $10k MTR  | ~$0–10 (Blaze if used) | ~$100      | **~$100** |
-| 50k MAU, $25k MTR  | ~$25–80 (Blaze writes) | ~$250      | **~$300** |
+### 1. RevenueCat — for managing subscriptions on iOS / Android
 
-Firebase Spark (free) tier covers up to **50,000 MAU on Auth**,
-**50k document reads / 20k writes per day on Firestore**, and **unlimited
-Crashlytics + Analytics events**. ([Firebase pricing](https://firebase.google.com/pricing).)
-A 10k MAU app that writes ~3 docs/day per user lives comfortably inside
-Spark; the moment we add features that write more (live activity sync,
-chat, etc.) we move to Blaze (pay-as-you-go) and costs are still tiny —
-Firestore writes are $0.18 per 100k. Even at 50k MAU + heavy sync the
-bill is double-digit dollars per month.
+When someone buys a subscription inside the iOS or Android app,
+Apple and Google handle the payment (and take a 15–30% cut). What's
+hard is everything around that: knowing who is currently paying, who
+has cancelled, who upgraded, restoring past purchases, sending receipts
+to our backend. **RevenueCat** is a service that solves all of this.
+Every modern indie / small-team app uses it (or their direct
+competitor, Adapty); building it ourselves is a multi-week project we
+shouldn't take on.
 
-### Strengths
+**What it costs.** Free up to **$2,500 / month of Monthly Tracked
+Revenue (MTR)**. Above that, RevenueCat charges 1% of MTR.
 
-- **Single console for everything except IAP**. One billing account, one
-  IAM, one set of credentials.
-- **First-class Expo support** via `@react-native-firebase/*` config
-  plugins. The Expo team's docs walk you through it.
-- **Crashlytics is best-in-class** for mobile crash reporting and ships
-  with the Firebase SDK at no incremental cost.
-- **Generous free tier** — we're free at launch and likely free at 10k
-  MAU.
-- **Remote Config + A/B Testing** lets us flip on premium features for
-  cohorts without shipping a new build.
+| Scenario | RevenueCat fee |
+| -------- | -------------- |
+| Launch   | $0             |
+| Growth   | $0             |
+| Steady   | ~$59 / month   |
+| Cap      | ~$94 / month   |
 
-### Trade-offs
+Source: <https://www.revenuecat.com/pricing>
 
-- **GA4 is a step down from PostHog** for ad-hoc product analytics.
-  Funnels, cohort drilldowns, and event property exploration are all
-  noticeably clunkier; expect to lean on BigQuery export for non-trivial
-  questions.
-- **Firestore data model lock-in**. Future migration off Firestore means
-  rewriting queries against a relational schema. Mitigation: keep
-  documents flat and export nightly to BigQuery / GCS.
-- **Vendor concentration**: Google decides our pricing model. They
-  already deprecated several Firebase products (Crashlytics for non-Spark
-  is fine, but Dynamic Links was killed; Test Lab is being shuffled).
-- **No session replay** out of the box (we'd add LogRocket / PostHog
-  later if we ever need it — adds a 3rd account at that point).
+### 2. Privacy & data-retention compliance
 
-# Option 2 — Supabase + RevenueCat + PostHog (best-of-breed, 3 accounts)
+Because we'll have users in the European Union, the United Kingdom,
+Brazil, California, and other places, we need to comply with each
+region's privacy laws. The most demanding is the EU's **GDPR** (General
+Data Protection Regulation), which is increasingly the global baseline.
+Practically that means we must be able to:
 
-**Three SaaS accounts.** Supabase replaces Firebase for auth + data;
-PostHog covers analytics + flags + crash reporting in one place.
+- show a user every piece of data we hold about them,
+- delete that data on request, fully, within 30 days,
+- record their explicit consent for any analytics tracking,
+- store passwords / personal data inside reputable services that have
+  signed equivalent paperwork with us.
 
-| Capability             | Service                                                                 |
-| ---------------------- | ----------------------------------------------------------------------- |
-| Auth                   | Supabase Auth (email, Apple, Google, magic-link)                        |
-| User / activity data   | Supabase Postgres                                                       |
-| Crash + error tracking | PostHog Error Tracking                                                  |
-| Product analytics      | PostHog Product Analytics                                               |
-| Feature flags / A/B    | PostHog Feature Flags + Experiments                                     |
-| Session replay         | PostHog Session Replay                                                  |
-| Push notifications     | Supabase Edge Functions + APNs/FCM (DIY) **or** OneSignal (4th account) |
-| Subscriptions          | RevenueCat                                                              |
+All three options below can satisfy this; the difference is how much
+manual work it takes. **Supabase** (Option 2 / 3) makes deletion
+particularly easy because the data sits in a normal database we can
+query. **Firebase** (Option 1) requires a small amount of custom code
+to walk the user's documents and delete them.
 
-### Approximate monthly cost at our scale
+There is no extra fee from any of the listed services for GDPR
+compliance — but we do need to budget a couple of engineering days to
+build the export/delete flow, regardless of which option we pick.
 
-| Volume             | Supabase            | PostHog             | RevenueCat | **Total**     |
-| ------------------ | ------------------- | ------------------- | ---------- | ------------- |
-| 1k MAU, $0 revenue | $0 (Free)           | $0                  | $0         | **$0**        |
-| 5k MAU, $1k MTR    | $0 (Free)           | $0                  | $0         | **$0**        |
-| 10k MAU, $2.5k MTR | $0–25 (Free or Pro) | $0                  | $0         | **$0–25**     |
-| 10k MAU, $10k MTR  | $25 (Pro)           | $0–10 (under 1M ev) | ~$100      | **~$130**     |
-| 50k MAU, $25k MTR  | $25–60 (Pro)        | ~$25–75             | ~$250      | **~$320–385** |
+# Option 1 — Firebase + RevenueCat
 
-- **Supabase Free**: 50k MAU, 500 MB database, 1 GB storage, projects
-  pause after 1 week of inactivity. Pro plan **$25/mo** lifts to 100k
-  MAU (then $0.00325/MAU), 8 GB DB, 250 GB egress, daily backups.
-  Source: <https://supabase.com/pricing>.
-- **PostHog Free**: 1M events/mo for product analytics, 100k errors/mo
-  for crash tracking, 1M feature-flag requests, 5k session replays. At
-  10k MAU and ~50 events/MAU/day (high) we'd land around 15M events/mo
-  → ~$60–75 PostHog bill. The free tier covers small/medium apps for
-  free; metered overage scales linearly. Source:
-  <https://posthog.com/pricing>.
+**Two service providers in total. One Google account, one RevenueCat
+account.**
+
+Firebase is a Google product that bundles almost everything we need
+into one console: sign-in, a database, crash reports, analytics,
+feature flags. RevenueCat handles the subscriptions on top.
+
+| Need we have                | Tool that handles it                           |
+| --------------------------- | ---------------------------------------------- |
+| Sign-in / sign-up           | Firebase Authentication (email, Apple, Google) |
+| User profiles & activity DB | Firebase Firestore (the database)              |
+| Crash reports               | Firebase Crashlytics                           |
+| App usage analytics         | Google Analytics for Firebase                  |
+| Feature flags / A/B tests   | Firebase Remote Config + A/B Testing           |
+| Subscriptions               | RevenueCat (separate account)                  |
+
+### What we'd pay (mobile app only, website handled separately below)
+
+| Scenario | Firebase             | RevenueCat | **Mobile total** |
+| -------- | -------------------- | ---------- | ---------------- |
+| Launch   | $0 (free tier)       | $0         | **$0**           |
+| Growth   | $0 (free tier)       | $0         | **$0**           |
+| Steady   | ~$30–80 (paid tier)  | ~$59       | **~$90–140**     |
+| Cap      | ~$60–150 (paid tier) | ~$94       | **~$155–245**    |
+
+Firebase is free up to 50,000 sign-in users and 50k database reads /
+20k database writes per day. We hit the paid tier (called "Blaze")
+once we're syncing every user's rowing activities to the cloud, which
+the team has decided is required for premium. The numbers above are
+the order of magnitude — the actual bill could vary by a factor of 2
+depending on how often each device syncs.
+
+Source: <https://firebase.google.com/pricing>
 
 ### Strengths
 
-- **You own the schema (Postgres)**. Migrating off Supabase later is a
-  `pg_dump` away — no rewrite. Great for long-term insurance.
-- **PostHog is dramatically better than GA4** for product analytics:
-  funnel exploration, cohort definitions, formula-based metrics, and
-  session replay all in the same UI.
-- **Mobile session replay** is unique among the options — invaluable for
-  reproducing weird touch sequences during stroke detection.
-- **Open-source escape hatch**: Supabase is OSS; PostHog is OSS. Both
-  can be self-hosted if SaaS pricing ever bites (we wouldn't, but the
-  optionality is reassuring).
-- **Supabase Auth is excellent** — magic links, OAuth, anonymous-to-real
-  account upgrade flow, Apple sign-in (required by App Store), all built
-  in. Row-level security lets us write policies once instead of guarding
-  every API call.
+- Fewest moving parts. One console, one bill (besides RevenueCat).
+- Crashlytics is the most respected mobile crash reporting product —
+  if the app misbehaves, it tells us exactly where, complete with
+  device model and OS version.
+- Free during the launch and growth phases.
+- Engineering integration with our app framework (Expo) is the
+  smoothest of the three options.
 
 ### Trade-offs
 
-- **Three accounts, three billing relationships**. Slightly more invoice
-  management; modest in absolute terms but real.
-- **PostHog mobile crash reporting is newer than Sentry's**. It works,
-  but if a fancy iOS native crash with a stripped symbol table needs
-  resolving, Sentry would do a better job (see Option 3).
-- **Push notifications need either Edge Functions + DIY APNs/FCM or a
-  4th account (OneSignal)**. Firebase wins on this front for being
-  built-in.
-- **Supabase availability** has historically been less rock-solid than
-  Firebase's at the free tier (incidents are louder because you can see
-  them in the open Slack). Pro plan SLA is fine.
+- Google Analytics is fine but noticeably less powerful than the
+  PostHog tool used in the other options — more clicks to answer
+  questions like "what % of premium users row at least 3 times a week?"
+- The database (Firestore) stores data as JSON-like documents, not as
+  rows in a normal database. If we ever wanted to leave Firebase, we'd
+  need to convert that data to a different shape — doable, but not
+  cheap.
+- Google has a track record of shutting down products with limited
+  notice. Firebase's core offerings are safe, but we should not bet on
+  any of its newer add-ons.
 
-# Option 3 — Supabase + RevenueCat + Sentry + PostHog (4 accounts, max polish)
+# Option 2 — Supabase + RevenueCat + PostHog
 
-Same as Option 2, but split crash reporting from PostHog into Sentry —
-the gold standard for mobile crash dumps.
+**Three service providers.**
 
-| Capability              | Service    |
-| ----------------------- | ---------- |
-| Auth + data             | Supabase   |
-| Crash + perf monitoring | Sentry     |
-| Product analytics       | PostHog    |
-| Feature flags / A/B     | PostHog    |
-| Session replay          | PostHog    |
-| Subscriptions           | RevenueCat |
+Supabase is the open-source equivalent of Firebase, but built on top of
+a standard database (PostgreSQL). PostHog covers analytics, feature
+flags, and crash reporting in a single tool with a much sharper
+analytics experience than Google Analytics.
 
-### Approximate monthly cost at our scale
+| Need we have                | Tool that handles it                             |
+| --------------------------- | ------------------------------------------------ |
+| Sign-in / sign-up           | Supabase Auth (email, Apple, Google, magic link) |
+| User profiles & activity DB | Supabase Postgres                                |
+| Crash reports               | PostHog Error Tracking                           |
+| App usage analytics         | PostHog Product Analytics                        |
+| Feature flags / A/B tests   | PostHog Feature Flags                            |
+| Session replay              | PostHog Session Replay (bonus — see below)       |
+| Subscriptions               | RevenueCat                                       |
 
-| Volume             | Supabase | PostHog | Sentry (Team) | RevenueCat | **Total**     |
-| ------------------ | -------- | ------- | ------------- | ---------- | ------------- |
-| 1k MAU, $0 revenue | $0       | $0      | $0 (Dev)      | $0         | **$0**        |
-| 5k MAU, $1k MTR    | $0       | $0      | $0–26         | $0         | **$0–26**     |
-| 10k MAU, $2.5k MTR | $25      | $0      | $26           | $0         | **~$51**      |
-| 10k MAU, $10k MTR  | $25      | $0–10   | $26           | ~$100      | **~$160**     |
-| 50k MAU, $25k MTR  | $25–60   | ~$25–75 | $26–80        | ~$250      | **~$340–465** |
+### What we'd pay (mobile app only)
 
-- **Sentry Team plan**: $26/mo (annual), 50k errors/mo included; $0.0003625
-  per overage error. With a stable build we expect well under 50k
-  errors/mo. Source: <https://sentry.io/pricing>.
-- Free Sentry "Developer" plan handles 5k errors/mo at $0 — enough for
-  pre-launch and small private betas.
+| Scenario | Supabase | PostHog  | RevenueCat | **Mobile total** |
+| -------- | -------- | -------- | ---------- | ---------------- |
+| Launch   | $0       | $0       | $0         | **$0**           |
+| Growth   | $0–25    | $0       | $0         | **$0–25**        |
+| Steady   | $25–60   | ~$25–75  | ~$59       | **~$110–195**    |
+| Cap      | $60–120  | ~$50–120 | ~$94       | **~$205–335**    |
+
+- **Supabase**: free up to 50,000 monthly active users in the database;
+  Pro plan is $25 / month (up to 100,000 MAU, plenty of storage,
+  daily backups).  
+  Source: <https://supabase.com/pricing>
+- **PostHog**: free for up to 1 million analytics events / month and
+  100,000 errors / month; meter ticks afterwards (about $0.00005 per
+  event at the lowest tier).  
+  Source: <https://posthog.com/pricing>
 
 ### Strengths
 
-- **Best-in-class crash reporting**. Sentry's iOS/Android symbolication,
-  ANR detection, and stack-trace UX are still better than anyone else's.
-- All other strengths of Option 2 (Postgres ownership, PostHog analytics
-  - replay, etc.).
+- We own the database. The data sits in a standard Postgres database,
+  so if we ever leave Supabase we run one export command and we're
+  done. (This is meaningful insurance if the company changes
+  ownership.)
+- PostHog's analytics is dramatically better than Google's for the
+  kind of question we'll actually ask ("Do people who use a heart-rate
+  monitor stay subscribed longer?").
+- **Session replay** is included — we can watch (anonymized) recordings
+  of confusing user sessions. Very useful when someone reports that
+  "the connect button does nothing".
+- Both Supabase and PostHog are open-source: in the unlikely case
+  pricing becomes an issue we could host them ourselves.
 
 ### Trade-offs
 
-- **Four accounts**, four invoices, four sets of credentials, four IAM
-  systems to keep tidy.
-- Two services overlap on "errors" — PostHog Error Tracking and Sentry
-  both ingest exceptions. We'd point our SDK at Sentry only and use
-  PostHog purely for product analytics + flags + replay; otherwise we
-  pay twice.
-- Highest fixed monthly cost of the three (Sentry adds the only
-  baseline-cost item: $26/mo regardless of volume on the Team plan).
+- Three accounts to manage, three invoices, three sets of credentials.
+  Real overhead, just not large.
+- PostHog's mobile crash reporting is solid but newer than Crashlytics
+  or Sentry. For most crashes it's fine; for unusually weird native
+  crashes it can be slightly less sharp.
 
-# Quick comparison
+# Option 3 — Supabase + RevenueCat + Sentry + PostHog
 
-| Dimension                        | Option 1 (Firebase) | Option 2 (Supabase+PostHog) | Option 3 (+ Sentry) |
-| -------------------------------- | ------------------- | --------------------------- | ------------------- |
-| SaaS accounts                    | **2**               | 3                           | 4                   |
-| Cost @ launch (1k MAU, $0)       | **$0**              | **$0**                      | $0                  |
-| Cost @ 10k MAU, $2.5k MTR        | **$0**              | $0–25                       | ~$51                |
-| Cost @ 50k MAU, $25k MTR         | **~$300**           | ~$320–385                   | ~$340–465           |
-| Auth quality                     | Excellent           | **Excellent**               | **Excellent**       |
-| Mobile crash reports             | **Crashlytics**     | PostHog (newer)             | **Sentry (best)**   |
-| Product analytics                | GA4 (OK)            | **PostHog (great)**         | **PostHog (great)** |
-| Session replay (mobile)          | none                | **PostHog**                 | **PostHog**         |
-| Feature flags / A/B              | Remote Config + A/B | **PostHog**                 | **PostHog**         |
-| Push notifications               | **FCM built-in**    | DIY or OneSignal            | DIY or OneSignal    |
-| Schema portability               | Firestore lock-in   | **Postgres dump**           | **Postgres dump**   |
-| Expo / RN integration smoothness | **Excellent**       | Excellent                   | Excellent           |
-| Operational overhead             | **Lowest**          | Medium                      | Highest             |
+**Four service providers.** Same as Option 2 but with **Sentry** added
+for top-tier crash reporting.
 
-## Recommendation framing (for the team to decide)
+This is the same picture as Option 2, except PostHog stops doing crash
+reports and Sentry takes over. Sentry is the gold standard for mobile
+crash diagnosis — when a customer complains "the app crashes when I
+tap Connect", Sentry will already have the stack trace, the device
+model, and even a video of the crash waiting for the engineer.
 
-We'd lean on these heuristics:
+### What we'd pay (mobile app only)
 
-- If our top constraints are **fewest-vendors** and **lowest cost**:
-  **Option 1 (Firebase + RevenueCat)**. Two accounts, free at launch,
-  ~$300/mo at 50k MAU. Crashlytics is great. The trade-off you accept is
-  GA4 instead of PostHog for analytics and Firestore lock-in for data.
-- If **product-analytics quality and schema portability** matter more
-  than vendor count: **Option 2 (Supabase + PostHog + RevenueCat)**.
-  Three accounts, very similar total cost, but a much better analytics
-  story and you own a Postgres database.
-- If **iOS/Android crash quality** is critical (e.g. native crashes in
-  the BLE / sensor path are common pain): **Option 3** adds Sentry. The
-  marginal cost is the smallest piece of the bill once subscriptions
-  scale, and the troubleshooting time saved on tricky native crashes
-  generally pays for it.
+| Scenario | Supabase | PostHog  | Sentry    | RevenueCat | **Mobile total** |
+| -------- | -------- | -------- | --------- | ---------- | ---------------- |
+| Launch   | $0       | $0       | $0 (free) | $0         | **$0**           |
+| Growth   | $0–25    | $0       | $26       | $0         | **$26–51**       |
+| Steady   | $25–60   | ~$25–75  | $26–80    | ~$59       | **~$135–275**    |
+| Cap      | $60–120  | ~$50–120 | $26–80    | ~$94       | **~$230–415**    |
 
-For RowerM8 specifically — small team, mobile-only, not many crashes
-expected once stroke detection stabilizes, but with a strong product-
-analytics need (we'll want to understand which sensor placements
-correlate with retention) — the **Option 1 vs Option 2** split is the
-real question. **Option 3** is a future upgrade path from Option 2 if
-crash reporting ever becomes a bottleneck.
+Sentry's Team plan is $26 / month for up to 50,000 errors per month;
+the free Developer tier covers 5,000 errors / month and is enough until
+we have real users.  
+Source: <https://sentry.io/pricing>
 
-## Notes on caveats and assumptions
+### Strengths and trade-offs
 
-- All prices are **list prices in USD as of the document date** and do
-  not include enterprise discounts, promo credits, or annual prepay
-  discounts. Vendors change pricing without much notice; treat the
-  numbers as **order-of-magnitude estimates**.
-- "MAU" is defined slightly differently by each vendor (Firebase counts
-  any auth-active user; Supabase counts users who hit the API; PostHog
-  doesn't gate on MAU). The columns above use _our_ internal MAU
-  estimate (10k or 50k) and translate it to each vendor's metric.
-- App Store / Google Play take their **15–30% cut** before any of these
-  vendors see revenue. RevenueCat's MTR is gross (pre-cut) by design.
-- We assume our analytics event volume is "moderate" for a fitness app:
-  ~30–80 events/MAU/day. If we instrumented every accelerometer sample
-  we'd blow PostHog's free tier on day one, but that's never the
-  intent — we'd track sessions, screens, and key feature use.
+Same as Option 2, plus best-in-class crash quality. Cost is only
+slightly higher than Option 2 in absolute terms — the marginal $26 to
+$80 / month is a rounding error once subscription revenue is steady.
+The price you pay is the fourth account.
 
-## Open questions for the team
+# The website (separate decision, can be picked independently)
 
-1. Are there hard requirements (e.g. EU data residency, HIPAA-style
-   audit) that would rule out any of these vendors?
-2. Do we need server-side webhook handling for subscription events on
-   day one, or can we live entirely on client-side entitlement checks
-   (RevenueCat's SDK answers "is the user pro?" with one call) and add
-   webhooks later?
-3. Is push notification a launch requirement? If yes, Firebase's bundled
-   FCM is a meaningful tilt toward Option 1.
-4. Activity-history sync: do we want it at launch (push the team toward
-   committing to Postgres or Firestore now), or is "FIT files stay on
-   device" acceptable for the first release?
+The website needs to do three things:
+
+1. Sell the **sensor package** (one physical product).
+2. Sell the **premium subscription** for users who'd rather pay on the
+   web than through the app.
+3. Show a logged-in user their **rowing activities**, and serve a
+   public link for each activity that anyone can open.
+
+There are two reasonable shapes here.
+
+### Web option A — Squarespace (or similar) for store + small custom site for activities
+
+The team mentioned Squarespace specifically. Squarespace is a website
+builder that includes a store. It's friendly to non-engineers, has
+nice templates, and handles SEO and email forms out of the box.
+
+What it costs:
+
+| Squarespace plan      | Monthly (annual billing) | Notes                                                                        |
+| --------------------- | ------------------------ | ---------------------------------------------------------------------------- |
+| Business              | $33 / month              | 3% extra fee on each sale (on top of Stripe's ~3%)                           |
+| Basic Commerce        | $36 / month              | No Squarespace transaction fee                                               |
+| **Advanced Commerce** | **$65 / month**          | The only plan with API access — you'd need this to support **subscriptions** |
+
+Source: <https://www.squarespace.com/pricing>
+
+> **Important caveat for the team:** Squarespace's selling-point for us
+> is the polished store. But subscriptions and any "let our website
+> read user data" feature require the Advanced Commerce plan ($65 /
+> month). On the cheaper plans we could still sell the sensor, but
+> not memberships.
+
+The "show your activities" page would NOT be on Squarespace itself.
+We'd build a small custom page (probably a single-page app on a
+subdomain like `app.rowerm8.com`) that talks directly to whichever
+backend we picked above (Firebase or Supabase). This custom page is
+free to host on Vercel or Cloudflare Pages at our scale.
+
+**Approximate website monthly cost:**
+
+- Domain: ~$15 / year ($1.25 / month)
+- Squarespace Basic Commerce: $36 / month (or $65 / month for the
+  Advanced plan if we sell subscriptions on web)
+- Stripe processing fee on each sale: 2.9% + $0.30 (on the $29.99
+  sensor, that's ~$1.17 per sale)
+- Custom activity page hosting: $0 (free tier)
+- **Total**: $36 – $65 / month plus per-sale processing fees.
+
+### Web option B — Build a custom site with Next.js + Stripe
+
+Next.js is a popular framework for building marketing + e-commerce
+sites. Stripe powers the payments directly (no e-commerce middleman).
+We'd host the whole thing on Vercel.
+
+| Item                           | Cost                                 |
+| ------------------------------ | ------------------------------------ |
+| Vercel hosting (Hobby tier)    | $0 — likely sufficient at our scale  |
+| Vercel Pro (if we outgrow)     | $20 / month per developer            |
+| Stripe processing fee per sale | 2.9% + $0.30 (same as Squarespace)   |
+| Domain                         | ~$15 / year                          |
+| **Total**                      | **$0 – $20 / month** plus processing |
+
+Strengths:
+
+- Cheaper at every scale.
+- Full control. The "show your activities" page is a normal page on
+  the same site instead of a bolted-on subdomain.
+- Subscriptions are easy: Stripe Checkout + RevenueCat's web billing
+  integration share the same subscriber list as the iOS / Android app.
+- The same database powers the mobile app and the website, so a public
+  activity link is just a URL on the marketing site.
+
+Trade-offs:
+
+- This is a build job (likely one to two weeks of engineering for a
+  basic shop + activity page). Squarespace is mostly drag-and-drop.
+- Marketing-team self-service (e.g., the team adding a blog post,
+  changing copy on the homepage) is harder than Squarespace.
+
+### A third path worth knowing about — Shopify
+
+If we want a more dedicated commerce experience for the sensor, Shopify
+Basic is $29 / month (annual) and is more focused on physical-product
+sales than Squarespace. The same caveats apply — we'd still need a
+separate place for the activity page. Shopify also charges 2.9% + $0.30
+on each card sale (via Shopify Payments), the same as Stripe.
+
+Source: <https://www.shopify.com/pricing>
+
+# Putting it all together
+
+The mobile-app stack and the website choice are independent. Combined
+monthly bills look like:
+
+| Combination                                           | At Launch | At Cap (~$9.5k revenue) |
+| ----------------------------------------------------- | --------- | ----------------------- |
+| Option 1 (Firebase) + Web option B (Next.js)          | **$0**    | ~$155 – $265            |
+| Option 1 (Firebase) + Web option A (Squarespace)      | $36       | ~$190 – $310            |
+| Option 2 (Supabase + PostHog) + Web option B          | **$0**    | ~$205 – $355            |
+| Option 2 (Supabase + PostHog) + Web option A          | $36       | ~$240 – $400            |
+| Option 3 (Supabase + Sentry + PostHog) + Web option B | ~$26      | ~$230 – $435            |
+
+**For a quick gut-check**: at our cap (~$113k / year of gross revenue)
+the most expensive combination above costs us about $5,200 / year.
+That's roughly 5% of revenue. The cheapest is closer to 1.5%.
+
+# Strong opinions, lightly held
+
+If we were forced to pick today:
+
+- **Cheapest, fewest tools, fastest to set up**: \*\*Option 1 (Firebase)
+  - Web option B (Next.js)\*\*. Two SaaS accounts. Free at launch. Around
+    $200 / month at our cap.
+- **Best long-term flexibility**: **Option 2 (Supabase + PostHog) +
+  Web option B (Next.js)**. We own a real database and have first-class
+  product analytics. About $30 / month more than Option 1 at the cap;
+  similar at small scale.
+- **For the marketing team to self-serve the website**: pair either
+  mobile option with **Web option A (Squarespace)** — they can edit
+  copy without engineering involvement. Cost is +$36 to $65 / month
+  versus the custom site.
+
+The recommendation we landed on while writing this is **Option 2 +
+Squarespace for now**. The reasoning, in plain language:
+
+1. The data being premium-gated and shareable via public links is a
+   core feature, and that's exactly what a normal database (Postgres)
+   handles best.
+2. PostHog will tell us which premium features actually drive paying
+   users, which matters most in year 1.
+3. Squarespace gets the sensor on sale next week without engineering
+   work; we can still migrate to a custom site later without losing
+   the Squarespace investment (it's just a different URL).
+
+But this is a coin-flip-class decision against Option 1 + Squarespace,
+and we should not block on a perfect answer. Either choice works.
+
+# Glossary
+
+- **API** (Application Programming Interface): a programmatic doorway
+  that lets one piece of software fetch data from another. We use
+  these to talk to RevenueCat, Firebase, etc.
+- **Backend / database**: the part of a service that stores data and
+  does work behind the scenes. Users don't see it directly.
+- **GDPR** (General Data Protection Regulation): the EU's privacy
+  law, increasingly the global standard. It gives users the right to
+  see, export, and delete their data.
+- **IAP** (In-App Purchase): a payment made inside an iOS or Android
+  app. Apple and Google take a cut of every IAP (15–30%), regardless
+  of which company we use to manage the subscription.
+- **MAU** (Monthly Active Users): the count of distinct users who open
+  the app at least once in a given calendar month. Our cap is 10,000.
+- **MTR** (Monthly Tracked Revenue): the total of all subscription and
+  one-time-purchase revenue in a month, before Apple/Google's cut.
+  RevenueCat uses this number to bill us.
+- **SaaS** (Software-as-a-Service): a tool we pay for monthly that
+  someone else hosts. Firebase, Supabase, RevenueCat, etc.
+- **SDK** (Software Development Kit): the package an engineer drops
+  into the app to talk to a service.
+- **Webhook**: a notification that one service sends to another when
+  something happens. Example: RevenueCat tells our backend "user 123
+  just cancelled their subscription".
+
+# Open questions for the team
+
+1. The illustrative scenario numbers above (paying-user counts, sensor
+   sales) — are they realistic? Bigger numbers move us to the paid
+   tiers of every option faster, but the _ranking_ of the options
+   doesn't change much.
+2. Squarespace vs. a custom Next.js site: do we want the marketing
+   team to self-serve copy changes (Squarespace) or do we prefer the
+   tighter integration of a single codebase (Next.js)?
+3. Is anyone on the team strongly opposed to a Google relationship
+   (Firebase) for any reason? It's the simplest option but also the
+   one with the most vendor concentration.
