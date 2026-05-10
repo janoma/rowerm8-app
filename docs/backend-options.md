@@ -3,6 +3,11 @@
 > **Status: for review.** This document is for the team to read together
 > and pick a direction. Once we agree, an engineer will wire up the
 > chosen tools. Nothing has been committed to yet.
+>
+> _Engineering counterpart: there is a sister document with the technical
+> details (data models, migration costs, webhook plumbing, etc.) at
+> [`backend-options-engineering-notes.md`](./backend-options-engineering-notes.md).
+> Non-engineers can ignore it._
 
 ## How to read this document
 
