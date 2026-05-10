@@ -1,0 +1,21 @@
+{
+  "features": {
+    "next": "Avanti",
+    "getStarted": "Inizia",
+    "a11yPager": "Pagina {current, number} di {total, number}",
+    "slides": {
+      "live": {
+        "title": "Voga con metriche in tempo reale",
+        "body": "Vedi cadenza, ritmo, tempo e frequenza cardiaca aggiornarsi a ogni colpo."
+      },
+      "track": {
+        "title": "Su misura per il tuo colpo",
+        "body": "Una breve calibrazione apprende il tuo ritmo di voga per contare con precisione ogni colpo."
+      },
+      "review": {
+        "title": "Salva, rivedi, condividi",
+        "body": "Ogni sessione viene salvata come file FIT, che puoi condividere su Strava, Garmin e altre app di allenamento."
+      }
+    }
+  }
+}

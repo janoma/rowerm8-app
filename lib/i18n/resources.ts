@@ -14,6 +14,7 @@ import arBle from "@/locales/ar/ble.json";
 import arCommon from "@/locales/ar/common.json";
 import arHome from "@/locales/ar/home.json";
 import arModal from "@/locales/ar/modal.json";
+import arOnboarding from "@/locales/ar/onboarding.json";
 import arRow from "@/locales/ar/row.json";
 import arSensor from "@/locales/ar/sensor.json";
 import arSettings from "@/locales/ar/settings.json";
@@ -22,6 +23,7 @@ import deBle from "@/locales/de/ble.json";
 import deCommon from "@/locales/de/common.json";
 import deHome from "@/locales/de/home.json";
 import deModal from "@/locales/de/modal.json";
+import deOnboarding from "@/locales/de/onboarding.json";
 import deRow from "@/locales/de/row.json";
 import deSensor from "@/locales/de/sensor.json";
 import deSettings from "@/locales/de/settings.json";
@@ -41,6 +43,7 @@ import esBle from "@/locales/es/ble.json";
 import esCommon from "@/locales/es/common.json";
 import esHome from "@/locales/es/home.json";
 import esModal from "@/locales/es/modal.json";
+import esOnboarding from "@/locales/es/onboarding.json";
 import esRow from "@/locales/es/row.json";
 import esSensor from "@/locales/es/sensor.json";
 import esSettings from "@/locales/es/settings.json";
@@ -49,6 +52,7 @@ import frBle from "@/locales/fr/ble.json";
 import frCommon from "@/locales/fr/common.json";
 import frHome from "@/locales/fr/home.json";
 import frModal from "@/locales/fr/modal.json";
+import frOnboarding from "@/locales/fr/onboarding.json";
 import frRow from "@/locales/fr/row.json";
 import frSensor from "@/locales/fr/sensor.json";
 import frSettings from "@/locales/fr/settings.json";
@@ -57,6 +61,7 @@ import itBle from "@/locales/it/ble.json";
 import itCommon from "@/locales/it/common.json";
 import itHome from "@/locales/it/home.json";
 import itModal from "@/locales/it/modal.json";
+import itOnboarding from "@/locales/it/onboarding.json";
 import itRow from "@/locales/it/row.json";
 import itSensor from "@/locales/it/sensor.json";
 import itSettings from "@/locales/it/settings.json";
@@ -65,6 +70,7 @@ import jaBle from "@/locales/ja/ble.json";
 import jaCommon from "@/locales/ja/common.json";
 import jaHome from "@/locales/ja/home.json";
 import jaModal from "@/locales/ja/modal.json";
+import jaOnboarding from "@/locales/ja/onboarding.json";
 import jaRow from "@/locales/ja/row.json";
 import jaSensor from "@/locales/ja/sensor.json";
 import jaSettings from "@/locales/ja/settings.json";
@@ -73,6 +79,7 @@ import zhHansBle from "@/locales/zh-Hans/ble.json";
 import zhHansCommon from "@/locales/zh-Hans/common.json";
 import zhHansHome from "@/locales/zh-Hans/home.json";
 import zhHansModal from "@/locales/zh-Hans/modal.json";
+import zhHansOnboarding from "@/locales/zh-Hans/onboarding.json";
 import zhHansRow from "@/locales/zh-Hans/row.json";
 import zhHansSensor from "@/locales/zh-Hans/sensor.json";
 import zhHansSettings from "@/locales/zh-Hans/settings.json";
@@ -119,6 +126,7 @@ export const RESOURCES = {
     ble: esBle,
     settings: esSettings,
     modal: esModal,
+    onboarding: esOnboarding,
   },
   fr: {
     common: frCommon,
@@ -129,6 +137,7 @@ export const RESOURCES = {
     ble: frBle,
     settings: frSettings,
     modal: frModal,
+    onboarding: frOnboarding,
   },
   it: {
     common: itCommon,
@@ -139,6 +148,7 @@ export const RESOURCES = {
     ble: itBle,
     settings: itSettings,
     modal: itModal,
+    onboarding: itOnboarding,
   },
   ja: {
     common: jaCommon,
@@ -149,6 +159,7 @@ export const RESOURCES = {
     ble: jaBle,
     settings: jaSettings,
     modal: jaModal,
+    onboarding: jaOnboarding,
   },
   ar: {
     common: arCommon,
@@ -159,6 +170,7 @@ export const RESOURCES = {
     ble: arBle,
     settings: arSettings,
     modal: arModal,
+    onboarding: arOnboarding,
   },
   de: {
     common: deCommon,
@@ -169,6 +181,7 @@ export const RESOURCES = {
     ble: deBle,
     settings: deSettings,
     modal: deModal,
+    onboarding: deOnboarding,
   },
   // BCP-47 tag with script subtag — must be quoted because it's not a
   // valid JS identifier. i18next looks up languages by exact tag, so this
@@ -182,5 +195,6 @@ export const RESOURCES = {
     ble: zhHansBle,
     settings: zhHansSettings,
     modal: zhHansModal,
+    onboarding: zhHansOnboarding,
   },
 } as const;

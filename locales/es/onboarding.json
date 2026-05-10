@@ -1,0 +1,21 @@
+{
+  "features": {
+    "next": "Siguiente",
+    "getStarted": "Comenzar",
+    "a11yPager": "Página {current, number} de {total, number}",
+    "slides": {
+      "live": {
+        "title": "Rema con métricas en directo",
+        "body": "Ve cómo se actualizan la cadencia, el ritmo, el tiempo y la frecuencia cardiaca con cada palada."
+      },
+      "track": {
+        "title": "Adaptado a tu palada",
+        "body": "Una breve calibración aprende tu ritmo de remo para contar con precisión cada palada."
+      },
+      "review": {
+        "title": "Guarda, revisa, comparte",
+        "body": "Cada sesión se guarda como un archivo FIT que puedes compartir en Strava, Garmin y otras apps de entrenamiento."
+      }
+    }
+  }
+}

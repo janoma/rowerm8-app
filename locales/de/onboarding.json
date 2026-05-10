@@ -1,0 +1,21 @@
+{
+  "features": {
+    "next": "Weiter",
+    "getStarted": "Loslegen",
+    "a11yPager": "Seite {current, number} von {total, number}",
+    "slides": {
+      "live": {
+        "title": "Rudern mit Live-Werten",
+        "body": "Verfolge Schlagfrequenz, Tempo, Zeit und Herzfrequenz – live bei jedem Schlag."
+      },
+      "track": {
+        "title": "Auf deinen Schlag abgestimmt",
+        "body": "Eine kurze Kalibrierung lernt deinen Rudertakt kennen, damit jeder Schlag genau gezählt wird."
+      },
+      "review": {
+        "title": "Speichern, ansehen, teilen",
+        "body": "Jede Einheit wird als FIT-Datei gespeichert und lässt sich an Strava, Garmin und andere Trainings-Apps teilen."
+      }
+    }
+  }
+}

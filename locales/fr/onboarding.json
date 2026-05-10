@@ -1,0 +1,21 @@
+{
+  "features": {
+    "next": "Suivant",
+    "getStarted": "Commencer",
+    "a11yPager": "Page {current, number} sur {total, number}",
+    "slides": {
+      "live": {
+        "title": "Ramez avec des mesures en direct",
+        "body": "Suivez votre cadence, votre allure, votre temps et votre fréquence cardiaque à chaque coup d’aviron."
+      },
+      "track": {
+        "title": "Adapté à votre rythme",
+        "body": "Une rapide calibration apprend votre rythme d’aviron afin de compter chaque coup avec précision."
+      },
+      "review": {
+        "title": "Enregistrez, revoyez, partagez",
+        "body": "Chaque session est enregistrée au format FIT et peut être partagée vers Strava, Garmin et d’autres applis d’entraînement."
+      }
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "features": {
+    "next": "下一步",
+    "getStarted": "开始",
+    "a11yPager": "第 {current, number} 页，共 {total, number} 页",
+    "slides": {
+      "live": {
+        "title": "实时记录划船数据",
+        "body": "每一桨都会即时更新桨频、配速、时长和心率。"
+      },
+      "track": {
+        "title": "贴合你的划桨节奏",
+        "body": "通过简短校准了解你的划船节奏，从而精准记录每一桨。"
+      },
+      "review": {
+        "title": "保存、回顾、分享",
+        "body": "每次训练都会保存为 FIT 文件，可分享到 Strava、Garmin 等训练 App。"
+      }
+    }
+  }
+}
