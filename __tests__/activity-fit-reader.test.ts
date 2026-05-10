@@ -28,6 +28,7 @@ function buildFixture(): RecordedActivity {
     },
     records,
     strokes: [],
+    pauses: [],
   };
 }
 
@@ -85,6 +86,7 @@ describe("FIT reader", () => {
       },
       records: [],
       strokes: [],
+      pauses: [],
     };
     const decoded = decodeFitToActivity(encodeActivityToFit(empty));
     expect(decoded.records).toEqual([]);

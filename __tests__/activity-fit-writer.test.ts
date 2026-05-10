@@ -36,6 +36,7 @@ function fixtureActivity(): RecordedActivity {
       elapsedS: i * 2.5,
       cadenceSpm: 24,
     })),
+    pauses: [],
   };
 }
 
@@ -106,6 +107,7 @@ describe("FIT writer", () => {
       },
       records: [],
       strokes: [],
+      pauses: [],
     };
     const bytes = encodeActivityToFit(empty);
     const stream = Stream.fromByteArray(bytes);
@@ -166,6 +168,7 @@ describe("FIT writer", () => {
       },
       records,
       strokes: [],
+      pauses: [],
     };
     const messages = decodeMessages(activity);
     const recs = (messages.recordMesgs ?? []) as Record<string, unknown>[];
@@ -185,6 +188,88 @@ describe("FIT writer", () => {
     const creator =
       deviceInfo.find((d) => d.deviceIndex === "creator") ?? deviceInfo[0];
     expect(creator?.productName).toBe("RowerM8 (est. pace)");
+  });
+
+  it("emits timer/stop and timer/start events for each pause window", () => {
+    const startedAtMs = Date.UTC(2026, 4, 8, 14, 0, 0);
+    const durationS = 60;
+    const activity: RecordedActivity = {
+      id: "paused",
+      summary: {
+        startedAtMs,
+        endedAtMs: startedAtMs + durationS * 1000,
+        durationS: 50,
+        strokeCount: 12,
+        avgCadenceSpm: 24,
+        avgPaceSecondsPer500m: 130,
+        avgHeartRateBpm: null,
+        maxHeartRateBpm: null,
+      },
+      records: Array.from({ length: durationS }, (_, i) => ({
+        elapsedS: i,
+        cadenceSpm: 24,
+        paceSecondsPer500m: 130,
+        strokeCount: Math.floor((i * 24) / 60),
+        heartRateBpm: null,
+      })),
+      strokes: [],
+      pauses: [{ startElapsedS: 20, endElapsedS: 30 }],
+    };
+    const messages = decodeMessages(activity);
+    const events = (messages.eventMesgs ?? []) as Record<string, unknown>[];
+    const timerEvents = events.filter((e) => e.event === "timer");
+    const eventTypes = timerEvents.map((e) => e.eventType);
+    // Expect: start (initial), stopAll (pause begin), start (resume), stopAll (final).
+    expect(eventTypes).toEqual(["start", "stopAll", "start", "stopAll"]);
+  });
+
+  it("uses moving-time dt for distance integration across pauses", () => {
+    const startedAtMs = Date.UTC(2026, 4, 8, 14, 0, 0);
+    const cadence = 30;
+    const pace = 120; // 500 / 120 = ~4.167 m/s
+    const records = Array.from({ length: 20 }, (_, i) => ({
+      elapsedS: i,
+      cadenceSpm: cadence,
+      paceSecondsPer500m: pace,
+      strokeCount: Math.floor((i * cadence) / 60),
+      heartRateBpm: null,
+    }));
+    const withoutPause: RecordedActivity = {
+      id: "no-pause",
+      summary: {
+        startedAtMs,
+        endedAtMs: startedAtMs + 19_000,
+        durationS: 19,
+        strokeCount: records[records.length - 1].strokeCount,
+        avgCadenceSpm: cadence,
+        avgPaceSecondsPer500m: pace,
+        avgHeartRateBpm: null,
+        maxHeartRateBpm: null,
+      },
+      records,
+      strokes: [],
+      pauses: [],
+    };
+    const withPause: RecordedActivity = {
+      ...withoutPause,
+      id: "pause",
+      summary: {
+        ...withoutPause.summary,
+        durationS: 14,
+      },
+      pauses: [{ startElapsedS: 9, endElapsedS: 14 }],
+    };
+    const totalOf = (a: RecordedActivity) => {
+      const m = decodeMessages(a);
+      return (m.sessionMesgs?.[0] as Record<string, unknown>)
+        .totalDistance as number;
+    };
+    const noPauseTotal = totalOf(withoutPause);
+    const pauseTotal = totalOf(withPause);
+    // 5 s of pause at ~4.167 m/s would add ~20.8 m if we ignored pauses;
+    // the moving-time integrator should subtract that out.
+    expect(noPauseTotal - pauseTotal).toBeGreaterThan(15);
+    expect(noPauseTotal - pauseTotal).toBeLessThan(30);
   });
 
   it("emits an estimation-note developer field on the SESSION", () => {

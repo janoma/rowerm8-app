@@ -37,7 +37,11 @@ export type ActivitySummary = {
   startedAtMs: number;
   /** Wall-clock end time in epoch ms. */
   endedAtMs: number;
-  /** Total duration of the session in seconds. */
+  /**
+   * Moving duration of the session in seconds. Pause windows are
+   * subtracted, so this represents the time the user was actually
+   * rowing. The wall-clock duration is `(endedAtMs - startedAtMs) / 1000`.
+   */
   durationS: number;
   /** Total stroke count over the session. */
   strokeCount: number;
@@ -51,12 +55,33 @@ export type ActivitySummary = {
   maxHeartRateBpm: number | null;
 };
 
+/**
+ * A single pause window inside a recording, expressed in wall-clock
+ * seconds relative to {@link ActivitySummary.startedAtMs}. The FIT
+ * writer uses these to emit `timer/stop` and `timer/start` events so
+ * downstream viewers (Strava, Garmin Connect) report the pause boundary
+ * correctly and exclude paused time from moving-time calculations.
+ */
+export type PauseInterval = {
+  /** Wall-clock seconds since `startedAtMs` when the pause began. */
+  startElapsedS: number;
+  /** Wall-clock seconds since `startedAtMs` when the pause ended. */
+  endElapsedS: number;
+};
+
 export type RecordedActivity = {
   /** Stable, sortable, locally-unique identifier (no UUID dependency). */
   id: string;
   summary: ActivitySummary;
   records: RecordSnapshot[];
   strokes: StrokeEvent[];
+  /**
+   * Closed pause windows captured during the session, in chronological
+   * order. Empty when the user never paused. The recorder closes any
+   * still-open pause inside `finish()`, so callers can assume every
+   * interval has both endpoints.
+   */
+  pauses: PauseInterval[];
 };
 
 /** Inputs accepted by {@link ActivityRecorder.tick}. */
@@ -74,17 +99,39 @@ export type ActivityRecorder = {
    * Record a 1 Hz metrics snapshot. Calls within {@link RECORD_INTERVAL_MS}
    * of the previous accepted snapshot are ignored, so the caller can drive
    * this from a tight render loop without inflating the record stream.
+   *
+   * No-op while the recorder is paused.
    */
   tick(input: SnapshotInput, nowMs: number): void;
-  /** Record a single stroke event at the given moment. */
+  /**
+   * Record a single stroke event at the given moment. No-op while the
+   * recorder is paused — strokes detected during a pause window aren't
+   * part of the user's recording.
+   */
   markStroke(cadenceSpm: number, nowMs: number): void;
+  /**
+   * Open a pause window at `nowMs`. Subsequent `tick()` and
+   * `markStroke()` calls are ignored until `resume()`. No-op when the
+   * recorder isn't running or is already paused.
+   */
+  pause(nowMs: number): void;
+  /**
+   * Close the open pause window at `nowMs` and append it to the
+   * activity's `pauses[]`. No-op when the recorder isn't paused.
+   */
+  resume(nowMs: number): void;
   /**
    * End the recording, compute summary metrics, and return the activity
    * payload. After finish() the recorder returns to an empty, stopped state
    * — call {@link start} again to begin a fresh session.
+   *
+   * If the recorder is currently paused, the open pause is closed at
+   * `nowMs` so the resulting activity has a clean pause list.
    */
   finish(nowMs: number): RecordedActivity;
   readonly isRunning: boolean;
+  /** True while the recorder is between `pause()` and `resume()`. */
+  readonly isPaused: boolean;
   /** Snapshot count so far (mostly useful for tests/UI). */
   readonly recordCount: number;
 };

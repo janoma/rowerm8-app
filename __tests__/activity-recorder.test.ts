@@ -136,4 +136,89 @@ describe("activity recorder", () => {
     expect(r.isRunning).toBe(false);
     expect(r.recordCount).toBe(0);
   });
+
+  describe("pause/resume", () => {
+    it("ignores pause/resume before start()", () => {
+      const r = createActivityRecorder();
+      r.pause(t0);
+      r.resume(t0);
+      expect(r.isPaused).toBe(false);
+      expect(r.isRunning).toBe(false);
+    });
+
+    it("excludes paused time from summary.durationS", () => {
+      const r = createActivityRecorder();
+      r.start(t0);
+      r.tick(snap({ cadenceSpm: 24 }), t0);
+      r.pause(t0 + 2 * RECORD_INTERVAL_MS);
+      r.resume(t0 + 7 * RECORD_INTERVAL_MS);
+      r.tick(snap({ cadenceSpm: 24 }), t0 + 7 * RECORD_INTERVAL_MS);
+      const result = r.finish(t0 + 10 * RECORD_INTERVAL_MS);
+      expect(result.summary.durationS).toBe(5);
+      expect(result.summary.endedAtMs - result.summary.startedAtMs).toBe(
+        10 * RECORD_INTERVAL_MS,
+      );
+    });
+
+    it("drops snapshots and strokes while paused", () => {
+      const r = createActivityRecorder();
+      r.start(t0);
+      r.tick(snap({ cadenceSpm: 24 }), t0);
+      r.pause(t0 + RECORD_INTERVAL_MS);
+      r.tick(snap({ cadenceSpm: 24 }), t0 + 2 * RECORD_INTERVAL_MS);
+      r.markStroke(24, t0 + 2 * RECORD_INTERVAL_MS);
+      expect(r.recordCount).toBe(1);
+      r.resume(t0 + 3 * RECORD_INTERVAL_MS);
+      r.tick(snap({ cadenceSpm: 26 }), t0 + 3 * RECORD_INTERVAL_MS);
+      const result = r.finish(t0 + 4 * RECORD_INTERVAL_MS);
+      expect(result.records.length).toBe(2);
+      expect(result.strokes).toEqual([]);
+    });
+
+    it("records pause intervals in wall-clock elapsed seconds", () => {
+      const r = createActivityRecorder();
+      r.start(t0);
+      r.tick(snap({ cadenceSpm: 24 }), t0);
+      r.pause(t0 + 3 * RECORD_INTERVAL_MS);
+      r.resume(t0 + 8 * RECORD_INTERVAL_MS);
+      const result = r.finish(t0 + 10 * RECORD_INTERVAL_MS);
+      expect(result.pauses).toEqual([{ startElapsedS: 3, endElapsedS: 8 }]);
+    });
+
+    it("supports multiple pause windows", () => {
+      const r = createActivityRecorder();
+      r.start(t0);
+      r.pause(t0 + 2 * RECORD_INTERVAL_MS);
+      r.resume(t0 + 4 * RECORD_INTERVAL_MS);
+      r.pause(t0 + 6 * RECORD_INTERVAL_MS);
+      r.resume(t0 + 9 * RECORD_INTERVAL_MS);
+      const result = r.finish(t0 + 10 * RECORD_INTERVAL_MS);
+      expect(result.pauses).toEqual([
+        { startElapsedS: 2, endElapsedS: 4 },
+        { startElapsedS: 6, endElapsedS: 9 },
+      ]);
+      expect(result.summary.durationS).toBe(5);
+    });
+
+    it("closes an open pause when finish() is called while paused", () => {
+      const r = createActivityRecorder();
+      r.start(t0);
+      r.pause(t0 + 2 * RECORD_INTERVAL_MS);
+      const result = r.finish(t0 + 5 * RECORD_INTERVAL_MS);
+      expect(result.pauses).toEqual([{ startElapsedS: 2, endElapsedS: 5 }]);
+      expect(result.summary.durationS).toBe(2);
+      expect(r.isPaused).toBe(false);
+    });
+
+    it("ignores duplicate pause() and resume() calls", () => {
+      const r = createActivityRecorder();
+      r.start(t0);
+      r.pause(t0 + RECORD_INTERVAL_MS);
+      r.pause(t0 + 2 * RECORD_INTERVAL_MS);
+      r.resume(t0 + 3 * RECORD_INTERVAL_MS);
+      r.resume(t0 + 4 * RECORD_INTERVAL_MS);
+      const result = r.finish(t0 + 5 * RECORD_INTERVAL_MS);
+      expect(result.pauses).toEqual([{ startElapsedS: 1, endElapsedS: 3 }]);
+    });
+  });
 });

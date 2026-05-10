@@ -23,7 +23,7 @@
  */
 import { Encoder, Profile } from "@garmin/fitsdk";
 
-import type { RecordedActivity } from "./types";
+import type { PauseInterval, RecordedActivity } from "./types";
 
 /**
  * Identifier reported in the FIT FILE_ID message. "development" is a
@@ -80,6 +80,31 @@ function speedMps(paceSecondsPer500m: number): number {
 }
 
 /**
+ * Compute the seconds of overlap between `[prevElapsedS, currElapsedS]`
+ * and any closed pause windows in `pauses`. Used by the distance
+ * integrator so a long pause between two records doesn't spuriously
+ * inflate cumulative distance with phantom rowing time.
+ */
+function pausedOverlapSeconds(
+  prevElapsedS: number,
+  currElapsedS: number,
+  pauses: PauseInterval[],
+): number {
+  if (currElapsedS <= prevElapsedS || pauses.length === 0) {
+    return 0;
+  }
+  let overlap = 0;
+  for (const p of pauses) {
+    const lo = Math.max(prevElapsedS, p.startElapsedS);
+    const hi = Math.min(currElapsedS, p.endElapsedS);
+    if (hi > lo) {
+      overlap += hi - lo;
+    }
+  }
+  return overlap;
+}
+
+/**
  * Pre-built developer-data metadata for the estimation-note field. Passed
  * to the Encoder constructor so it can wire up message definitions; we
  * also `writeMesg` both records into the file so decoders can resolve the
@@ -120,8 +145,18 @@ export function encodeActivityToFit(activity: RecordedActivity): Uint8Array {
 
   const startFit = toFitDateTime(activity.summary.startedAtMs);
   const endFit = toFitDateTime(activity.summary.endedAtMs);
-  const totalElapsedTime = activity.summary.durationS;
+  // summary.durationS is moving time (paused seconds excluded). The FIT
+  // spec models the same distinction as totalTimerTime (moving) vs
+  // totalElapsedTime (wall clock); we derive the latter from the
+  // wall-clock start/end pair so Strava's "Elapsed Time" reflects when
+  // the activity actually ran.
   const totalTimerTime = activity.summary.durationS;
+  const wallClockSeconds = Math.max(
+    activity.summary.durationS,
+    (activity.summary.endedAtMs - activity.summary.startedAtMs) / 1000,
+  );
+  const totalElapsedTime = wallClockSeconds;
+  const pauses = activity.pauses ?? [];
 
   // Every FIT file MUST start with a FILE_ID message.
   encoder.writeMesg({
@@ -164,17 +199,50 @@ export function encodeActivityToFit(activity: RecordedActivity): Uint8Array {
   // session/activity wrappers are intact.
   //
   // We don't carry distance from the sensor (there is none), so we
-  // integrate `(prevSpeed + currSpeed) / 2 * dt` across consecutive
-  // records to produce a monotonic cumulative `distance`. Without this,
-  // Strava drops indoor-rowing pace/distance even though `speed` is set.
+  // integrate `(prevSpeed + currSpeed) / 2 * movingDt` across consecutive
+  // records to produce a monotonic cumulative `distance`. `movingDt`
+  // excludes any pause windows that fall between the two records, so a
+  // long pause doesn't add a phantom kilometre to the activity total.
+  //
+  // Timer/stop and timer/start events are emitted at each pause's
+  // wall-clock boundary so Strava and Garmin Connect see the pause and
+  // mirror our own moving-time accounting.
   let prevSpeed = 0;
   let prevElapsedS = 0;
   let cumulativeDistanceM = 0;
+  let pauseIdx = 0;
+  const emitPauseEventsBefore = (elapsedS: number) => {
+    while (
+      pauseIdx < pauses.length &&
+      pauses[pauseIdx].endElapsedS <= elapsedS
+    ) {
+      const p = pauses[pauseIdx];
+      encoder.writeMesg({
+        mesgNum: Profile.MesgNum.EVENT,
+        timestamp: startFit + Math.round(p.startElapsedS),
+        event: "timer",
+        eventType: "stopAll",
+      });
+      encoder.writeMesg({
+        mesgNum: Profile.MesgNum.EVENT,
+        timestamp: startFit + Math.round(p.endElapsedS),
+        event: "timer",
+        eventType: "start",
+      });
+      pauseIdx += 1;
+    }
+  };
   for (const r of activity.records) {
+    emitPauseEventsBefore(r.elapsedS);
+
     const ts = startFit + Math.round(r.elapsedS);
     const speed = speedMps(r.paceSecondsPer500m);
-    const dt = Math.max(0, r.elapsedS - prevElapsedS);
-    cumulativeDistanceM += ((prevSpeed + speed) / 2) * dt;
+    const rawDt = Math.max(0, r.elapsedS - prevElapsedS);
+    const movingDt = Math.max(
+      0,
+      rawDt - pausedOverlapSeconds(prevElapsedS, r.elapsedS, pauses),
+    );
+    cumulativeDistanceM += ((prevSpeed + speed) / 2) * movingDt;
     prevSpeed = speed;
     prevElapsedS = r.elapsedS;
 
@@ -194,6 +262,9 @@ export function encodeActivityToFit(activity: RecordedActivity): Uint8Array {
     }
     encoder.writeMesg(mesg);
   }
+  // Any pause that closed after the last record (or recordings with no
+  // records at all) still needs its timer events.
+  emitPauseEventsBefore(Number.POSITIVE_INFINITY);
 
   // Per-stroke event markers. Some viewers (Strava in particular) ignore
   // these but they're useful for downstream tooling and round-trip testing.

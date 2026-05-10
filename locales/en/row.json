@@ -53,9 +53,13 @@
     "recording": {
       "armed": "Tap Start to begin recording. Your row will be saved as a FIT file you can upload to Strava, Training Peaks, or Garmin Connect.",
       "running": "Recording in progress.",
+      "paused": "Recording paused.",
       "start": "Start",
       "waitingCalibration": "Waiting for calibration…",
       "stop": "Stop",
+      "pause": "Pause",
+      "resume": "Resume",
+      "lap": "Lap",
       "save": "Save",
       "discard": "Discard",
       "share": "Share",

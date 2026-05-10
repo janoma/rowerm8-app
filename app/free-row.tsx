@@ -30,8 +30,8 @@ import {
 import { formatDuration } from "@/lib/format/time";
 import { zoneForBpm } from "@/lib/hr/zones";
 
-/** Recording lifecycle states. The UI flips between primary buttons (Start, Stop, Share) and notice content based on this. */
-type RecordingPhase = "armed" | "running" | "saving" | "saved";
+/** Recording lifecycle states. The UI flips between primary buttons (Start, Stop, Pause/Resume, Lap, Share) and notice content based on this. */
+type RecordingPhase = "armed" | "running" | "paused" | "saving" | "saved";
 
 export default function FreeRowScreen() {
   const { tokens } = useTheme();
@@ -68,21 +68,61 @@ export default function FreeRowScreen() {
     number | null
   >(null);
   const [recordingStartStrokeCount, setRecordingStartStrokeCount] = useState(0);
-  // A 4 Hz "now" tick that drives the total-time display. We don't
-  // couple to the motion-sample cadence (which would re-render at 50 Hz
-  // even just to advance the seconds digit). Only ticks while a
-  // recording is in flight; outside `running` the display is locked to
-  // 0 and there's nothing to refresh.
+  // Pause/Lap state (C6 of the row-fixes plan). Pause windows freeze the
+  // displayed total time, stroke count, and lap timer without resetting
+  // the underlying stroke session — so calibration survives a pause and
+  // resume just like it survives a save.
+  const [pauseStartedAtMs, setPauseStartedAtMs] = useState<number | null>(null);
+  const [pausedTotalMs, setPausedTotalMs] = useState(0);
+  const [sessionStrokesAtPauseStart, setSessionStrokesAtPauseStart] =
+    useState(0);
+  const [strokesDuringPauses, setStrokesDuringPauses] = useState(0);
+  // Lap timer: the moving-time offset (ms since recording start, paused
+  // windows excluded) at which the user last tapped Lap. `null` means no
+  // lap has been started yet — the metrics card collapses the row.
+  const [lapStartedAtMovingMs, setLapStartedAtMovingMs] = useState<
+    number | null
+  >(null);
+  // A 4 Hz "now" tick that drives the total-time / lap-time displays. We
+  // don't couple to the motion-sample cadence (which would re-render at
+  // 50 Hz even just to advance the seconds digit). The ticker keeps
+  // running through pauses so the open-pause subtraction still freezes
+  // the display smoothly; outside running/paused the value is unused.
   const [nowMs, setNowMs] = useState(() => Date.now());
+
+  // Current open-pause duration (ms) and stroke count: the running pause
+  // window isn't folded into the cumulative `pausedTotalMs` until resume,
+  // so we apply the open window separately on every render.
+  const currentPauseMs =
+    pauseStartedAtMs != null ? Math.max(0, nowMs - pauseStartedAtMs) : 0;
+  const currentPauseStrokes =
+    pauseStartedAtMs != null
+      ? Math.max(0, strokeSession.strokeCount - sessionStrokesAtPauseStart)
+      : 0;
+  const movingMsSinceStart =
+    recordingStartedAtMs == null
+      ? 0
+      : Math.max(
+          0,
+          nowMs - recordingStartedAtMs - pausedTotalMs - currentPauseMs,
+        );
 
   const displayStrokeCount =
     recordingStartedAtMs == null
       ? 0
-      : Math.max(0, strokeSession.strokeCount - recordingStartStrokeCount);
+      : Math.max(
+          0,
+          strokeSession.strokeCount -
+            recordingStartStrokeCount -
+            strokesDuringPauses -
+            currentPauseStrokes,
+        );
   const displayTotalTimeSeconds =
-    recordingStartedAtMs == null
-      ? 0
-      : Math.max(0, (nowMs - recordingStartedAtMs) / 1000);
+    recordingStartedAtMs == null ? 0 : movingMsSinceStart / 1000;
+  const displayLapElapsedSeconds =
+    lapStartedAtMovingMs == null
+      ? null
+      : Math.max(0, (movingMsSinceStart - lapStartedAtMovingMs) / 1000);
   // Calibration plumbing for C4 of the row-fixes plan.
   //
   // Pre-recording (`recordingStartedAtMs == null`) the metrics card
@@ -122,9 +162,12 @@ export default function FreeRowScreen() {
   // Drive the 1 Hz snapshot stream from a setInterval rather than the
   // motion sample arrival, so the recorder samples cadence/HR even during
   // pauses where the sensor briefly stops streaming. The same loop also
-  // refreshes the `nowMs` state so the displayed total time advances.
+  // refreshes the `nowMs` state so the displayed total / lap times keep
+  // moving. The recorder itself ignores `tick()` while paused, so it's
+  // safe to call here regardless of phase as long as a recording is in
+  // flight.
   useEffect(() => {
-    if (phase !== "running") {
+    if (phase !== "running" && phase !== "paused") {
       return;
     }
     const id = setInterval(() => {
@@ -159,10 +202,74 @@ export default function FreeRowScreen() {
     const now = Date.now();
     setRecordingStartStrokeCount(strokeSession.strokeCount);
     setRecordingStartedAtMs(now);
+    setPauseStartedAtMs(null);
+    setPausedTotalMs(0);
+    setStrokesDuringPauses(0);
+    setLapStartedAtMovingMs(null);
     setNowMs(now);
     recorderRef.current.start(now);
     setPhase("running");
   }, [strokeSession.strokeCount]);
+
+  const handlePause = useCallback(() => {
+    if (phase !== "running") {
+      return;
+    }
+    const now = Date.now();
+    setSessionStrokesAtPauseStart(strokeSession.strokeCount);
+    setPauseStartedAtMs(now);
+    setNowMs(now);
+    recorderRef.current.pause(now);
+    setPhase("paused");
+  }, [phase, strokeSession.strokeCount]);
+
+  const handleResume = useCallback(() => {
+    if (phase !== "paused" || pauseStartedAtMs == null) {
+      return;
+    }
+    const now = Date.now();
+    const pauseSpanMs = Math.max(0, now - pauseStartedAtMs);
+    const pauseStrokes = Math.max(
+      0,
+      strokeSession.strokeCount - sessionStrokesAtPauseStart,
+    );
+    setPausedTotalMs((prev) => prev + pauseSpanMs);
+    setStrokesDuringPauses((prev) => prev + pauseStrokes);
+    setPauseStartedAtMs(null);
+    setNowMs(now);
+    recorderRef.current.resume(now);
+    setPhase("running");
+  }, [
+    phase,
+    pauseStartedAtMs,
+    sessionStrokesAtPauseStart,
+    strokeSession.strokeCount,
+  ]);
+
+  const handleLap = useCallback(() => {
+    if (phase !== "running" || recordingStartedAtMs == null) {
+      return;
+    }
+    // Anchor the lap timer to the moving-time clock so the displayed
+    // lap duration freezes during pauses, exactly like total time.
+    const now = Date.now();
+    const movingMsNow = Math.max(0, now - recordingStartedAtMs - pausedTotalMs);
+    setLapStartedAtMovingMs(movingMsNow);
+    setNowMs(now);
+  }, [phase, recordingStartedAtMs, pausedTotalMs]);
+
+  // Centralised reset for the local recording-display state. Called by
+  // handlers that transition out of an in-flight recording (stop, save,
+  // discard, error, acknowledge) so the next session starts clean
+  // without resetting the stroke session (calibration persists).
+  const resetRecordingDisplay = useCallback(() => {
+    setRecordingStartedAtMs(null);
+    setPauseStartedAtMs(null);
+    setPausedTotalMs(0);
+    setStrokesDuringPauses(0);
+    setSessionStrokesAtPauseStart(0);
+    setLapStartedAtMovingMs(null);
+  }, []);
 
   const handleStop = useCallback(async () => {
     if (!recorderRef.current.isRunning) {
@@ -181,9 +288,9 @@ export default function FreeRowScreen() {
         t("freeRow.recording.saveErrorBody"),
       );
       setPhase("armed");
-      setRecordingStartedAtMs(null);
+      resetRecordingDisplay();
     }
-  }, [t]);
+  }, [resetRecordingDisplay, t]);
 
   const handleDiscardRunning = useCallback(() => {
     Alert.alert(
@@ -198,13 +305,13 @@ export default function FreeRowScreen() {
               recorderRef.current.finish(Date.now());
             }
             setPhase("armed");
-            setRecordingStartedAtMs(null);
+            resetRecordingDisplay();
           },
         },
         { text: t("freeRow.back"), style: "cancel" },
       ],
     );
-  }, [t]);
+  }, [resetRecordingDisplay, t]);
 
   const handleShare = useCallback(async () => {
     if (!savedActivity) {
@@ -228,11 +335,11 @@ export default function FreeRowScreen() {
   const handleAcknowledgeSaved = useCallback(() => {
     setSavedActivity(null);
     setPhase("armed");
-    setRecordingStartedAtMs(null);
-  }, []);
+    resetRecordingDisplay();
+  }, [resetRecordingDisplay]);
 
   const handleBack = useCallback(() => {
-    if (phase === "running") {
+    if (phase === "running" || phase === "paused") {
       handleDiscardRunning();
       return;
     }
@@ -260,10 +367,7 @@ export default function FreeRowScreen() {
     cadenceSpm: strokeSession.cadenceSpm,
     paceSecondsPer500m: strokeSession.paceSecondsPer500m,
     elapsedSeconds: displayTotalTimeSeconds,
-    // The Lap button plumbing that turns this into a real value lands
-    // in C6 of the row-fixes plan. Until then we always render the
-    // single-column Total time layout.
-    lapElapsedSeconds: null,
+    lapElapsedSeconds: displayLapElapsedSeconds,
     calibrationStrokeCount,
     heartRateBpm: heartRate.bpm,
   };
@@ -370,7 +474,8 @@ export default function FreeRowScreen() {
       );
     }
 
-    if (phase === "running") {
+    if (phase === "running" || phase === "paused") {
+      const isPaused = phase === "paused";
       return (
         <View style={styles.controlsBlock}>
           <ThemedText
@@ -379,8 +484,37 @@ export default function FreeRowScreen() {
               { color: tokens.colors.textSecondary },
             ]}
           >
-            {t("freeRow.recording.running")}
+            {isPaused
+              ? t("freeRow.recording.paused")
+              : t("freeRow.recording.running")}
           </ThemedText>
+          <View style={styles.runningControlsRow}>
+            <View style={styles.runningControlsCell}>
+              <Button
+                title={
+                  isPaused
+                    ? t("freeRow.recording.resume")
+                    : t("freeRow.recording.pause")
+                }
+                onPress={isPaused ? handleResume : handlePause}
+                tone="neutral"
+                variant="tinted"
+                size="lg"
+                block
+              />
+            </View>
+            <View style={styles.runningControlsCell}>
+              <Button
+                title={t("freeRow.recording.lap")}
+                onPress={handleLap}
+                disabled={isPaused}
+                tone="neutral"
+                variant="tinted"
+                size="lg"
+                block
+              />
+            </View>
+          </View>
           <Button
             title={t("freeRow.recording.stop")}
             onPress={handleStop}
@@ -499,5 +633,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     textAlign: "center",
+  },
+  runningControlsRow: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  runningControlsCell: {
+    flex: 1,
   },
 });

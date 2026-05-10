@@ -9,6 +9,7 @@
 
 import type {
   ActivityRecorder,
+  PauseInterval,
   RecordedActivity,
   RecordSnapshot,
   SnapshotInput,
@@ -61,14 +62,20 @@ function meanFinitePositive(values: number[]): number {
 export function createActivityRecorder(): ActivityRecorder {
   let startedAtMs: number | null = null;
   let lastTickMs: number | null = null;
+  let pauseStartedAtMs: number | null = null;
+  let pausedMs = 0;
   const records: RecordSnapshot[] = [];
   const strokes: StrokeEvent[] = [];
+  const pauses: PauseInterval[] = [];
 
   function reset(): void {
     startedAtMs = null;
     lastTickMs = null;
+    pauseStartedAtMs = null;
+    pausedMs = 0;
     records.length = 0;
     strokes.length = 0;
+    pauses.length = 0;
   }
 
   function start(nowMs: number): void {
@@ -78,6 +85,9 @@ export function createActivityRecorder(): ActivityRecorder {
 
   function tick(input: SnapshotInput, nowMs: number): void {
     if (startedAtMs == null) {
+      return;
+    }
+    if (pauseStartedAtMs != null) {
       return;
     }
     if (lastTickMs != null && nowMs - lastTickMs < RECORD_INTERVAL_MS) {
@@ -98,16 +108,50 @@ export function createActivityRecorder(): ActivityRecorder {
     if (startedAtMs == null) {
       return;
     }
+    if (pauseStartedAtMs != null) {
+      return;
+    }
     const elapsedS = Math.max(0, (nowMs - startedAtMs) / 1000);
     strokes.push({ elapsedS, cadenceSpm });
+  }
+
+  function pause(nowMs: number): void {
+    if (startedAtMs == null || pauseStartedAtMs != null) {
+      return;
+    }
+    pauseStartedAtMs = nowMs;
+  }
+
+  function resume(nowMs: number): void {
+    if (startedAtMs == null || pauseStartedAtMs == null) {
+      return;
+    }
+    const start_ = startedAtMs;
+    const pauseStart = pauseStartedAtMs;
+    const startElapsedS = Math.max(0, (pauseStart - start_) / 1000);
+    const endElapsedS = Math.max(startElapsedS, (nowMs - start_) / 1000);
+    pauses.push({ startElapsedS, endElapsedS });
+    pausedMs += Math.max(0, nowMs - pauseStart);
+    pauseStartedAtMs = null;
+    // Reset the tick throttle so the first post-resume tick lands
+    // immediately. Otherwise a paused window slightly shorter than
+    // RECORD_INTERVAL_MS could swallow the next snapshot, leaving a
+    // visible gap in the record stream.
+    lastTickMs = null;
   }
 
   function finish(nowMs: number): RecordedActivity {
     if (startedAtMs == null) {
       throw new Error("ActivityRecorder.finish called before start");
     }
+    // Closing the open pause (if any) keeps the returned `pauses[]`
+    // self-consistent: every interval has both endpoints, so the FIT
+    // writer can emit matched timer/stop + timer/start pairs.
+    if (pauseStartedAtMs != null) {
+      resume(nowMs);
+    }
     const start_ = startedAtMs;
-    const durationS = Math.max(0, (nowMs - start_) / 1000);
+    const durationS = Math.max(0, (nowMs - start_ - pausedMs) / 1000);
 
     const lastSnapshotStrokeCount =
       records.length > 0 ? records[records.length - 1].strokeCount : 0;
@@ -142,6 +186,7 @@ export function createActivityRecorder(): ActivityRecorder {
       summary,
       records: [...records],
       strokes: [...strokes],
+      pauses: [...pauses],
     };
     reset();
     return result;
@@ -151,9 +196,14 @@ export function createActivityRecorder(): ActivityRecorder {
     start,
     tick,
     markStroke,
+    pause,
+    resume,
     finish,
     get isRunning() {
       return startedAtMs != null;
+    },
+    get isPaused() {
+      return pauseStartedAtMs != null;
     },
     get recordCount() {
       return records.length;
