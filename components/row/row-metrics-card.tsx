@@ -1,7 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { StyleSheet } from "react-native";
 
-import { ThemedText } from "@/components/themed-text";
 import { useFormatters } from "@/lib/format";
 import { Card, Stat, ZonePill, useTheme } from "@/lib/design-system";
 import { zoneForBpm } from "@/lib/hr/zones";
@@ -17,9 +16,6 @@ type Props = {
    * hidden in that case so users without an HRM don't see a stale "—".
    */
   heartRateBpm?: number | null;
-  /** Optional rate-of-data-arrival (Hz) to surface in the footer for
-   * parity with the previous accelerometer card; pass 0 to hide. */
-  sampleRateHz?: number;
 };
 
 /**
@@ -43,7 +39,6 @@ export function RowMetricsCard({
   paceSecondsPer500m,
   elapsedSeconds,
   heartRateBpm = null,
-  sampleRateHz = 0,
 }: Props) {
   const { tokens } = useTheme();
   const { t } = useTranslation("row");
@@ -96,13 +91,6 @@ export function RowMetricsCard({
           trailing={heartRateZone ? <ZonePill zone={heartRateZone} /> : null}
         />
       ) : null}
-      {sampleRateHz > 0 ? (
-        <ThemedText
-          style={[styles.footer, { color: tokens.colors.textSecondary }]}
-        >
-          {t("metrics.footer", { rate: sampleRateHz })}
-        </ThemedText>
-      ) : null}
     </Card>
   );
 }
@@ -110,10 +98,5 @@ export function RowMetricsCard({
 const styles = StyleSheet.create({
   card: {
     gap: 14,
-  },
-  footer: {
-    fontSize: 12,
-    lineHeight: 14,
-    marginTop: 4,
   },
 });

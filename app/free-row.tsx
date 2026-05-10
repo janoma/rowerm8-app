@@ -241,7 +241,6 @@ export default function FreeRowScreen() {
     paceSecondsPer500m: strokeSession.paceSecondsPer500m,
     elapsedSeconds: displayTotalTimeSeconds,
     heartRateBpm: heartRate.bpm,
-    sampleRateHz: stream.sampleRateHz,
   };
 
   const currentZone = zoneForBpm(heartRate.bpm);

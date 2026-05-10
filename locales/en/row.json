@@ -41,8 +41,7 @@
     "pace": "Pace",
     "elapsed": "Elapsed",
     "heartRate": "Heart rate",
-    "heartRateUnit": "bpm",
-    "footer": "{rate, number} Hz · pace estimated from cadence"
+    "heartRateUnit": "bpm"
   },
   "freeRow": {
     "title": "Free row",
