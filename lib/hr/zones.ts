@@ -1,17 +1,23 @@
 /**
  * Heart-rate zone helpers.
  *
- * Splits a continuous HR (bpm) reading into the 5-zone Garmin ramp
- * defined in `lib/design-system/tokens/hr-zones`. The ranges
- * themselves are *intentionally* parameterized: a `defaultZoneRanges`
- * helper builds the standard 60/70/80/90% × max-HR thresholds from a
- * user's max heart rate. Call sites should pass the user's resolved
- * max HR from `useProfile().resolved.maxHrBpm` — this module's
- * `DEFAULT_MAX_HR_BPM` is the seed value the resolver falls back to
- * when the user hasn't configured one yet.
+ * Two zone models live side by side:
+ *
+ *   - Garmin/Polar 5-zone, by % of max HR ({@link defaultZoneRanges},
+ *     {@link zoneForBpm}).
+ *   - Coggan/Friel 7-zone, by % of LTHR ({@link cogganZoneRanges},
+ *     {@link cogganZoneForBpm}).
+ *
+ * The functions are pure and deterministic. The active model lives
+ * in the user profile (`useProfile().resolved.hrZoneModel`); UI code
+ * picks the right pair via `hooks/use-hr-zone-resolver`.
+ *
+ * `DEFAULT_MAX_HR_BPM` is the seed value the profile resolver falls
+ * back to when the user hasn't configured a max HR yet — UI code
+ * should generally read `useProfile().resolved.maxHrBpm`.
  */
 
-import { type HrZoneKey } from "@/lib/design-system";
+import { type CogganZoneKey, type HrZoneKey } from "@/lib/design-system";
 
 /**
  * Seed fallback consumed by the profile resolver when the user hasn't
@@ -65,4 +71,71 @@ export function zoneForBpm(
     return "z4";
   }
   return "z5";
+}
+
+/**
+ * Six boundaries between the seven Coggan/Friel zones, in absolute
+ * bpm. A reading at or above the i-th boundary belongs to zone (i+2);
+ * readings below the first boundary are zone 1 (Recovery).
+ */
+export type CogganZoneRanges = readonly [
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+];
+
+/**
+ * Joel Friel's HR-zone adaptation of Andrew Coggan's power zones.
+ * Boundaries are taken at LTHR fractions:
+ *
+ *   - Z1 Recovery:           < 85% LTHR
+ *   - Z2 Aerobic:            85–89%
+ *   - Z3 Tempo:              90–94%
+ *   - Z4 SubThreshold:       95–99%
+ *   - Z5a SuperThreshold:    100–102%
+ *   - Z5b Aerobic Capacity:  103–106%
+ *   - Z5c Anaerobic Capacity: ≥ 107%
+ *
+ * The integer rounding here mirrors what Friel's published tables
+ * do — every breakpoint lands on a whole bpm value so display
+ * boundaries don't sit between reportable HR samples.
+ */
+export function cogganZoneRanges(lthrBpm: number): CogganZoneRanges {
+  const r = (pct: number) => Math.round(lthrBpm * pct);
+  return [r(0.85), r(0.9), r(0.95), r(1.0), r(1.03), r(1.07)];
+}
+
+/**
+ * Map a bpm reading to one of the seven Coggan/Friel zones. Same
+ * null-input contract as {@link zoneForBpm}.
+ */
+export function cogganZoneForBpm(
+  bpm: number | null | undefined,
+  ranges: CogganZoneRanges,
+): CogganZoneKey | null {
+  if (bpm == null || !Number.isFinite(bpm)) {
+    return null;
+  }
+  if (bpm < ranges[0]) {
+    return "c1";
+  }
+  if (bpm < ranges[1]) {
+    return "c2";
+  }
+  if (bpm < ranges[2]) {
+    return "c3";
+  }
+  if (bpm < ranges[3]) {
+    return "c4";
+  }
+  if (bpm < ranges[4]) {
+    return "c5a";
+  }
+  if (bpm < ranges[5]) {
+    return "c5b";
+  }
+  return "c5c";
 }

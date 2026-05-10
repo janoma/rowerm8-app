@@ -117,6 +117,7 @@ export function useProfile(): ProfileContextValue {
 // Re-export the resolver public surface so consumers can keep
 // importing types and constants from a single module.
 export type {
+  HrZoneModel,
   ProfilePrefs,
   ResolvedProfile,
   Sex,

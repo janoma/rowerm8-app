@@ -13,6 +13,14 @@ import { DEFAULT_MAX_HR_BPM } from "@/lib/hr/zones";
 export type Sex = "male" | "female";
 
 /**
+ * HR-zone display model. The 5-zone Garmin/Polar ramp uses % of max
+ * HR; the 7-zone Coggan/Friel ramp uses % of LTHR. The user can flip
+ * between them in Settings → Profile; the choice is purely a display
+ * concern (saved activities re-render with the active model).
+ */
+export type HrZoneModel = "garminPolar5" | "cogganFriel7";
+
+/**
  * Raw on-disk profile shape. Every field is nullable: `null` means
  * "use the documented default" so UI rows can show the default value
  * as a subtitle and the user can revert a field without picking a
@@ -25,9 +33,9 @@ export type ProfilePrefs = {
    */
   maxHrBpm: number | null;
   /**
-   * Lactate-threshold heart rate (LTHR) in bpm. Stored for a future
-   * switch to Coggan-style zones — the current 5-zone layout uses %
-   * of max HR only. When unset, defaults to 85% of resolved max HR.
+   * Lactate-threshold heart rate (LTHR) in bpm. Drives the 7-zone
+   * %-of-LTHR ramp. When unset, defaults to 85% of resolved max HR
+   * (the standard Friel/Coggan starting estimate).
    */
   thresholdHrBpm: number | null;
   /** Body weight in kilograms. Drives the Keytel calorie estimator. */
@@ -36,6 +44,11 @@ export type ProfilePrefs = {
   ageYears: number | null;
   /** Biological sex used by the Keytel calorie formula. */
   sex: Sex | null;
+  /**
+   * Active HR-zone model. When unset, defaults to `"garminPolar5"`
+   * so zero-config users see today's UX.
+   */
+  hrZoneModel: HrZoneModel | null;
 };
 
 /**
@@ -48,6 +61,7 @@ export type ResolvedProfile = {
   weightKg: number;
   ageYears: number;
   sex: Sex;
+  hrZoneModel: HrZoneModel;
   /** True when any field has been explicitly user-set (i.e. not null). */
   isCustomized: boolean;
 };
@@ -58,6 +72,7 @@ export const DEFAULT_PREFS: ProfilePrefs = {
   weightKg: null,
   ageYears: null,
   sex: null,
+  hrZoneModel: null,
 };
 
 /**
@@ -72,6 +87,7 @@ export const PROFILE_DEFAULTS = {
   sex: "male" as Sex,
   /** Threshold defaults to 85% of resolved max HR (see Friel/Coggan). */
   thresholdFractionOfMax: 0.85,
+  hrZoneModel: "garminPolar5" as HrZoneModel,
 } as const;
 
 /**
@@ -94,13 +110,23 @@ export function resolveProfile(prefs: ProfilePrefs): ResolvedProfile {
   const weightKg = prefs.weightKg ?? PROFILE_DEFAULTS.weightKg;
   const ageYears = prefs.ageYears ?? PROFILE_DEFAULTS.ageYears;
   const sex = prefs.sex ?? PROFILE_DEFAULTS.sex;
+  const hrZoneModel = prefs.hrZoneModel ?? PROFILE_DEFAULTS.hrZoneModel;
   const isCustomized =
     prefs.maxHrBpm != null ||
     prefs.thresholdHrBpm != null ||
     prefs.weightKg != null ||
     prefs.ageYears != null ||
-    prefs.sex != null;
-  return { maxHrBpm, thresholdHrBpm, weightKg, ageYears, sex, isCustomized };
+    prefs.sex != null ||
+    prefs.hrZoneModel != null;
+  return {
+    maxHrBpm,
+    thresholdHrBpm,
+    weightKg,
+    ageYears,
+    sex,
+    hrZoneModel,
+    isCustomized,
+  };
 }
 
 /**
@@ -128,5 +154,10 @@ export function migrateProfilePrefs(
   out.ageYears = num(parsed.ageYears);
   out.sex =
     parsed.sex === "male" || parsed.sex === "female" ? parsed.sex : null;
+  out.hrZoneModel =
+    parsed.hrZoneModel === "garminPolar5" ||
+    parsed.hrZoneModel === "cogganFriel7"
+      ? parsed.hrZoneModel
+      : null;
   return out;
 }

@@ -16,6 +16,7 @@ import { ThemedView } from "@/components/themed-view";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useLocale } from "@/contexts/locale-context";
 import {
+  type HrZoneModel,
   PROFILE_DEFAULTS,
   PROFILE_LIMITS,
   type ProfilePrefs,
@@ -40,9 +41,9 @@ export default function ProfileScreen() {
   const { prefs, resolved, setPref, resetPrefs } = useProfile();
   const { tokens } = useTheme();
 
-  const [editingField, setEditingField] = useState<NumericField | "sex" | null>(
-    null,
-  );
+  const [editingField, setEditingField] = useState<
+    NumericField | "sex" | "hrZoneModel" | null
+  >(null);
 
   const closeSheet = () => setEditingField(null);
 
@@ -69,6 +70,21 @@ export default function ProfileScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        <SettingsSection
+          header={t("profile.section.zoneModel")}
+          footer={t("profile.section.zoneModelFooter")}
+        >
+          <SettingsRow
+            label={t(
+              `profile.fields.hrZoneModel.options.${resolved.hrZoneModel}.label`,
+            )}
+            subtitle={t(
+              `profile.fields.hrZoneModel.options.${resolved.hrZoneModel}.subtitle`,
+            )}
+            onPress={() => setEditingField("hrZoneModel")}
+          />
+        </SettingsSection>
+
         <SettingsSection
           header={t("profile.section.heartRate")}
           footer={t("profile.section.heartRateFooter")}
@@ -127,7 +143,9 @@ export default function ProfileScreen() {
         </SettingsSection>
       </ScrollView>
 
-      {editingField && editingField !== "sex" ? (
+      {editingField &&
+      editingField !== "sex" &&
+      editingField !== "hrZoneModel" ? (
         <NumericFieldSheet
           field={editingField}
           spec={numericFields[editingField]}
@@ -143,6 +161,18 @@ export default function ProfileScreen() {
           onClose={closeSheet}
           onSelect={(next) => {
             setPref("sex", next);
+            closeSheet();
+          }}
+          accentColor={tokens.colors.accent}
+        />
+      ) : null}
+
+      {editingField === "hrZoneModel" ? (
+        <HrZoneModelSheet
+          value={prefs.hrZoneModel}
+          onClose={closeSheet}
+          onSelect={(next) => {
+            setPref("hrZoneModel", next);
             closeSheet();
           }}
           accentColor={tokens.colors.accent}
@@ -344,6 +374,56 @@ function NumericFieldSheet({
           />
         </View>
       </View>
+    </Sheet>
+  );
+}
+
+function HrZoneModelSheet({
+  value,
+  onSelect,
+  onClose,
+  accentColor,
+}: {
+  value: HrZoneModel | null;
+  onSelect: (next: HrZoneModel | null) => void;
+  onClose: () => void;
+  accentColor: string;
+}) {
+  const { t } = useTranslation("settings");
+  const options: HrZoneModel[] = ["garminPolar5", "cogganFriel7"];
+  return (
+    <Sheet
+      visible
+      onClose={onClose}
+      title={t("profile.fields.hrZoneModel.pickerTitle")}
+    >
+      {options.map((opt) => (
+        <SettingsRow
+          key={opt}
+          label={t(`profile.fields.hrZoneModel.options.${opt}.label`)}
+          subtitle={t(`profile.fields.hrZoneModel.options.${opt}.subtitle`)}
+          accessory={
+            value === opt ? (
+              <IconSymbol name="checkmark" size={20} color={accentColor} />
+            ) : null
+          }
+          onPress={() => onSelect(opt)}
+        />
+      ))}
+      <SettingsRow
+        label={t("profile.input.useDefault")}
+        subtitle={t("profile.fields.hrZoneModel.useDefaultSubtitle", {
+          value: t(
+            `profile.fields.hrZoneModel.options.${PROFILE_DEFAULTS.hrZoneModel}.label`,
+          ),
+        })}
+        accessory={
+          value == null ? (
+            <IconSymbol name="checkmark" size={20} color={accentColor} />
+          ) : null
+        }
+        onPress={() => onSelect(null)}
+      />
     </Sheet>
   );
 }

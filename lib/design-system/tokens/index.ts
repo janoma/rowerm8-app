@@ -31,10 +31,13 @@ export const tokensForScheme = (scheme: ColorScheme): ThemeTokens =>
   scheme === "dark" ? darkTokens : lightTokens;
 
 export {
+  COGGAN_ZONE_KEYS,
   HR_ZONE_KEYS,
   achievementsDark,
   achievementsLight,
   buildChartTokens,
+  cogganZonesDark,
+  cogganZonesLight,
   darkColors,
   fontsAndroid,
   fontsIos,
@@ -53,6 +56,8 @@ export type {
   AchievementPalette,
   AchievementTokens,
   ChartTokens,
+  CogganZoneKey,
+  CogganZonePalette,
   ColorTokens,
   DurationToken,
   EasingToken,

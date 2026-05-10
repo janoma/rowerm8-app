@@ -1,30 +1,32 @@
 /**
- * ZoneBar — a 5-segment horizontal HR zone bar with one segment
- * highlighted as "current".
+ * ZoneBar — a horizontal HR zone bar with one segment highlighted as
+ * "current".
  *
  * Used as a ribbon above the live row metrics card while HR is
- * available. Segments follow the Garmin ramp from `hrZones.ts`. When
- * `current` is `null` the bar still renders (low opacity) so the
- * layout doesn't jump when zone data goes momentarily missing.
+ * available. The segment count and palette are model-aware: pass the
+ * 5-zone Garmin/Polar palette + keys for the standard ramp, or the
+ * 7-zone Coggan/Friel palette + keys when the user opts into LTHR
+ * zones. When `current` is `null` the bar still renders (low opacity)
+ * so the layout doesn't jump when zone data goes momentarily missing.
  *
- * Optional `labels` prop renders Z1-Z5 under each segment. Hidden by
- * default for the live ribbon (which only needs the colored strip).
+ * Optional `labels` prop renders short tags ("Z1", "Z5a", …) under
+ * each segment. Hidden by default for the live ribbon (which only
+ * needs the colored strip).
  */
 
 import { StyleSheet, Text, View, type ViewStyle } from "react-native";
 
 import { useTheme } from "../provider";
-import { HR_ZONE_KEYS, type HrZoneKey } from "../tokens/hr-zones";
+import {
+  COGGAN_ZONE_KEYS,
+  type CogganZoneKey,
+  type CogganZonePalette,
+  HR_ZONE_KEYS,
+  type HrZoneKey,
+  type HrZonePalette,
+} from "../tokens/hr-zones";
 
-export type ZoneBarProps = {
-  current: HrZoneKey | null;
-  labels?: boolean;
-  /** Bar height in dp. Defaults to 12. */
-  height?: number;
-  style?: ViewStyle;
-};
-
-const ZONE_LABEL: Record<HrZoneKey, string> = {
+const GARMIN_LABELS: Record<HrZoneKey, string> = {
   z1: "Z1",
   z2: "Z2",
   z3: "Z3",
@@ -32,13 +34,50 @@ const ZONE_LABEL: Record<HrZoneKey, string> = {
   z5: "Z5",
 };
 
-export function ZoneBar({
-  current,
-  labels = false,
-  height = 12,
-  style,
-}: ZoneBarProps) {
+const COGGAN_LABELS: Record<CogganZoneKey, string> = {
+  c1: "Z1",
+  c2: "Z2",
+  c3: "Z3",
+  c4: "Z4",
+  c5a: "Z5a",
+  c5b: "Z5b",
+  c5c: "Z5c",
+};
+
+type GarminProps = {
+  model?: "garminPolar5";
+  current: HrZoneKey | null;
+  labels?: boolean;
+  height?: number;
+  style?: ViewStyle;
+};
+
+type CogganProps = {
+  model: "cogganFriel7";
+  current: CogganZoneKey | null;
+  labels?: boolean;
+  height?: number;
+  style?: ViewStyle;
+};
+
+export type ZoneBarProps = GarminProps | CogganProps;
+
+export function ZoneBar(props: ZoneBarProps) {
   const { tokens } = useTheme();
+  const { labels = false, height = 12, style } = props;
+  const isCoggan = props.model === "cogganFriel7";
+
+  const orderedKeys: readonly (HrZoneKey | CogganZoneKey)[] = isCoggan
+    ? COGGAN_ZONE_KEYS
+    : HR_ZONE_KEYS;
+  const palette: HrZonePalette | CogganZonePalette = isCoggan
+    ? tokens.cogganZones
+    : tokens.hrZones;
+  const labelMap: Record<string, string> = isCoggan
+    ? COGGAN_LABELS
+    : GARMIN_LABELS;
+  const current = props.current as HrZoneKey | CogganZoneKey | null;
+
   return (
     <View style={style}>
       <View
@@ -47,9 +86,11 @@ export function ZoneBar({
           { borderRadius: tokens.radius.sm, overflow: "hidden", height },
         ]}
       >
-        {HR_ZONE_KEYS.map((key, idx) => {
+        {orderedKeys.map((key, idx) => {
           const isCurrent = current === key;
-          const zone = tokens.hrZones[key];
+          // The narrowed palette/key types below are safe — `palette`
+          // is keyed on the same union as `orderedKeys`.
+          const zone = (palette as Record<string, { bg: string }>)[key];
           return (
             <View
               key={key}
@@ -67,21 +108,20 @@ export function ZoneBar({
       </View>
       {labels ? (
         <View style={styles.labelRow}>
-          {HR_ZONE_KEYS.map((key) => {
+          {orderedKeys.map((key) => {
             const isCurrent = current === key;
+            const zone = (palette as Record<string, { text: string }>)[key];
             return (
               <Text
                 key={key}
                 style={[
                   styles.label,
                   {
-                    color: isCurrent
-                      ? tokens.hrZones[key].text
-                      : tokens.colors.textTertiary,
+                    color: isCurrent ? zone.text : tokens.colors.textTertiary,
                   },
                 ]}
               >
-                {ZONE_LABEL[key]}
+                {labelMap[key]}
               </Text>
             );
           })}

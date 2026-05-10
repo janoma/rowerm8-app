@@ -16,6 +16,10 @@ import {
 import { buildChartTokens, type ChartTokens } from "./chart";
 import { darkColors, lightColors, type ColorTokens } from "./colors";
 import {
+  cogganZonesDark,
+  cogganZonesLight,
+  COGGAN_ZONE_KEYS,
+  type CogganZonePalette,
   hrZonesDark,
   hrZonesLight,
   HR_ZONE_KEYS,
@@ -31,6 +35,7 @@ export type ColorScheme = "light" | "dark";
 export type ThemeTokens = {
   colors: ColorTokens;
   hrZones: HrZonePalette;
+  cogganZones: CogganZonePalette;
   achievements: AchievementPalette;
   chart: ChartTokens;
   spacing: SpacingScale;
@@ -42,6 +47,7 @@ export type ThemeTokens = {
 export const lightTokens: ThemeTokens = {
   colors: lightColors,
   hrZones: hrZonesLight,
+  cogganZones: cogganZonesLight,
   achievements: achievementsLight,
   chart: buildChartTokens(lightColors, hrZonesLight),
   spacing,
@@ -53,6 +59,7 @@ export const lightTokens: ThemeTokens = {
 export const darkTokens: ThemeTokens = {
   colors: darkColors,
   hrZones: hrZonesDark,
+  cogganZones: cogganZonesDark,
   achievements: achievementsDark,
   chart: buildChartTokens(darkColors, hrZonesDark),
   spacing,
@@ -65,10 +72,13 @@ export const tokensForScheme = (scheme: ColorScheme): ThemeTokens =>
   scheme === "dark" ? darkTokens : lightTokens;
 
 export {
+  COGGAN_ZONE_KEYS,
   HR_ZONE_KEYS,
   achievementsDark,
   achievementsLight,
   buildChartTokens,
+  cogganZonesDark,
+  cogganZonesLight,
   darkColors,
   hrZonesDark,
   hrZonesLight,
@@ -86,7 +96,13 @@ export type {
 } from "./achievements";
 export type { ChartTokens } from "./chart";
 export type { ColorTokens } from "./colors";
-export type { HrZoneKey, HrZonePalette, HrZoneTokens } from "./hr-zones";
+export type {
+  CogganZoneKey,
+  CogganZonePalette,
+  HrZoneKey,
+  HrZonePalette,
+  HrZoneTokens,
+} from "./hr-zones";
 export type { DurationToken, EasingToken, MotionTokens } from "./motion";
 export type { RadiusScale, RadiusToken } from "./radius";
 export type { SpacingScale, SpacingToken } from "./spacing";

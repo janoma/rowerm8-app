@@ -18,6 +18,7 @@
  */
 
 import {
+  COGGAN_ZONE_KEYS,
   darkTokens,
   HR_ZONE_KEYS,
   lightTokens,
@@ -37,6 +38,24 @@ describe("design-system tokens", () => {
         scheme === "light" ? lightTokens.hrZones : darkTokens.hrZones;
       expect(Object.keys(palette).sort()).toEqual([...HR_ZONE_KEYS].sort());
       for (const zone of HR_ZONE_KEYS) {
+        expect(palette[zone]).toEqual(
+          expect.objectContaining({
+            bg: expect.any(String),
+            bgSubtle: expect.any(String),
+            text: expect.any(String),
+            onZoneText: expect.any(String),
+          }),
+        );
+      }
+    }
+  });
+
+  it("declares every Coggan zone with the same field shape in both schemes", () => {
+    for (const scheme of ["light", "dark"] as const) {
+      const palette =
+        scheme === "light" ? lightTokens.cogganZones : darkTokens.cogganZones;
+      expect(Object.keys(palette).sort()).toEqual([...COGGAN_ZONE_KEYS].sort());
+      for (const zone of COGGAN_ZONE_KEYS) {
         expect(palette[zone]).toEqual(
           expect.objectContaining({
             bg: expect.any(String),

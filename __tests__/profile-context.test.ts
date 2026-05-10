@@ -21,6 +21,7 @@ function prefs(overrides: Partial<ProfilePrefs> = {}): ProfilePrefs {
     weightKg: null,
     ageYears: null,
     sex: null,
+    hrZoneModel: null,
     ...overrides,
   };
 }
@@ -33,7 +34,15 @@ describe("resolveProfile", () => {
     expect(r.weightKg).toBe(PROFILE_DEFAULTS.weightKg);
     expect(r.ageYears).toBe(PROFILE_DEFAULTS.ageYears);
     expect(r.sex).toBe(PROFILE_DEFAULTS.sex);
+    expect(r.hrZoneModel).toBe(PROFILE_DEFAULTS.hrZoneModel);
+    expect(r.hrZoneModel).toBe("garminPolar5");
     expect(r.isCustomized).toBe(false);
+  });
+
+  it("preserves a user-selected hrZoneModel and flips isCustomized", () => {
+    const r = resolveProfile(prefs({ hrZoneModel: "cogganFriel7" }));
+    expect(r.hrZoneModel).toBe("cogganFriel7");
+    expect(r.isCustomized).toBe(true);
   });
 
   it("derives threshold HR as ~85% of resolved max HR by default", () => {
@@ -66,20 +75,16 @@ describe("resolveProfile", () => {
 
 describe("migrateProfilePrefs", () => {
   it("returns documented defaults when given null / undefined / corrupt", () => {
-    expect(migrateProfilePrefs(null)).toEqual({
+    const allNull: ProfilePrefs = {
       maxHrBpm: null,
       thresholdHrBpm: null,
       weightKg: null,
       ageYears: null,
       sex: null,
-    });
-    expect(migrateProfilePrefs(undefined)).toEqual({
-      maxHrBpm: null,
-      thresholdHrBpm: null,
-      weightKg: null,
-      ageYears: null,
-      sex: null,
-    });
+      hrZoneModel: null,
+    };
+    expect(migrateProfilePrefs(null)).toEqual(allNull);
+    expect(migrateProfilePrefs(undefined)).toEqual(allNull);
   });
 
   it("drops non-finite numbers and unknown sex values", () => {
@@ -97,6 +102,20 @@ describe("migrateProfilePrefs", () => {
     expect(out.sex).toBeNull();
   });
 
+  it("preserves known hrZoneModel values and nulls unknown ones", () => {
+    expect(
+      migrateProfilePrefs({ hrZoneModel: "garminPolar5" }).hrZoneModel,
+    ).toBe("garminPolar5");
+    expect(
+      migrateProfilePrefs({ hrZoneModel: "cogganFriel7" }).hrZoneModel,
+    ).toBe("cogganFriel7");
+    expect(
+      migrateProfilePrefs({
+        hrZoneModel: "polar5" as unknown as "garminPolar5",
+      }).hrZoneModel,
+    ).toBeNull();
+  });
+
   it("ignores extra keys not in the schema", () => {
     const out = migrateProfilePrefs({
       maxHrBpm: 200,
@@ -105,7 +124,14 @@ describe("migrateProfilePrefs", () => {
     });
     expect(out.maxHrBpm).toBe(200);
     expect(Object.keys(out).sort()).toEqual(
-      ["ageYears", "maxHrBpm", "sex", "thresholdHrBpm", "weightKg"].sort(),
+      [
+        "ageYears",
+        "hrZoneModel",
+        "maxHrBpm",
+        "sex",
+        "thresholdHrBpm",
+        "weightKg",
+      ].sort(),
     );
   });
 });

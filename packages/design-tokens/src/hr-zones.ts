@@ -103,3 +103,74 @@ export const HR_ZONE_KEYS: readonly HrZoneKey[] = [
   "z4",
   "z5",
 ];
+
+/**
+ * Coggan/Friel 7-zone HR palette.
+ *
+ * The first five zones reuse the Garmin/Polar 5-zone ramp so users
+ * who switch between models get the same "blue → green → yellow →
+ * orange → red" intuition for the bulk of the bar; the two new top
+ * zones (c5b, c5c) extend with a deeper red and a violet so the
+ * ramp keeps progressing past Z5. Same four-slot structure
+ * (`bg`, `bgSubtle`, `text`, `onZoneText`) as the 5-zone palette so
+ * `<ZonePill>` / `<ZoneBar>` consumers can swap palettes without
+ * touching layout code.
+ *
+ * Naming follows Joel Friel's adaptation of Andrew Coggan's HR
+ * zones: c1 Recovery, c2 Aerobic, c3 Tempo, c4 SubThreshold,
+ * c5a SuperThreshold, c5b Aerobic Capacity, c5c Anaerobic Capacity.
+ */
+export type CogganZoneKey = "c1" | "c2" | "c3" | "c4" | "c5a" | "c5b" | "c5c";
+
+export type CogganZonePalette = Record<CogganZoneKey, HrZoneTokens>;
+
+export const cogganZonesLight: CogganZonePalette = {
+  c1: hrZonesLight.z1,
+  c2: hrZonesLight.z2,
+  c3: hrZonesLight.z3,
+  c4: hrZonesLight.z4,
+  c5a: hrZonesLight.z5,
+  c5b: {
+    bg: "#B62232",
+    bgSubtle: "rgba(182, 34, 50, 0.20)",
+    text: "#5C0F18",
+    onZoneText: "#FFFFFF",
+  },
+  c5c: {
+    bg: "#7A2BAE",
+    bgSubtle: "rgba(122, 43, 174, 0.20)",
+    text: "#3F1264",
+    onZoneText: "#FFFFFF",
+  },
+};
+
+export const cogganZonesDark: CogganZonePalette = {
+  c1: hrZonesDark.z1,
+  c2: hrZonesDark.z2,
+  c3: hrZonesDark.z3,
+  c4: hrZonesDark.z4,
+  c5a: hrZonesDark.z5,
+  c5b: {
+    bg: "#B62232",
+    bgSubtle: "rgba(182, 34, 50, 0.24)",
+    text: "#E5818D",
+    onZoneText: "#FFFFFF",
+  },
+  c5c: {
+    bg: "#A04AD8",
+    bgSubtle: "rgba(160, 74, 216, 0.24)",
+    text: "#D5A8EE",
+    onZoneText: "#FFFFFF",
+  },
+};
+
+/** Ordered list of Coggan/Friel zone keys, easy → max. */
+export const COGGAN_ZONE_KEYS: readonly CogganZoneKey[] = [
+  "c1",
+  "c2",
+  "c3",
+  "c4",
+  "c5a",
+  "c5b",
+  "c5c",
+];
