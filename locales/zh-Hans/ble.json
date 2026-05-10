@@ -12,7 +12,7 @@
       },
       "unauthorized": {
         "title": "需要蓝牙权限",
-        "subtitle": "请在 iOS 设置中为 rowerm8 启用蓝牙。"
+        "subtitle": "请在 iOS 设置中为 {appName} 启用蓝牙。"
       },
       "unavailable": {
         "title": "蓝牙不可用",

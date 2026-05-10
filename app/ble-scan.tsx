@@ -15,6 +15,7 @@ import { DeviceCard } from "@/components/ble/device-card";
 import { ScanHero } from "@/components/ble/scan-hero";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { APP_NAME } from "@/constants/branding";
 import type { BleRole, ScannedDevice } from "@/contexts/ble-context";
 import { useBle } from "@/contexts/ble-context";
 import { useHeartRate } from "@/contexts/heart-rate-context";
@@ -120,7 +121,12 @@ export default function BleScanScreen() {
     return "complete";
   })();
   const heroTitle = t(`scan.hero.${heroState}.title`);
-  const heroSubtitle = t(`scan.hero.${heroState}.subtitle`);
+  // Pass `appName` unconditionally; only the `unauthorized` subtitle uses
+  // the placeholder today, but feeding it everywhere keeps the call site
+  // simple and is a no-op for the other hero states.
+  const heroSubtitle = t(`scan.hero.${heroState}.subtitle`, {
+    appName: APP_NAME,
+  });
 
   return (
     <ThemedView style={styles.root}>

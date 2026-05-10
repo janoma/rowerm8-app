@@ -5,15 +5,15 @@
   "selectHelper": "Choisissez comment suivre le mouvement de la palette.",
   "placeholder": "Les données du capteur en direct apparaîtront ici une fois la source sélectionnée.",
   "phone": {
-    "noPermission": "L’autorisation Mouvement a été refusée. Activez Mouvement et forme physique pour rowerm8 dans Réglages pour voir les données en direct.",
+    "noPermission": "L’autorisation Mouvement a été refusée. Activez Mouvement et forme physique pour {appName} dans Réglages pour voir les données en direct.",
     "noAccelerometer": "Aucun accéléromètre détecté sur cet appareil.",
     "label": "Accéléromètre de l’iPhone"
   },
   "ble": {
     "reconnect": "Touchez Connecter pour vous reconnecter à {label}.",
     "reconnectFallback": "Touchez Connecter pour vous reconnecter à votre capteur Bluetooth.",
-    "noDecoder": "Connecté à {label}, mais rowerm8 n’a pas encore de décodeur pour cet appareil. Aucune donnée en direct disponible.",
-    "noDecoderFallback": "Connecté à cet appareil, mais rowerm8 n’a pas encore de décodeur pour celui-ci. Aucune donnée en direct disponible.",
+    "noDecoder": "Connecté à {label}, mais {appName} n’a pas encore de décodeur pour cet appareil. Aucune donnée en direct disponible.",
+    "noDecoderFallback": "Connecté à cet appareil, mais {appName} n’a pas encore de décodeur pour celui-ci. Aucune donnée en direct disponible.",
     "connecting": "Connexion à {label}…",
     "connectingFallback": "Connexion au capteur…"
   }

@@ -5,15 +5,15 @@
   "selectHelper": "选择追踪划桨动作的方式。",
   "placeholder": "选择信号源后，传感器实时数据将显示在此处。",
   "phone": {
-    "noPermission": "运动权限已被拒绝。如需查看实时数据，请在设置中为 rowerm8 启用「健身运动」。",
+    "noPermission": "运动权限已被拒绝。如需查看实时数据，请在设置中为 {appName} 启用「健身运动」。",
     "noAccelerometer": "未在此设备上检测到加速度计。",
     "label": "iPhone 加速度计"
   },
   "ble": {
     "reconnect": "轻点「连接」以重新连接到 {label}。",
     "reconnectFallback": "轻点「连接」以重新连接你的蓝牙传感器。",
-    "noDecoder": "已连接到 {label}，但 rowerm8 暂不支持此设备。实时数据不可用。",
-    "noDecoderFallback": "已连接到此设备，但 rowerm8 暂不支持。实时数据不可用。",
+    "noDecoder": "已连接到 {label}，但 {appName} 暂不支持此设备。实时数据不可用。",
+    "noDecoderFallback": "已连接到此设备，但 {appName} 暂不支持。实时数据不可用。",
     "connecting": "正在连接到 {label}…",
     "connectingFallback": "正在连接传感器…"
   }

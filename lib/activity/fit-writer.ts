@@ -21,7 +21,7 @@ import type { RecordedActivity } from "./types";
  */
 const FIT_MANUFACTURER = "development";
 const FIT_PRODUCT = 0;
-const FIT_PRODUCT_NAME = "rowerm8";
+const FIT_PRODUCT_NAME = "RowerM8";
 
 /**
  * Convert a JS Date (or ms epoch) to FIT-epoch seconds (1989-12-31 UTC).

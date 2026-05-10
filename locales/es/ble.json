@@ -12,7 +12,7 @@
       },
       "unauthorized": {
         "title": "Se necesita permiso de Bluetooth",
-        "subtitle": "Activa el Bluetooth para rowerm8 en los Ajustes de iOS."
+        "subtitle": "Activa el Bluetooth para {appName} en los Ajustes de iOS."
       },
       "unavailable": {
         "title": "Bluetooth no disponible",

@@ -12,7 +12,7 @@
       },
       "unauthorized": {
         "title": "Bluetooth の許可が必要です",
-        "subtitle": "iOS の設定で rowerm8 の Bluetooth を有効にしてください。"
+        "subtitle": "iOS の設定で {appName} の Bluetooth を有効にしてください。"
       },
       "unavailable": {
         "title": "Bluetooth は利用できません",

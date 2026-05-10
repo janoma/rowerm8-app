@@ -5,15 +5,15 @@
   "selectHelper": "Elige cómo quieres registrar el movimiento de la palada.",
   "placeholder": "Los datos del sensor en vivo aparecerán aquí cuando selecciones una fuente.",
   "phone": {
-    "noPermission": "Se denegó el permiso de movimiento. Activa Movimiento y forma física para rowerm8 en Ajustes para ver los datos en vivo.",
+    "noPermission": "Se denegó el permiso de movimiento. Activa Movimiento y forma física para {appName} en Ajustes para ver los datos en vivo.",
     "noAccelerometer": "No se detectó ningún acelerómetro en este dispositivo.",
     "label": "Acelerómetro del iPhone"
   },
   "ble": {
     "reconnect": "Toca Conectar para volver a conectar con {label}.",
     "reconnectFallback": "Toca Conectar para volver a conectar con tu sensor Bluetooth.",
-    "noDecoder": "Conectado a {label}, pero rowerm8 aún no tiene un decodificador para él. No hay datos en vivo disponibles.",
-    "noDecoderFallback": "Conectado a este dispositivo, pero rowerm8 aún no tiene un decodificador para él. No hay datos en vivo disponibles.",
+    "noDecoder": "Conectado a {label}, pero {appName} aún no tiene un decodificador para él. No hay datos en vivo disponibles.",
+    "noDecoderFallback": "Conectado a este dispositivo, pero {appName} aún no tiene un decodificador para él. No hay datos en vivo disponibles.",
     "connecting": "Conectando con {label}…",
     "connectingFallback": "Conectando con el sensor…"
   }

@@ -22,15 +22,15 @@
     "comingSoonBody": "Structured workouts aren’t available yet. Stay tuned!"
   },
   "phone": {
-    "noPermission": "Motion permission was denied. Enable Motion & Fitness for rowerm8 in Settings to see live data.",
+    "noPermission": "Motion permission was denied. Enable Motion & Fitness for {appName} in Settings to see live data.",
     "noAccelerometer": "No accelerometer detected on this device.",
     "label": "iPhone accelerometer"
   },
   "ble": {
     "reconnect": "Tap Connect to reconnect to {label}.",
     "reconnectFallback": "Tap Connect to reconnect to your Bluetooth sensor.",
-    "noDecoder": "Connected to {label}, but rowerm8 doesn’t have a decoder for it yet. Live data is unavailable.",
-    "noDecoderFallback": "Connected to this device, but rowerm8 doesn’t have a decoder for it yet. Live data is unavailable.",
+    "noDecoder": "Connected to {label}, but {appName} doesn’t have a decoder for it yet. Live data is unavailable.",
+    "noDecoderFallback": "Connected to this device, but {appName} doesn’t have a decoder for it yet. Live data is unavailable.",
     "connecting": "Connecting to {label}…",
     "connectingFallback": "Connecting to sensor…"
   },

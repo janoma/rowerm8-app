@@ -6,6 +6,7 @@ import { ActivityIndicator, Alert, StyleSheet, View } from "react-native";
 import { RowMetricsCard } from "@/components/row/row-metrics-card";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { APP_NAME } from "@/constants/branding";
 import { useBle } from "@/contexts/ble-context";
 import { useMotionSensor } from "@/contexts/motion-sensor-context";
 import { useHeartRateStream } from "@/hooks/use-heart-rate-stream";
@@ -204,7 +205,11 @@ export default function FreeRowScreen() {
 
     if (source === "phone") {
       if (stream.permissionDenied) {
-        return <Banner tone="warning">{t("phone.noPermission")}</Banner>;
+        return (
+          <Banner tone="warning">
+            {t("phone.noPermission", { appName: APP_NAME })}
+          </Banner>
+        );
       }
       if (!stream.isAvailable) {
         return <Banner tone="warning">{t("phone.noAccelerometer")}</Banner>;
@@ -226,8 +231,8 @@ export default function FreeRowScreen() {
       return (
         <Banner tone="warning">
           {deviceLabel
-            ? t("ble.noDecoder", { label: deviceLabel })
-            : t("ble.noDecoderFallback")}
+            ? t("ble.noDecoder", { label: deviceLabel, appName: APP_NAME })
+            : t("ble.noDecoderFallback", { appName: APP_NAME })}
         </Banner>
       );
     }

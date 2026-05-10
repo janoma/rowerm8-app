@@ -5,15 +5,15 @@
   "selectHelper": "Scegli come tracciare il movimento della palata.",
   "placeholder": "I dati del sensore in tempo reale appariranno qui dopo aver selezionato una sorgente.",
   "phone": {
-    "noPermission": "L’autorizzazione Movimento è stata negata. Attiva Movimento e fitness per rowerm8 in Impostazioni per vedere i dati in tempo reale.",
+    "noPermission": "L’autorizzazione Movimento è stata negata. Attiva Movimento e fitness per {appName} in Impostazioni per vedere i dati in tempo reale.",
     "noAccelerometer": "Nessun accelerometro rilevato su questo dispositivo.",
     "label": "Accelerometro dell’iPhone"
   },
   "ble": {
     "reconnect": "Tocca Connetti per riconnetterti a {label}.",
     "reconnectFallback": "Tocca Connetti per riconnetterti al tuo sensore Bluetooth.",
-    "noDecoder": "Connesso a {label}, ma rowerm8 non ha ancora un decoder per questo dispositivo. Dati in tempo reale non disponibili.",
-    "noDecoderFallback": "Connesso a questo dispositivo, ma rowerm8 non ha ancora un decoder. Dati in tempo reale non disponibili.",
+    "noDecoder": "Connesso a {label}, ma {appName} non ha ancora un decoder per questo dispositivo. Dati in tempo reale non disponibili.",
+    "noDecoderFallback": "Connesso a questo dispositivo, ma {appName} non ha ancora un decoder. Dati in tempo reale non disponibili.",
     "connecting": "Connessione a {label}…",
     "connectingFallback": "Connessione al sensore…"
   }

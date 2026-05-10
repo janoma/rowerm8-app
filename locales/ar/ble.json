@@ -12,7 +12,7 @@
       },
       "unauthorized": {
         "title": "إذن Bluetooth مطلوب",
-        "subtitle": "فعّل Bluetooth لـ rowerm8 من إعدادات iOS."
+        "subtitle": "فعّل Bluetooth لـ {appName} من إعدادات iOS."
       },
       "unavailable": {
         "title": "Bluetooth غير متاح",
