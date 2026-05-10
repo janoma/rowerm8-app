@@ -3,7 +3,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Alert, StyleSheet, View } from "react-native";
 
-import { RowMetricsCard } from "@/components/row/row-metrics-card";
+import {
+  RowMetricsCard,
+  CALIBRATION_STROKE_COUNT,
+} from "@/components/row/row-metrics-card";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { APP_NAME } from "@/constants/branding";
@@ -80,6 +83,23 @@ export default function FreeRowScreen() {
     recordingStartedAtMs == null
       ? 0
       : Math.max(0, (nowMs - recordingStartedAtMs) / 1000);
+  // Calibration plumbing for C4 of the row-fixes plan.
+  //
+  // Pre-recording (`recordingStartedAtMs == null`) the metrics card
+  // renders a calibration view inside the cadence slot; the value we
+  // pass is the raw session stroke count, which is what the card uses
+  // to decide between the three calibration sub-states. Once recording
+  // begins we pass `null` to tell the card to skip the calibration UX
+  // entirely and render the live cadence as usual.
+  //
+  // Calibration persists across recording sessions: after a save the
+  // user is dropped back into `armed`, but `strokeSession.strokeCount`
+  // is still well above the threshold so the Start button stays
+  // immediately enabled. The session is reset (and calibration restarts)
+  // only when the motion source changes — see `useStrokeSession`.
+  const calibrationStrokeCount =
+    recordingStartedAtMs == null ? strokeSession.strokeCount : null;
+  const isCalibrated = strokeSession.strokeCount >= CALIBRATION_STROKE_COUNT;
 
   // The metrics ref is kept fresh on every render so the 1 Hz tick driver
   // can read the latest values without re-running its effect on every
@@ -244,6 +264,7 @@ export default function FreeRowScreen() {
     // in C6 of the row-fixes plan. Until then we always render the
     // single-column Total time layout.
     lapElapsedSeconds: null,
+    calibrationStrokeCount,
     heartRateBpm: heartRate.bpm,
   };
 
@@ -314,6 +335,14 @@ export default function FreeRowScreen() {
     }
 
     if (phase === "armed") {
+      // The Start button is disabled until the user has produced
+      // CALIBRATION_STROKE_COUNT strokes (C4 of the row-fixes plan).
+      // While disabled we swap the label to make the wait state
+      // explicit; the design system's `disabled` styling drops the
+      // button to ~40% opacity so the change is also visible at a
+      // glance. The "Tap Start to begin recording…" helper above
+      // stays in place — it describes what Start *does* (save a FIT
+      // file), which is independent of calibration.
       return (
         <View style={styles.controlsBlock}>
           <ThemedText
@@ -325,8 +354,13 @@ export default function FreeRowScreen() {
             {t("freeRow.recording.armed")}
           </ThemedText>
           <Button
-            title={t("freeRow.recording.start")}
+            title={
+              isCalibrated
+                ? t("freeRow.recording.start")
+                : t("freeRow.recording.waitingCalibration")
+            }
             onPress={handleStart}
+            disabled={!isCalibrated}
             tone="accent"
             variant="filled"
             size="lg"

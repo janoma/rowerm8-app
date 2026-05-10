@@ -42,7 +42,9 @@
     "totalTime": "Total time",
     "lapTime": "Lap time",
     "heartRate": "Heart rate",
-    "heartRateUnit": "bpm"
+    "heartRateUnit": "bpm",
+    "calibrateHelper": "Start rowing to calibrate your cadence.",
+    "calibrationProgress": "{count} of {total} calibration strokes"
   },
   "freeRow": {
     "title": "Free row",
@@ -52,6 +54,7 @@
       "armed": "Tap Start to begin recording. Your row will be saved as a FIT file you can upload to Strava, Training Peaks, or Garmin Connect.",
       "running": "Recording in progress.",
       "start": "Start",
+      "waitingCalibration": "Waiting for calibration…",
       "stop": "Stop",
       "save": "Save",
       "discard": "Discard",
