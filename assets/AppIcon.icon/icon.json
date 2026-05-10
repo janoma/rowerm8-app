@@ -1,0 +1,32 @@
+{
+  "fill": {
+    "solid": "srgb:1.00000,1.00000,1.00000,1.00000"
+  },
+  "fill-specializations": [
+    {
+      "appearance": "dark",
+      "value": {
+        "solid": "srgb:0.08235,0.09020,0.09412,1.00000"
+      }
+    }
+  ],
+  "groups": [
+    {
+      "name": "Rower",
+      "layers": [
+        {
+          "image-name": "Foreground.svg",
+          "name": "Rower",
+          "position": {
+            "scale": 1.3,
+            "translation-in-points": [0, 0]
+          }
+        }
+      ]
+    }
+  ],
+  "supported-platforms": {
+    "circles": ["watchOS"],
+    "squares": "shared"
+  }
+}

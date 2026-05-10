@@ -39,6 +39,9 @@ yarn-error.*
 
 app-example
 
+# local working dir for one-off pipelines (icon tracing, etc.)
+.tmp/
+
 # generated native folders
 /ios
 /android

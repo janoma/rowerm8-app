@@ -14,6 +14,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "gen:routes": "node ./scripts/regenerate-router-types.mjs",
+    "icons": "./scripts/export-icons.sh",
+    "icons:trace": "./scripts/trace-icon.sh",
     "test": "jest",
     "precommit": "pnpm run gen:routes && pnpm run typecheck && pnpm run lint && pnpm run format:check"
   },

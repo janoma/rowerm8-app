@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>rowerm8 icon preview</title>
+    <style>
+      :root {
+        --bg: #f6f7f9;
+        --fg: #11181c;
+        --muted: #687076;
+        --border: #e4e6ea;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0f1112;
+          --fg: #ecedee;
+          --muted: #9ba1a6;
+          --border: #2a2d30;
+        }
+      }
+      body {
+        margin: 0;
+        font:
+          14px/1.4 -apple-system,
+          system-ui,
+          Segoe UI,
+          sans-serif;
+        background: var(--bg);
+        color: var(--fg);
+        padding: 24px;
+      }
+      h1 {
+        font-size: 18px;
+        margin: 0 0 4px;
+      }
+      p.lead {
+        color: var(--muted);
+        margin: 0 0 24px;
+      }
+      .controls {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 12px;
+        margin-bottom: 24px;
+        padding: 16px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+      }
+      .controls label {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .controls input[type="color"] {
+        width: 100%;
+        height: 36px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 2px;
+        background: transparent;
+      }
+      .controls .swatch-row {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-top: 4px;
+      }
+      .controls .swatch {
+        width: 24px;
+        height: 24px;
+        border-radius: 6px;
+        border: 1px solid var(--border);
+        cursor: pointer;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 16px;
+      }
+      .card {
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 16px;
+        background: var(--bg);
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        align-items: center;
+      }
+      .card h3 {
+        margin: 0;
+        font-size: 13px;
+        color: var(--muted);
+        font-weight: 500;
+      }
+      .tile {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 22%;
+      }
+      .tile.bg-light {
+        background: #ffffff;
+      }
+      .tile.bg-dark {
+        background: #151718;
+      }
+      .tile.bg-teal {
+        background: #0a7ea4;
+      }
+      .tile.bg-android {
+        background: #e6f4fe;
+      }
+      .sizes {
+        display: flex;
+        gap: 12px;
+        align-items: end;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      .size-label {
+        font-size: 11px;
+        color: var(--muted);
+        text-align: center;
+        margin-top: 4px;
+      }
+      object,
+      svg {
+        display: block;
+      }
+      .preset-row {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 16px;
+      }
+      .preset {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 10px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: transparent;
+        color: var(--fg);
+        cursor: pointer;
+        font: inherit;
+      }
+      .preset .dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+      }
+    </style>
+  </head>
+  <body>
+    <h1>rowerm8 icon preview</h1>
+    <p class="lead">
+      Live preview of <code>icon.svg</code>. Edit the SVG file and refresh; or
+      tweak colors here to A/B variants. Defaults match the design tokens.
+    </p>
+
+    <div class="preset-row" id="presets"></div>
+
+    <div class="controls">
+      <label>
+        Brand (rower + machine)
+        <input type="color" id="brand" value="#0A7EA4" />
+        <div class="swatch-row" data-target="brand">
+          <span
+            class="swatch"
+            style="background: #0a7ea4"
+            data-c="#0A7EA4"
+            title="accent (light)"
+          ></span>
+          <span
+            class="swatch"
+            style="background: #075f7c"
+            data-c="#075F7C"
+            title="accentText (light)"
+          ></span>
+          <span
+            class="swatch"
+            style="background: #3db7e0"
+            data-c="#3DB7E0"
+            title="accent (dark)"
+          ></span>
+          <span
+            class="swatch"
+            style="background: #11181c"
+            data-c="#11181C"
+            title="ink"
+          ></span>
+          <span
+            class="swatch"
+            style="background: #ffffff; border-color: #aaa"
+            data-c="#FFFFFF"
+            title="paper"
+          ></span>
+        </div>
+      </label>
+      <label>
+        Accent (flywheel middle ring)
+        <input type="color" id="accent" value="#F5C518" />
+        <div class="swatch-row" data-target="accent">
+          <span
+            class="swatch"
+            style="background: #f5c518"
+            data-c="#F5C518"
+            title="Z3 yellow"
+          ></span>
+          <span
+            class="swatch"
+            style="background: #3db7e0"
+            data-c="#3DB7E0"
+            title="bright teal"
+          ></span>
+          <span
+            class="swatch"
+            style="background: #3fbf6f"
+            data-c="#3FBF6F"
+            title="Z2 green"
+          ></span>
+          <span
+            class="swatch"
+            style="background: #f58221"
+            data-c="#F58221"
+            title="Z4 orange"
+          ></span>
+          <span
+            class="swatch"
+            style="background: #e63946"
+            data-c="#E63946"
+            title="Z5 red"
+          ></span>
+          <span
+            class="swatch"
+            style="background: #ffffff; border-color: #aaa"
+            data-c="#FFFFFF"
+            title="paper"
+          ></span>
+        </div>
+      </label>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h3>Light surface</h3>
+        <div class="tile bg-light" style="width: 200px; height: 200px">
+          <div class="ico" style="width: 84%; height: 84%"></div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Dark surface</h3>
+        <div class="tile bg-dark" style="width: 200px; height: 200px">
+          <div class="ico" style="width: 84%; height: 84%"></div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Brand-on-brand (filled bg)</h3>
+        <div class="tile bg-teal" style="width: 200px; height: 200px">
+          <div class="ico" style="width: 84%; height: 84%"></div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Android adaptive bg</h3>
+        <div class="tile bg-android" style="width: 200px; height: 200px">
+          <div class="ico" style="width: 66%; height: 66%"></div>
+        </div>
+      </div>
+      <div class="card" style="grid-column: 1 / -1">
+        <h3>Home-screen sizes</h3>
+        <div class="sizes">
+          <div>
+            <div
+              class="tile bg-light"
+              style="width: 120px; height: 120px; border-radius: 22%"
+            >
+              <div class="ico" style="width: 84%; height: 84%"></div>
+            </div>
+            <div class="size-label">120 × 120 (iPad)</div>
+          </div>
+          <div>
+            <div
+              class="tile bg-light"
+              style="width: 80px; height: 80px; border-radius: 22%"
+            >
+              <div class="ico" style="width: 84%; height: 84%"></div>
+            </div>
+            <div class="size-label">80 × 80 (iPhone)</div>
+          </div>
+          <div>
+            <div
+              class="tile bg-light"
+              style="width: 60px; height: 60px; border-radius: 22%"
+            >
+              <div class="ico" style="width: 84%; height: 84%"></div>
+            </div>
+            <div class="size-label">60 × 60 (Spotlight)</div>
+          </div>
+          <div>
+            <div
+              class="tile bg-light"
+              style="width: 40px; height: 40px; border-radius: 22%"
+            >
+              <div class="ico" style="width: 84%; height: 84%"></div>
+            </div>
+            <div class="size-label">40 × 40 (Settings)</div>
+          </div>
+          <div>
+            <div
+              class="tile bg-light"
+              style="width: 29px; height: 29px; border-radius: 22%"
+            >
+              <div class="ico" style="width: 84%; height: 84%"></div>
+            </div>
+            <div class="size-label">29 × 29 (notif)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const SVG_URL = "icon.svg";
+      const presets = [
+        { name: "Yellow (chosen)", brand: "#0A7EA4", accent: "#F5C518" },
+        { name: "Bright teal", brand: "#0A7EA4", accent: "#3DB7E0" },
+        { name: "Endurance green", brand: "#0A7EA4", accent: "#3FBF6F" },
+        { name: "Tempo orange", brand: "#0A7EA4", accent: "#F58221" },
+        { name: "Mono ink", brand: "#11181C", accent: "#F5C518" },
+        { name: "White on teal", brand: "#FFFFFF", accent: "#F5C518" },
+      ];
+      const presetsEl = document.getElementById("presets");
+      presets.forEach((p) => {
+        const btn = document.createElement("button");
+        btn.className = "preset";
+        btn.innerHTML =
+          '<span class="dot" style="background:' +
+          p.brand +
+          '"></span>' +
+          '<span class="dot" style="background:' +
+          p.accent +
+          '"></span>' +
+          " " +
+          p.name;
+        btn.onclick = () => apply(p.brand, p.accent);
+        presetsEl.appendChild(btn);
+      });
+
+      let svgText = "";
+      fetch(SVG_URL)
+        .then((r) => r.text())
+        .then((t) => {
+          svgText = t;
+          render();
+        })
+        .catch((err) => {
+          document.body.insertAdjacentHTML(
+            "afterbegin",
+            '<p style="color:#c5283d">Could not load icon.svg — open this file via a local web server (e.g. <code>python3 -m http.server</code>) instead of file://</p>',
+          );
+          console.error(err);
+        });
+
+      function render() {
+        const brand = document.getElementById("brand").value;
+        const accent = document.getElementById("accent").value;
+        const colored = svgText.replace(
+          /<svg(\s|>)/,
+          '<svg style="--rm8-brand:' +
+            brand +
+            ";--rm8-accent:" +
+            accent +
+            ';width:100%;height:100%"$1',
+        );
+        document.querySelectorAll(".ico").forEach((el) => {
+          el.innerHTML = colored;
+        });
+      }
+      function apply(brand, accent) {
+        document.getElementById("brand").value = brand;
+        document.getElementById("accent").value = accent;
+        render();
+      }
+      document.getElementById("brand").oninput = render;
+      document.getElementById("accent").oninput = render;
+      document.querySelectorAll(".swatch-row").forEach((row) => {
+        const target = row.dataset.target;
+        row.querySelectorAll(".swatch").forEach((s) => {
+          s.onclick = () => {
+            document.getElementById(target).value = s.dataset.c;
+            render();
+          };
+        });
+      });
+    </script>
+  </body>
+</html>
