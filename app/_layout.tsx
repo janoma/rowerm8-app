@@ -7,6 +7,8 @@ import {
 } from "react-native-safe-area-context";
 import "react-native-reanimated";
 
+import { OnboardingOverlay } from "@/components/onboarding/onboarding-overlay";
+import { AuthProvider } from "@/contexts/auth-context";
 import { BleProvider } from "@/contexts/ble-context";
 import { HeartRateProvider } from "@/contexts/heart-rate-context";
 import { LocaleProvider } from "@/contexts/locale-context";
@@ -55,6 +57,14 @@ function ThemedRootLayout() {
           }}
         />
       </Stack>
+      {/*
+       * Mounted as a sibling of the navigator so the onboarding overlay
+       * paints above every tab + stack screen on cold start (and again
+       * when the user taps the Home avatar). The overlay uses a
+       * non-transparent <Modal> internally and self-hides when there's
+       * nothing to show.
+       */}
+      <OnboardingOverlay />
       <StatusBar style="auto" />
     </NavThemeProvider>
   );
@@ -65,13 +75,15 @@ export default function RootLayout() {
     <SafeAreaProvider initialMetrics={initialWindowMetrics}>
       <ThemeProvider>
         <LocaleProvider>
-          <MotionSensorProvider>
-            <HeartRateProvider>
-              <BleProvider>
-                <ThemedRootLayout />
-              </BleProvider>
-            </HeartRateProvider>
-          </MotionSensorProvider>
+          <AuthProvider>
+            <MotionSensorProvider>
+              <HeartRateProvider>
+                <BleProvider>
+                  <ThemedRootLayout />
+                </BleProvider>
+              </HeartRateProvider>
+            </MotionSensorProvider>
+          </AuthProvider>
         </LocaleProvider>
       </ThemeProvider>
     </SafeAreaProvider>

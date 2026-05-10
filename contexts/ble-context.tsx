@@ -118,6 +118,17 @@ export type BleContextValue = {
   scanError: string | null;
   motion: BleSlot;
   hr: BleSlot;
+  /**
+   * Lazily create the underlying `BleManager`, which on iOS is what surfaces
+   * the system Bluetooth permission prompt. Callers should invoke this from
+   * the BLE scan screen *only* — never on app boot — so the user only sees
+   * the prompt after they've actively chosen to pair an external sensor.
+   *
+   * Idempotent: subsequent calls reuse the existing manager. Returns `true`
+   * if a manager is now available, `false` if the platform doesn't ship the
+   * native module (e.g. web).
+   */
+  prime: () => boolean;
   startScan: (args: StartScanArgs) => Promise<void>;
   stopScan: () => void;
   connect: (deviceId: string, role: BleRole) => Promise<ScannedDevice | null>;
@@ -599,13 +610,19 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
     [],
   );
 
+  const prime = useCallback((): boolean => {
+    return ensureManager() !== null;
+  }, [ensureManager]);
+
   useEffect(() => {
-    // Eagerly create the BleManager so its onStateChange subscription resolves
-    // `availability` before the user opens the picker. Without this, the manager
-    // is only created on the first scan/connect and `availability` stays at
-    // 'unknown', which both blocks the auto-scan effect on the picker screen
-    // and shows misleading "Scan complete" copy.
-    ensureManager();
+    // We deliberately do NOT instantiate `BleManager` here. Doing so on app
+    // boot triggers the iOS `bluetoothAlwaysPermission` system prompt the
+    // first time it runs, which is exactly the behavior we're trying to
+    // avoid (the user should only be asked when they actively try to pair
+    // an external sensor). The manager is created lazily inside
+    // `ensureManager()` on the first `startScan` / `connect` call — which
+    // means `availability` stays `"unknown"` until the user opens the BLE
+    // scan screen, which is the only place that needs it.
     return () => {
       stopScan();
       ROLES.forEach((role) => {
@@ -623,7 +640,7 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
         managerRef.current = null;
       }
     };
-  }, [ensureManager, stopScan, teardownConnection]);
+  }, [stopScan, teardownConnection]);
 
   const sortedDevices = useMemo(
     () => Object.values(devices).slice().sort(compareDevices),
@@ -639,6 +656,7 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
       scanError,
       motion: motionSlot,
       hr: hrSlot,
+      prime,
       startScan,
       stopScan,
       connect,
@@ -653,6 +671,7 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
       scanError,
       motionSlot,
       hrSlot,
+      prime,
       startScan,
       stopScan,
       connect,

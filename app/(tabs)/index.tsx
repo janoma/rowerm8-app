@@ -2,8 +2,17 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Pressable, ScrollView, StyleSheet, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  I18nManager,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+} from "react-native";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
 import { ActivityCard } from "@/components/activity/activity-card";
 import { SensorPickerSheet } from "@/components/sensor/sensor-picker-sheet";
@@ -11,6 +20,7 @@ import { SensorPlacementModal } from "@/components/sensor/sensor-placement-modal
 import { SensorStatusCard } from "@/components/sensor/sensor-status-card";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { AvatarButton } from "@/components/user/avatar-button";
 import { PLACEMENT_DONT_SHOW_KEY } from "@/constants/storage-keys";
 import { useBle } from "@/contexts/ble-context";
 import { useHeartRate } from "@/contexts/heart-rate-context";
@@ -25,11 +35,30 @@ import { useTheme } from "@/lib/design-system";
 
 const RECENT_PEEK_LIMIT = 3;
 
+/**
+ * Distance from the trailing edge of the safe area to the avatar circle.
+ * Mirrors the screen's horizontal content padding so the avatar visually
+ * aligns with the title text below.
+ */
+const AVATAR_EDGE_INSET = 16;
+
+/**
+ * Vertical offset added on top of the safe-area top inset so the avatar
+ * doesn't crowd the status bar / dynamic island.
+ */
+const AVATAR_TOP_OFFSET = 8;
+
 export default function HomeScreen() {
   const { tokens } = useTheme();
   const { t } = useTranslation("home");
   const { t: tSensor } = useTranslation("sensor");
   const { t: tRow } = useTranslation("row");
+  // The avatar is positioned absolutely on top of the SafeAreaView, but
+  // `position: absolute` doesn't respect the SafeAreaView's padding edge —
+  // `top: 0` lands at the screen's actual top (under the status bar). We
+  // read the insets directly so we can offset the avatar below the system
+  // chrome on every device.
+  const insets = useSafeAreaInsets();
 
   const motion = useMotionSensor();
   const heartRate = useHeartRate();
@@ -111,6 +140,24 @@ export default function HomeScreen() {
   return (
     <ThemedView style={styles.root}>
       <SafeAreaView edges={["top"]} style={styles.safeArea}>
+        <View
+          style={[
+            styles.avatarSlot,
+            // Push the avatar below the status bar / notch. Absolute
+            // positioning is anchored to the parent's outer padding edge,
+            // so we have to add the safe-area top inset manually.
+            { top: insets.top + AVATAR_TOP_OFFSET },
+            // `position: absolute` doesn't auto-flip `left`/`right` under
+            // RTL — the layout system only flips margins/paddings — so we
+            // pin to the trailing edge explicitly.
+            I18nManager.isRTL
+              ? { left: AVATAR_EDGE_INSET }
+              : { right: AVATAR_EDGE_INSET },
+          ]}
+          pointerEvents="box-none"
+        >
+          <AvatarButton />
+        </View>
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={styles.content}
@@ -239,12 +286,23 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 20,
+    // Reserve room so the title doesn't visually run under the absolutely
+    // positioned avatar. The avatar circle is 36 dp + a small breathing gap.
     paddingTop: 12,
     paddingBottom: 24,
     gap: 14,
   },
+  avatarSlot: {
+    position: "absolute",
+    // `top` is overridden inline using the safe-area inset so the avatar
+    // never tucks under the status bar.
+    zIndex: 1,
+  },
   title: {
     marginBottom: 0,
+    // Reserve trailing space so the title text never flows under the avatar
+    // circle on narrow screens.
+    paddingEnd: 56,
   },
   subtitle: {
     fontSize: 15,

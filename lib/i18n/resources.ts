@@ -26,11 +26,13 @@ import deRow from "@/locales/de/row.json";
 import deSensor from "@/locales/de/sensor.json";
 import deSettings from "@/locales/de/settings.json";
 import deTabs from "@/locales/de/tabs.json";
+import enAuth from "@/locales/en/auth.json";
 import enBle from "@/locales/en/ble.json";
 import enCommon from "@/locales/en/common.json";
 import enHistory from "@/locales/en/history.json";
 import enHome from "@/locales/en/home.json";
 import enModal from "@/locales/en/modal.json";
+import enOnboarding from "@/locales/en/onboarding.json";
 import enRow from "@/locales/en/row.json";
 import enSensor from "@/locales/en/sensor.json";
 import enSettings from "@/locales/en/settings.json";
@@ -86,6 +88,8 @@ export const NAMESPACES = [
   "settings",
   "modal",
   "history",
+  "onboarding",
+  "auth",
 ] as const;
 
 export type Namespace = (typeof NAMESPACES)[number];
@@ -103,6 +107,8 @@ export const RESOURCES = {
     settings: enSettings,
     modal: enModal,
     history: enHistory,
+    onboarding: enOnboarding,
+    auth: enAuth,
   },
   es: {
     common: esCommon,

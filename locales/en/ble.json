@@ -14,6 +14,11 @@
     },
     "connecting": "Connecting…",
     "connectError": "Couldn’t connect: {error}",
+    "permissions": {
+      "denied": "Bluetooth permission is required to find nearby sensors. Tap to try again.",
+      "blocked": "Bluetooth permission is blocked. Open Settings to grant it.",
+      "openSettings": "Open Settings"
+    },
     "hero": {
       "off": {
         "title": "Bluetooth is off",

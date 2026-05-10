@@ -1,8 +1,9 @@
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -20,6 +21,10 @@ import type { BleRole, ScannedDevice } from "@/contexts/ble-context";
 import { useBle } from "@/contexts/ble-context";
 import { useHeartRate } from "@/contexts/heart-rate-context";
 import { useMotionSensor } from "@/contexts/motion-sensor-context";
+import {
+  type BlePermissionStatus,
+  requestBlePermissions,
+} from "@/lib/ble/permissions";
 import { AppHeader, Banner, Stack, useTheme } from "@/lib/design-system";
 
 function parseRoleParam(raw: string | string[] | undefined): BleRole {
@@ -45,8 +50,12 @@ export default function BleScanScreen() {
   const { t } = useTranslation("ble");
   const { t: tc } = useTranslation("common");
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const [permissionStatus, setPermissionStatus] =
+    useState<BlePermissionStatus | null>(null);
+  const didRequestPermissionsRef = useRef(false);
+  const didPrimeRef = useRef(false);
   const didAutoStartRef = useRef(false);
-  const { availability, startScan, stopScan } = ble;
+  const { availability, prime, startScan, stopScan } = ble;
 
   // Devices we don't have a decoder for can't actually be used, so we hide
   // them entirely instead of cluttering the list. The decoder match is
@@ -60,6 +69,39 @@ export default function BleScanScreen() {
   // Pick the slot that matches the active scan so notices and "connecting"
   // copy reflect the right connection attempt.
   const slot = role === "hr" ? ble.hr : ble.motion;
+
+  // Request runtime BLE permissions on first mount of this screen.
+  // - Android 12+: the OS surfaces `BLUETOOTH_SCAN` / `BLUETOOTH_CONNECT`
+  //   prompts here for the first time (we removed the eager BleManager
+  //   instantiation from `BleProvider` so the user is never prompted at app
+  //   boot).
+  // - iOS: the helper is a no-op; the iOS prompt fires when we `prime()`
+  //   the BLE context below, which is what constructs the `BleManager`.
+  // Subsequent visits resolve immediately to "granted" without re-prompting.
+  useEffect(() => {
+    if (didRequestPermissionsRef.current) {
+      return;
+    }
+    didRequestPermissionsRef.current = true;
+    requestBlePermissions().then(setPermissionStatus);
+  }, []);
+
+  // Once runtime permissions are sorted, instantiate the BleManager. This is
+  // the iOS permission-prompt trigger; we deliberately keep it scoped to
+  // this screen so the prompt never shows on app boot. After priming, the
+  // manager's `onStateChange` subscription will move `availability` from
+  // `"unknown"` to `"on"` (or `"unauthorized"` / `"off"` on denial), which
+  // gates the actual scan in the next effect.
+  useEffect(() => {
+    if (didPrimeRef.current) {
+      return;
+    }
+    if (permissionStatus !== "granted" && permissionStatus !== "notRequired") {
+      return;
+    }
+    didPrimeRef.current = true;
+    prime();
+  }, [permissionStatus, prime]);
 
   useEffect(() => {
     if (availability === "on" && !didAutoStartRef.current) {
@@ -101,6 +143,21 @@ export default function BleScanScreen() {
     ble.stopScan();
     router.dismiss();
   };
+
+  // When the user denied an Android prompt we let them try again with a
+  // tap; if they hit "Don't ask again" or hit a `RESTRICTED` policy we
+  // route them to system settings instead.
+  const handleRetryPermissions = useCallback(async () => {
+    if (permissionStatus === "blocked") {
+      Linking.openSettings().catch(() => {
+        // Best-effort: if the OS refuses to open Settings (rare) the
+        // banner stays visible and the user can try again later.
+      });
+      return;
+    }
+    const status = await requestBlePermissions();
+    setPermissionStatus(status);
+  }, [permissionStatus]);
 
   const heroState: HeroState = (() => {
     if (ble.availability === "off") {
@@ -156,6 +213,24 @@ export default function BleScanScreen() {
           title={heroTitle}
           subtitle={heroSubtitle}
         />
+
+        {permissionStatus === "denied" || permissionStatus === "blocked" ? (
+          <Pressable
+            onPress={handleRetryPermissions}
+            accessibilityRole="button"
+            accessibilityLabel={
+              permissionStatus === "blocked"
+                ? t("scan.permissions.openSettings")
+                : tc("actions.scanAgain")
+            }
+          >
+            <Banner tone="warning">
+              {permissionStatus === "blocked"
+                ? t("scan.permissions.blocked")
+                : t("scan.permissions.denied")}
+            </Banner>
+          </Pressable>
+        ) : null}
 
         {ble.scanError ? <Banner tone="warning">{ble.scanError}</Banner> : null}
 
