@@ -51,9 +51,41 @@ export default function FreeRowScreen() {
     null,
   );
 
+  // Display-layer gating for items 2 and 3 of the row-fixes plan.
+  //
+  // The stroke session keeps running whenever motion data is flowing so
+  // the calibration progress (C4) can count toward 5 strokes before the
+  // user taps Start. To keep the metrics card honest in the meantime,
+  // we anchor a separate "recording started" wall-clock timestamp on
+  // Start and snapshot the session's stroke count at the same moment.
+  // The displayed strokes / total time are derived from those anchors
+  // so calibration strokes don't leak into the recording's display
+  // (or, downstream, into the recorder's snapshot stream).
+  const [recordingStartedAtMs, setRecordingStartedAtMs] = useState<
+    number | null
+  >(null);
+  const [recordingStartStrokeCount, setRecordingStartStrokeCount] = useState(0);
+  // A 4 Hz "now" tick that drives the total-time display. We don't
+  // couple to the motion-sample cadence (which would re-render at 50 Hz
+  // even just to advance the seconds digit). Only ticks while a
+  // recording is in flight; outside `running` the display is locked to
+  // 0 and there's nothing to refresh.
+  const [nowMs, setNowMs] = useState(() => Date.now());
+
+  const displayStrokeCount =
+    recordingStartedAtMs == null
+      ? 0
+      : Math.max(0, strokeSession.strokeCount - recordingStartStrokeCount);
+  const displayTotalTimeSeconds =
+    recordingStartedAtMs == null
+      ? 0
+      : Math.max(0, (nowMs - recordingStartedAtMs) / 1000);
+
   // The metrics ref is kept fresh on every render so the 1 Hz tick driver
   // can read the latest values without re-running its effect on every
-  // metrics change (which would defeat the throttle).
+  // metrics change (which would defeat the throttle). The recorder gets
+  // the *display* stroke count so its per-record snapshots are
+  // recording-relative (calibration strokes are excluded by construction).
   const metricsRef = useRef({
     cadenceSpm: 0,
     paceSecondsPer500m: Number.POSITIVE_INFINITY,
@@ -63,26 +95,31 @@ export default function FreeRowScreen() {
   metricsRef.current = {
     cadenceSpm: strokeSession.cadenceSpm,
     paceSecondsPer500m: strokeSession.paceSecondsPer500m,
-    strokeCount: strokeSession.strokeCount,
+    strokeCount: displayStrokeCount,
     heartRateBpm: heartRate.bpm,
   };
 
   // Drive the 1 Hz snapshot stream from a setInterval rather than the
   // motion sample arrival, so the recorder samples cadence/HR even during
-  // pauses where the sensor briefly stops streaming.
+  // pauses where the sensor briefly stops streaming. The same loop also
+  // refreshes the `nowMs` state so the displayed total time advances.
   useEffect(() => {
     if (phase !== "running") {
       return;
     }
     const id = setInterval(() => {
-      recorderRef.current.tick(metricsRef.current, Date.now());
+      const now = Date.now();
+      setNowMs(now);
+      recorderRef.current.tick(metricsRef.current, now);
     }, 250);
     return () => clearInterval(id);
   }, [phase]);
 
   // Forward each detected stroke to the recorder. The session hook clears
   // strokeJustDetected after one render, so we observe each stroke as a
-  // single edge event.
+  // single edge event. Already gated on `phase === "running"`, which is
+  // what keeps calibration strokes (detected while in `armed`) out of the
+  // recording.
   useEffect(() => {
     if (phase !== "running") {
       return;
@@ -94,10 +131,18 @@ export default function FreeRowScreen() {
   }, [phase, strokeSession.strokeJustDetected, strokeSession.cadenceSpm]);
 
   const handleStart = useCallback(() => {
-    strokeSession.reset();
-    recorderRef.current.start(Date.now());
+    // Note: we deliberately do NOT call strokeSession.reset() here.
+    // Resetting the session would clear the calibrated baseline /
+    // threshold / cadence EMA the user just spent 5 strokes warming up.
+    // Instead we snapshot the current stroke count so future displays
+    // are recording-relative.
+    const now = Date.now();
+    setRecordingStartStrokeCount(strokeSession.strokeCount);
+    setRecordingStartedAtMs(now);
+    setNowMs(now);
+    recorderRef.current.start(now);
     setPhase("running");
-  }, [strokeSession]);
+  }, [strokeSession.strokeCount]);
 
   const handleStop = useCallback(async () => {
     if (!recorderRef.current.isRunning) {
@@ -116,6 +161,7 @@ export default function FreeRowScreen() {
         t("freeRow.recording.saveErrorBody"),
       );
       setPhase("armed");
+      setRecordingStartedAtMs(null);
     }
   }, [t]);
 
@@ -132,6 +178,7 @@ export default function FreeRowScreen() {
               recorderRef.current.finish(Date.now());
             }
             setPhase("armed");
+            setRecordingStartedAtMs(null);
           },
         },
         { text: t("freeRow.back"), style: "cancel" },
@@ -161,6 +208,7 @@ export default function FreeRowScreen() {
   const handleAcknowledgeSaved = useCallback(() => {
     setSavedActivity(null);
     setPhase("armed");
+    setRecordingStartedAtMs(null);
   }, []);
 
   const handleBack = useCallback(() => {
@@ -188,10 +236,10 @@ export default function FreeRowScreen() {
   ]);
 
   const metricsCardProps = {
-    strokeCount: strokeSession.strokeCount,
+    strokeCount: displayStrokeCount,
     cadenceSpm: strokeSession.cadenceSpm,
     paceSecondsPer500m: strokeSession.paceSecondsPer500m,
-    elapsedSeconds: strokeSession.elapsedSeconds,
+    elapsedSeconds: displayTotalTimeSeconds,
     heartRateBpm: heartRate.bpm,
     sampleRateHz: stream.sampleRateHz,
   };

@@ -46,6 +46,19 @@ const INITIAL_METRICS: SessionMetrics = {
 };
 
 /**
+ * Wall-clock window after a session starts (or is reset) during which we
+ * silently drop any strokes the detector reports. The PCA / EMA state
+ * machines need a moment to settle when the projector first boots up;
+ * without this gate, a baseline that hasn't yet caught up with gravity
+ * can leak across the dynamic threshold and register a phantom "first
+ * stroke" the moment the user opens the screen. 1500 ms is roughly 3×
+ * the PCA warmup at 50 Hz, which empirically swallows the settling
+ * transient without eating real strokes (real rowing strokes don't fire
+ * back-to-back at <1 s gaps anyway).
+ */
+const STARTUP_IGNORE_WINDOW_MS = 1500;
+
+/**
  * Pick the projector best suited for the active motion source.
  *
  *   - `"ble"`: WitMotion handle. Use `handleAxisProjector` so we can
@@ -87,6 +100,17 @@ function buildSession(
  * source) whenever the source changes, so a switch from phone to BLE
  * doesn't carry a stale magnitude-rest baseline into the handle path.
  *
+ * Startup ignore window
+ * ---------------------
+ * Strokes the detector reports during the first {@link
+ * STARTUP_IGNORE_WINDOW_MS} of a fresh session are silently suppressed
+ * (they don't bump `strokeCount` and don't raise `strokeJustDetected`).
+ * This shields the UI from the projector's settling transient — without
+ * the gate, opening the Row screen with the phone resting on a desk can
+ * register a phantom "first stroke" before the user has done anything.
+ * The gate re-arms whenever the session is rebuilt (source change) or
+ * the consumer calls {@link StrokeSessionState.reset}.
+ *
  * Pure-by-construction: there are no side effects (no haptics, no audio).
  * The Row screen will eventually consume `strokeJustDetected` to drive a
  * visual stroke indicator, but that's a UI concern, not this hook's.
@@ -123,6 +147,15 @@ export function useStrokeSession(
   // across renders until a new sample arrives).
   const lastSampleRef = useRef<unknown>(null);
   const previousStrokeCountRef = useRef(0);
+  // Wall-clock timestamp of the first sample fed into the current
+  // session instance. Used to gate the startup-ignore window. Reset to
+  // `null` whenever the session is rebuilt or `reset()` is called.
+  const sessionStartMsRef = useRef<number | null>(null);
+  // Number of strokes the detector has reported that we silently
+  // suppressed because they fell inside the startup window. The hook
+  // subtracts this from the metrics it publishes so consumers see a
+  // strokeCount that starts at zero on session start.
+  const warmupSuppressedStrokesRef = useRef(0);
 
   useEffect(() => {
     const sample = stream.sample;
@@ -134,17 +167,40 @@ export function useStrokeSession(
     }
     lastSampleRef.current = sample;
 
+    const now = Date.now();
+    if (sessionStartMsRef.current == null) {
+      sessionStartMsRef.current = now;
+    }
+    const inWarmup = now - sessionStartMsRef.current < STARTUP_IGNORE_WINDOW_MS;
+
     // Forward the optional `angle` (BLE / WitMotion) so the projector
     // can subtract gravity properly.
     const next = sessionRef.current.update(
       { x: sample.x, y: sample.y, z: sample.z, angle: sample.angle },
-      Date.now(),
+      now,
     );
-    setMetrics(next);
+
     if (next.strokeCount > previousStrokeCountRef.current) {
+      const newStrokes = next.strokeCount - previousStrokeCountRef.current;
       previousStrokeCountRef.current = next.strokeCount;
-      setStrokeJustDetected(true);
+      if (inWarmup) {
+        warmupSuppressedStrokesRef.current += newStrokes;
+      } else {
+        setStrokeJustDetected(true);
+      }
     }
+
+    // Publish the suppressed-adjusted stroke count so consumers never see
+    // the warmup-window phantom strokes. `Math.max(0, …)` defends against
+    // a hypothetical race where the suppression count outpaces the raw
+    // count (shouldn't happen, but cheap to guard).
+    setMetrics({
+      ...next,
+      strokeCount: Math.max(
+        0,
+        next.strokeCount - warmupSuppressedStrokesRef.current,
+      ),
+    });
   }, [stream.sample]);
 
   // Auto-clear strokeJustDetected one tick after it fires so consumers
@@ -160,10 +216,13 @@ export function useStrokeSession(
   // When the source changes, the session has already been rebuilt above
   // (during render). Sync the public counters / "last sample" so we
   // don't carry stroke counts or stale sample identity into the new
-  // source's stream.
+  // source's stream. We also re-anchor the startup-ignore window: the
+  // freshly-built projector needs another settling window of its own.
   useEffect(() => {
     previousStrokeCountRef.current = 0;
     lastSampleRef.current = null;
+    sessionStartMsRef.current = null;
+    warmupSuppressedStrokesRef.current = 0;
     setMetrics(INITIAL_METRICS);
     setStrokeJustDetected(false);
   }, [stream.source]);
@@ -176,6 +235,8 @@ export function useStrokeSession(
         sessionRef.current.reset();
         previousStrokeCountRef.current = 0;
         lastSampleRef.current = null;
+        sessionStartMsRef.current = null;
+        warmupSuppressedStrokesRef.current = 0;
         setMetrics(INITIAL_METRICS);
         setStrokeJustDetected(false);
       },
