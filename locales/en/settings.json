@@ -93,7 +93,7 @@
       "zoneModel": "Heart rate zones",
       "heartRateFooter": "Max HR sets the 5-zone Garmin/Polar ramp. Threshold HR (LTHR) sets the 7-zone Coggan/Friel ramp. The active model is chosen above.",
       "bodyFooter": "Body metrics personalise the calorie estimate. Everything is stored on this device only.",
-      "zoneModelFooter": "The selected model is used everywhere zones appear — the live HR ribbon, zone pills, and saved activities re-render with this choice."
+      "zoneModelFooter": "The selected model is used everywhere zones appear: the live HR ribbon, zone pills, and saved activities re-render with this choice."
     },
     "fields": {
       "maxHrBpm": {
@@ -109,7 +109,7 @@
         "subtitleDefault": "Using default (~{value} bpm)",
         "subtitleValue": "{value} bpm",
         "pickerTitle": "Threshold heart rate",
-        "pickerFooter": "Lactate-threshold HR (LTHR), used for future Coggan-style zones. Defaults to ~85% of max HR.",
+        "pickerFooter": "Lactate-threshold HR (LTHR), used for Coggan-style zones. Defaults to ~85% of max HR.",
         "unit": "bpm"
       },
       "weightKg": {
