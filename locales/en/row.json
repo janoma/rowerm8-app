@@ -46,7 +46,7 @@
     "calories": "Calories",
     "caloriesUnit": "kcal",
     "calibrateHelper": "Start rowing to calibrate your cadence.",
-    "calibrationProgress": "{count} of {total} calibration strokes"
+    "calibrating": "Calibrating cadence…"
   },
   "freeRow": {
     "title": "Free row",

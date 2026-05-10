@@ -1,23 +1,13 @@
 import { type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
+import { CalibrationWaveform } from "@/components/row/calibration-waveform";
 import { ThemedText } from "@/components/themed-text";
-import { useProfile } from "@/contexts/profile-context";
+import { useHrZoneResolver } from "@/hooks/use-hr-zone-resolver";
 import { useFormatters } from "@/lib/format";
 import { Card, Stat, ZonePill, useTheme } from "@/lib/design-system";
-import { defaultZoneRanges, zoneForBpm } from "@/lib/hr/zones";
-
-/**
- * Number of strokes the user must produce after motion data starts
- * flowing before the cadence detector is considered calibrated. Below
- * this count we either show the "0 + helper line" pre-stroke layout
- * (count = 0) or the progress dots (1..N-1); at or above this count
- * we render the live cadence value. The Start button in
- * `app/free-row.tsx` is also gated on this same threshold, which is
- * why the constant is exported.
- */
-export const CALIBRATION_STROKE_COUNT = 5;
+import type { CalibrationState } from "@/lib/stroke/calibration";
 
 type Props = {
   strokeCount: number;
@@ -50,17 +40,16 @@ type Props = {
    */
   caloriesKcal?: number | null;
   /**
-   * Number of strokes the session has counted toward calibration, or
-   * `null` once recording has started (signals "cadence is live, skip
-   * the calibration UX entirely"). When `0`, the cadence block shows
-   * `0 spm` plus a helper line below the card asking the user to start
-   * rowing. When `1..CALIBRATION_STROKE_COUNT-1`, the cadence block is
-   * replaced with the 5-dot progress meter (Option D from the
-   * row-fixes plan). When `>= CALIBRATION_STROKE_COUNT`, the live
-   * cadence is shown — at which point `app/free-row.tsx` will enable
-   * the Start button.
+   * Cadence-calibration state. When `null` the calibration UX is
+   * skipped entirely (recording is in flight, cadence is live). When
+   * `idle`, the cadence block shows `0 spm` plus the "start rowing to
+   * calibrate" helper line. When `calibrating`, the cadence block is
+   * replaced with the animated `<CalibrationWaveform>` so the user
+   * sees the detector is listening without us telling them how many
+   * strokes are left. When `calibrated`, live cadence is rendered —
+   * at which point `app/free-row.tsx` will enable the Start button.
    */
-  calibrationStrokeCount?: number | null;
+  calibrationState?: CalibrationState | null;
 };
 
 /**
@@ -78,15 +67,15 @@ type Props = {
  * Calories.
  *
  * When `heartRateBpm` is provided, the HR row's value is tinted with
- * the corresponding zone color (via `zoneForBpm()`) and a small
- * `<ZonePill>` is rendered beside it. The zone thresholds come from
- * the user's profile (`useProfile().resolved.maxHrBpm`); when the user
- * hasn't set a max HR, the resolver returns the documented default
- * (~190 bpm).
+ * the active zone-model's color (via `useHrZoneResolver()`) and a
+ * small `<ZonePill>` is rendered beside it. The zone thresholds come
+ * from the user's profile — `maxHrBpm` for the 5-zone Garmin/Polar
+ * model, `thresholdHrBpm` for the 7-zone Coggan/Friel model. When
+ * neither is set, the resolver falls back to the documented defaults.
  *
- * `calibrationStrokeCount` gates the cadence block through three
- * states (pre-stroke / calibrating / calibrated). See the prop
- * docstring for the precise mapping.
+ * `calibrationState` gates the cadence block through three states
+ * (idle / calibrating / calibrated). See the prop docstring for the
+ * precise mapping.
  */
 export function RowMetricsCard({
   strokeCount,
@@ -96,13 +85,12 @@ export function RowMetricsCard({
   lapElapsedSeconds = null,
   heartRateBpm = null,
   caloriesKcal = null,
-  calibrationStrokeCount = null,
+  calibrationState = null,
 }: Props) {
   const { tokens } = useTheme();
   const { t } = useTranslation("row");
   const formatters = useFormatters();
-  const { resolved: profile } = useProfile();
-  const hrZoneRanges = defaultZoneRanges(profile.maxHrBpm);
+  const zoneResolver = useHrZoneResolver();
 
   // `paceSecondsPer500m` is what our pace-from-cadence estimator returns;
   // `formatPace` wants m/s. Invert here so the existing formatter keeps
@@ -121,7 +109,11 @@ export function RowMetricsCard({
       ? formatters.duration(lapElapsedSeconds, { tenths: false })
       : null;
 
-  const heartRateZone = zoneForBpm(heartRateBpm, hrZoneRanges);
+  const heartRateZone = zoneResolver.resolve(heartRateBpm);
+  const heartRateZoneTextColor = heartRateZone
+    ? (zoneResolver.palette as Record<string, { text: string }>)[heartRateZone]
+        .text
+    : undefined;
   const heartRateString =
     heartRateBpm != null
       ? `${Math.round(heartRateBpm)} ${t("metrics.heartRateUnit")}`
@@ -133,16 +125,11 @@ export function RowMetricsCard({
 
   // The cadence block has three possible renderings depending on the
   // calibration state; everything else in the card is unchanged.
-  // Pre-stroke (0) and post-calibration (>= N) both render a standard
-  // primary `<Stat>`; only the calibrating window (1..N-1) swaps in a
-  // bespoke progress block. We compute the value string here so the
-  // pre-stroke "0 spm" branch and the post-calibration "live" branch
-  // share the same code path.
-  const isCalibrating =
-    calibrationStrokeCount != null &&
-    calibrationStrokeCount > 0 &&
-    calibrationStrokeCount < CALIBRATION_STROKE_COUNT;
-  const showCadenceZero = calibrationStrokeCount === 0;
+  //   idle         → "0 spm" + helper line below the card
+  //   calibrating  → animated <CalibrationWaveform> in the cadence slot
+  //   calibrated / null → live cadence in a primary <Stat>
+  const isCalibrating = calibrationState === "calibrating";
+  const showCadenceZero = calibrationState === "idle";
 
   let cadenceValueString: string;
   if (showCadenceZero) {
@@ -157,7 +144,7 @@ export function RowMetricsCard({
     <View style={styles.root}>
       <Card variant="elevated" padding="md" style={styles.card}>
         {isCalibrating ? (
-          <CalibrationProgressBlock count={calibrationStrokeCount!} />
+          <CalibrationWaveform />
         ) : (
           <Stat
             label={t("metrics.cadence")}
@@ -184,9 +171,7 @@ export function RowMetricsCard({
               <Stat
                 label={t("metrics.heartRate")}
                 value={heartRateString}
-                accent={
-                  heartRateZone ? tokens.hrZones[heartRateZone].text : undefined
-                }
+                accent={heartRateZoneTextColor}
                 trailing={
                   heartRateZone ? <ZonePill zone={heartRateZone} /> : null
                 }
@@ -210,72 +195,6 @@ export function RowMetricsCard({
           {t("metrics.calibrateHelper")}
         </ThemedText>
       ) : null}
-    </View>
-  );
-}
-
-/**
- * Option D from the row-fixes plan: a 5-dot progress meter that
- * occupies the primary cadence slot while the detector is collecting
- * its first {@link CALIBRATION_STROKE_COUNT} strokes. Filled dots are
- * tinted with the accent color; unfilled dots are outlined in the
- * secondary text color. The sublabel below the dots reads
- * "{count} of {total} calibration strokes". The outer wrapper styles
- * mirror `<Stat emphasis="primary">` so the calibration block has the
- * same visual weight as the live cadence display it replaces — there's
- * no jarring height/colour shift when the detector transitions out of
- * calibration.
- */
-function CalibrationProgressBlock({ count }: { count: number }) {
-  const { tokens } = useTheme();
-  const { t } = useTranslation("row");
-  const total = CALIBRATION_STROKE_COUNT;
-  const filled = Math.max(0, Math.min(count, total));
-
-  return (
-    <View
-      style={[
-        styles.calibrationWrap,
-        {
-          backgroundColor: tokens.colors.accentSubtle,
-          borderColor: tokens.colors.accentSubtleBorder,
-          borderRadius: tokens.radius.md,
-        },
-      ]}
-    >
-      <Text
-        style={[styles.calibrationLabel, { color: tokens.colors.accentText }]}
-      >
-        {t("metrics.cadence")}
-      </Text>
-      <View style={styles.calibrationDots}>
-        {Array.from({ length: total }, (_, i) => {
-          const isFilled = i < filled;
-          return (
-            <View
-              key={i}
-              style={[
-                styles.calibrationDot,
-                isFilled
-                  ? { backgroundColor: tokens.colors.accent }
-                  : {
-                      backgroundColor: "transparent",
-                      borderWidth: 2,
-                      borderColor: tokens.colors.border,
-                    },
-              ]}
-            />
-          );
-        })}
-      </View>
-      <Text
-        style={[
-          styles.calibrationSublabel,
-          { color: tokens.colors.textSecondary },
-        ]}
-      >
-        {t("metrics.calibrationProgress", { count, total })}
-      </Text>
     </View>
   );
 }
@@ -320,37 +239,6 @@ const styles = StyleSheet.create({
   },
   statRowCell: {
     flex: 1,
-  },
-  // Matches `Stat`'s primaryWrap so the calibration block has the same
-  // outer geometry as the live cadence Stat it replaces.
-  calibrationWrap: {
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderWidth: StyleSheet.hairlineWidth,
-    gap: 12,
-    alignItems: "center",
-  },
-  calibrationLabel: {
-    alignSelf: "stretch",
-    fontSize: 12,
-    fontWeight: "700",
-    letterSpacing: 1,
-    textTransform: "uppercase",
-  },
-  calibrationDots: {
-    flexDirection: "row",
-    gap: 14,
-    paddingVertical: 8,
-  },
-  calibrationDot: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-  },
-  calibrationSublabel: {
-    fontSize: 13,
-    lineHeight: 18,
-    fontStyle: "italic",
   },
   calibrateHelper: {
     fontSize: 13,

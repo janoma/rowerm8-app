@@ -3,10 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Alert, StyleSheet, View } from "react-native";
 
-import {
-  RowMetricsCard,
-  CALIBRATION_STROKE_COUNT,
-} from "@/components/row/row-metrics-card";
+import { RowMetricsCard } from "@/components/row/row-metrics-card";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { APP_NAME } from "@/constants/branding";
@@ -14,6 +11,7 @@ import { useBle } from "@/contexts/ble-context";
 import { useMotionSensor } from "@/contexts/motion-sensor-context";
 import { useProfile } from "@/contexts/profile-context";
 import { useHeartRateStream } from "@/hooks/use-heart-rate-stream";
+import { useHrZoneResolver } from "@/hooks/use-hr-zone-resolver";
 import { useMotionStream } from "@/hooks/use-motion-stream";
 import { useStrokeSession } from "@/hooks/use-stroke-session";
 import { createActivityRecorder } from "@/lib/activity/recorder";
@@ -30,7 +28,6 @@ import {
   useTheme,
 } from "@/lib/design-system";
 import { formatDuration } from "@/lib/format/time";
-import { defaultZoneRanges, zoneForBpm } from "@/lib/hr/zones";
 
 /** Recording lifecycle states. The UI flips between primary buttons (Start, Stop, Pause/Resume, Lap, Share) and notice content based on this. */
 type RecordingPhase = "armed" | "running" | "paused" | "saving" | "saved";
@@ -43,7 +40,7 @@ export default function FreeRowScreen() {
   const heartRate = useHeartRateStream();
   const ble = useBle();
   const { resolved: profile } = useProfile();
-  const hrZoneRanges = defaultZoneRanges(profile.maxHrBpm);
+  const zoneResolver = useHrZoneResolver();
   const { t } = useTranslation("row");
 
   const deviceLabel =
@@ -138,23 +135,24 @@ export default function FreeRowScreen() {
     lapStartedAtMovingMs == null
       ? null
       : Math.max(0, (movingMsSinceStart - lapStartedAtMovingMs) / 1000);
-  // Calibration plumbing for C4 of the row-fixes plan.
+  // Calibration plumbing.
   //
   // Pre-recording (`recordingStartedAtMs == null`) the metrics card
   // renders a calibration view inside the cadence slot; the value we
-  // pass is the raw session stroke count, which is what the card uses
-  // to decide between the three calibration sub-states. Once recording
-  // begins we pass `null` to tell the card to skip the calibration UX
-  // entirely and render the live cadence as usual.
+  // pass is the live calibration state from the stroke session, which
+  // is what the card uses to decide between the three render branches
+  // (idle / calibrating / calibrated). Once recording begins we pass
+  // `null` to tell the card to skip the calibration UX entirely and
+  // render the live cadence as usual.
   //
   // Calibration persists across recording sessions: after a save the
-  // user is dropped back into `armed`, but `strokeSession.strokeCount`
-  // is still well above the threshold so the Start button stays
-  // immediately enabled. The session is reset (and calibration restarts)
-  // only when the motion source changes — see `useStrokeSession`.
-  const calibrationStrokeCount =
-    recordingStartedAtMs == null ? strokeSession.strokeCount : null;
-  const isCalibrated = strokeSession.strokeCount >= CALIBRATION_STROKE_COUNT;
+  // user is dropped back into `armed`, but `calibrationState` is
+  // latched at "calibrated" so the Start button stays immediately
+  // enabled. The session is reset (and calibration restarts) only
+  // when the motion source changes — see `useStrokeSession`.
+  const calibrationStateForCard =
+    recordingStartedAtMs == null ? strokeSession.calibrationState : null;
+  const isCalibrated = strokeSession.calibrationState === "calibrated";
 
   // The metrics ref is kept fresh on every render so the 1 Hz tick driver
   // can read the latest values without re-running its effect on every
@@ -431,12 +429,10 @@ export default function FreeRowScreen() {
     paceSecondsPer500m: strokeSession.paceSecondsPer500m,
     elapsedSeconds: displayTotalTimeSeconds,
     lapElapsedSeconds: displayLapElapsedSeconds,
-    calibrationStrokeCount,
+    calibrationState: calibrationStateForCard,
     heartRateBpm: heartRate.bpm,
     caloriesKcal,
   };
-
-  const currentZone = zoneForBpm(heartRate.bpm, hrZoneRanges);
 
   const renderDataSection = () => {
     if (source === "none") {
@@ -492,7 +488,22 @@ export default function FreeRowScreen() {
 
   const renderMetrics = () => (
     <Stack gap="sm">
-      {heartRate.bpm != null ? <ZoneBar current={currentZone} /> : null}
+      {heartRate.bpm != null ? (
+        zoneResolver.kind === "cogganFriel7" ? (
+          // The resolver's `current` zone is one of the Coggan keys
+          // here by construction; the cast just satisfies the
+          // discriminated-union prop on `<ZoneBar>`.
+          <ZoneBar
+            model="cogganFriel7"
+            current={zoneResolver.resolve(heartRate.bpm)}
+          />
+        ) : (
+          <ZoneBar
+            model="garminPolar5"
+            current={zoneResolver.resolve(heartRate.bpm)}
+          />
+        )
+      ) : null}
       <RowMetricsCard {...metricsCardProps} />
     </Stack>
   );

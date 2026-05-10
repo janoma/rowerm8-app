@@ -2,6 +2,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useMotionStream } from "@/hooks/use-motion-stream";
 import {
+  CALIBRATION_CONFIG,
+  type CalibrationState,
+  calibrationStatus,
+} from "@/lib/stroke/calibration";
+import {
   handleAxisProjector,
   magnitudeProjector,
 } from "@/lib/stroke/projector";
@@ -28,6 +33,15 @@ export type StrokeSessionState = SessionMetrics & {
    * `useEffect` on `strokeJustDetected` to drive visual cues without
    * latching. */
   strokeJustDetected: boolean;
+  /**
+   * Cadence-calibration gate. `idle` before the first stroke,
+   * `calibrating` while we're collecting gap statistics, `calibrated`
+   * once the rhythm-quality criterion fires (or the hard cap kicks in).
+   * Latched: once `calibrated` is reported, subsequent jitter doesn't
+   * drop us back into `calibrating`. See `lib/stroke/calibration.ts`
+   * for the criterion.
+   */
+  calibrationState: CalibrationState;
   /** Manually clear the session (count / cadence / elapsed). The detector
    * and projector keep running on subsequent samples. */
   reset: () => void;
@@ -142,6 +156,8 @@ export function useStrokeSession(
 
   const [metrics, setMetrics] = useState<SessionMetrics>(INITIAL_METRICS);
   const [strokeJustDetected, setStrokeJustDetected] = useState(false);
+  const [calibrationState, setCalibrationState] =
+    useState<CalibrationState>("idle");
   // Track the last sample we've already pushed into the session so we
   // don't double-process it (useMotionStream returns the same object
   // across renders until a new sample arrives).
@@ -156,6 +172,19 @@ export function useStrokeSession(
   // subtracts this from the metrics it publishes so consumers see a
   // strokeCount that starts at zero on session start.
   const warmupSuppressedStrokesRef = useRef(0);
+  // Calibration state is computed from a small ring buffer of stroke
+  // gap intervals (peak-to-peak) plus the wall-clock time of the
+  // first stroke. The ref-held buffer keeps the state machine in
+  // `calibrationStatus()` pure / synchronous; we mirror the resolved
+  // state into React state for consumers to render.
+  //
+  // `calibratedRef` latches once asserted so a subsequent run of bumpy
+  // strokes can't drop the user back into "calibrating" — the cadence
+  // display has already been live for N strokes by then.
+  const recentGapsMsRef = useRef<number[]>([]);
+  const lastStrokePeakMsRef = useRef<number | null>(null);
+  const firstStrokeAtMsRef = useRef<number | null>(null);
+  const calibratedRef = useRef(false);
 
   useEffect(() => {
     const sample = stream.sample;
@@ -187,6 +216,30 @@ export function useStrokeSession(
         warmupSuppressedStrokesRef.current += newStrokes;
       } else {
         setStrokeJustDetected(true);
+        // Maintain the calibration ring buffer. We use `now` as a
+        // proxy for the stroke peak timestamp — the detector's actual
+        // peak is a few ms earlier (the candidate is closed at
+        // end-of-drive), but the gap is stable to the same wall-clock
+        // delta as long as we're consistent. Trim the buffer to twice
+        // the gap window so it can't grow unboundedly during long
+        // sessions while still leaving room for slicing.
+        if (firstStrokeAtMsRef.current == null) {
+          firstStrokeAtMsRef.current = now;
+        }
+        if (lastStrokePeakMsRef.current != null) {
+          const gap = now - lastStrokePeakMsRef.current;
+          if (gap > 0) {
+            recentGapsMsRef.current.push(gap);
+            const maxBuffer = CALIBRATION_CONFIG.gapWindow * 2;
+            if (recentGapsMsRef.current.length > maxBuffer) {
+              recentGapsMsRef.current.splice(
+                0,
+                recentGapsMsRef.current.length - maxBuffer,
+              );
+            }
+          }
+        }
+        lastStrokePeakMsRef.current = now;
       }
     }
 
@@ -194,13 +247,31 @@ export function useStrokeSession(
     // the warmup-window phantom strokes. `Math.max(0, …)` defends against
     // a hypothetical race where the suppression count outpaces the raw
     // count (shouldn't happen, but cheap to guard).
+    const visibleStrokeCount = Math.max(
+      0,
+      next.strokeCount - warmupSuppressedStrokesRef.current,
+    );
     setMetrics({
       ...next,
-      strokeCount: Math.max(
-        0,
-        next.strokeCount - warmupSuppressedStrokesRef.current,
-      ),
+      strokeCount: visibleStrokeCount,
     });
+
+    // Re-evaluate calibration on every sample (cheap: a handful of
+    // arithmetic ops over <= gapWindow gaps). The hard cap on elapsed
+    // time means we need to keep evaluating even between strokes, so
+    // we can't gate this on the stroke-edge branch above.
+    if (!calibratedRef.current) {
+      const nextState = calibrationStatus({
+        strokeCount: visibleStrokeCount,
+        recentGapsMs: recentGapsMsRef.current,
+        firstStrokeAtMs: firstStrokeAtMsRef.current,
+        nowMs: now,
+      });
+      if (nextState === "calibrated") {
+        calibratedRef.current = true;
+      }
+      setCalibrationState((prev) => (prev === nextState ? prev : nextState));
+    }
   }, [stream.sample]);
 
   // Auto-clear strokeJustDetected one tick after it fires so consumers
@@ -223,24 +294,35 @@ export function useStrokeSession(
     lastSampleRef.current = null;
     sessionStartMsRef.current = null;
     warmupSuppressedStrokesRef.current = 0;
+    recentGapsMsRef.current = [];
+    lastStrokePeakMsRef.current = null;
+    firstStrokeAtMsRef.current = null;
+    calibratedRef.current = false;
     setMetrics(INITIAL_METRICS);
     setStrokeJustDetected(false);
+    setCalibrationState("idle");
   }, [stream.source]);
 
   return useMemo<StrokeSessionState>(
     () => ({
       ...metrics,
       strokeJustDetected,
+      calibrationState,
       reset: () => {
         sessionRef.current.reset();
         previousStrokeCountRef.current = 0;
         lastSampleRef.current = null;
         sessionStartMsRef.current = null;
         warmupSuppressedStrokesRef.current = 0;
+        recentGapsMsRef.current = [];
+        lastStrokePeakMsRef.current = null;
+        firstStrokeAtMsRef.current = null;
+        calibratedRef.current = false;
         setMetrics(INITIAL_METRICS);
         setStrokeJustDetected(false);
+        setCalibrationState("idle");
       },
     }),
-    [metrics, strokeJustDetected],
+    [metrics, strokeJustDetected, calibrationState],
   );
 }
