@@ -18,6 +18,7 @@ function fixtureActivity(): RecordedActivity {
     paceSecondsPer500m: 120 + (i % 30),
     strokeCount: Math.floor((i * 24) / 60),
     heartRateBpm: i < 30 ? null : 120 + (i % 20),
+    caloriesKcal: i < 30 ? null : Math.min(120, i * 0.18),
   }));
   return {
     id: "test-activity",
@@ -30,6 +31,7 @@ function fixtureActivity(): RecordedActivity {
       avgPaceSecondsPer500m: 130,
       avgHeartRateBpm: 130,
       maxHeartRateBpm: 139,
+      totalCaloriesKcal: records[records.length - 1].caloriesKcal,
     },
     records,
     strokes: Array.from({ length: 240 }, (_, i) => ({
@@ -104,6 +106,7 @@ describe("FIT writer", () => {
         avgPaceSecondsPer500m: Number.POSITIVE_INFINITY,
         avgHeartRateBpm: null,
         maxHeartRateBpm: null,
+        totalCaloriesKcal: null,
       },
       records: [],
       strokes: [],
@@ -153,6 +156,7 @@ describe("FIT writer", () => {
       paceSecondsPer500m: 0,
       strokeCount: 0,
       heartRateBpm: null,
+      caloriesKcal: null,
     }));
     const activity: RecordedActivity = {
       id: "still",
@@ -165,6 +169,7 @@ describe("FIT writer", () => {
         avgPaceSecondsPer500m: 0,
         avgHeartRateBpm: null,
         maxHeartRateBpm: null,
+        totalCaloriesKcal: null,
       },
       records,
       strokes: [],
@@ -204,6 +209,7 @@ describe("FIT writer", () => {
         avgPaceSecondsPer500m: 130,
         avgHeartRateBpm: null,
         maxHeartRateBpm: null,
+        totalCaloriesKcal: null,
       },
       records: Array.from({ length: durationS }, (_, i) => ({
         elapsedS: i,
@@ -211,6 +217,7 @@ describe("FIT writer", () => {
         paceSecondsPer500m: 130,
         strokeCount: Math.floor((i * 24) / 60),
         heartRateBpm: null,
+        caloriesKcal: null,
       })),
       strokes: [],
       pauses: [{ startElapsedS: 20, endElapsedS: 30 }],
@@ -233,6 +240,7 @@ describe("FIT writer", () => {
       paceSecondsPer500m: pace,
       strokeCount: Math.floor((i * cadence) / 60),
       heartRateBpm: null,
+      caloriesKcal: null,
     }));
     const withoutPause: RecordedActivity = {
       id: "no-pause",
@@ -245,6 +253,7 @@ describe("FIT writer", () => {
         avgPaceSecondsPer500m: pace,
         avgHeartRateBpm: null,
         maxHeartRateBpm: null,
+        totalCaloriesKcal: null,
       },
       records,
       strokes: [],
@@ -270,6 +279,61 @@ describe("FIT writer", () => {
     // the moving-time integrator should subtract that out.
     expect(noPauseTotal - pauseTotal).toBeGreaterThan(15);
     expect(noPauseTotal - pauseTotal).toBeLessThan(30);
+  });
+
+  it("writes per-record calories and a totalCalories on LAP/SESSION", () => {
+    const messages = decodeMessages(fixtureActivity());
+    const records = (messages.recordMesgs ?? []) as Record<string, unknown>[];
+    // Records with no calorie data omit the field; records that did have
+    // a value should carry a non-zero kcal count.
+    expect(records[0].calories ?? 0).toBe(0);
+    const lateRecord = records[400];
+    expect(typeof lateRecord.calories).toBe("number");
+    expect(lateRecord.calories as number).toBeGreaterThan(0);
+
+    const lap = messages.lapMesgs?.[0] as Record<string, unknown>;
+    const session = messages.sessionMesgs?.[0] as Record<string, unknown>;
+    expect(typeof lap.totalCalories).toBe("number");
+    expect(typeof session.totalCalories).toBe("number");
+    expect(lap.totalCalories as number).toBeGreaterThan(0);
+    expect(session.totalCalories).toBe(lap.totalCalories);
+  });
+
+  it("omits totalCalories when the activity has no HR/calorie data", () => {
+    const startedAtMs = Date.UTC(2026, 4, 8, 14, 0, 0);
+    const noHr: RecordedActivity = {
+      id: "no-hr",
+      summary: {
+        startedAtMs,
+        endedAtMs: startedAtMs + 60_000,
+        durationS: 60,
+        strokeCount: 24,
+        avgCadenceSpm: 24,
+        avgPaceSecondsPer500m: 130,
+        avgHeartRateBpm: null,
+        maxHeartRateBpm: null,
+        totalCaloriesKcal: null,
+      },
+      records: Array.from({ length: 60 }, (_, i) => ({
+        elapsedS: i,
+        cadenceSpm: 24,
+        paceSecondsPer500m: 130,
+        strokeCount: Math.floor((i * 24) / 60),
+        heartRateBpm: null,
+        caloriesKcal: null,
+      })),
+      strokes: [],
+      pauses: [],
+    };
+    const messages = decodeMessages(noHr);
+    const lap = messages.lapMesgs?.[0] as Record<string, unknown>;
+    const session = messages.sessionMesgs?.[0] as Record<string, unknown>;
+    expect(lap.totalCalories).toBeUndefined();
+    expect(session.totalCalories).toBeUndefined();
+    const records = (messages.recordMesgs ?? []) as Record<string, unknown>[];
+    for (const r of records) {
+      expect(r.calories).toBeUndefined();
+    }
   });
 
   it("emits an estimation-note developer field on the SESSION", () => {

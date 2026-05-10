@@ -13,6 +13,7 @@ function buildFixture(): RecordedActivity {
     paceSecondsPer500m: 120 + (i % 10),
     strokeCount: Math.floor((i * 24) / 60),
     heartRateBpm: i < 10 ? null : 120 + (i % 15),
+    caloriesKcal: null,
   }));
   return {
     id: "test",
@@ -25,6 +26,7 @@ function buildFixture(): RecordedActivity {
       avgPaceSecondsPer500m: 124,
       avgHeartRateBpm: 127,
       maxHeartRateBpm: 134,
+      totalCaloriesKcal: null,
     },
     records,
     strokes: [],
@@ -83,6 +85,7 @@ describe("FIT reader", () => {
         avgPaceSecondsPer500m: Number.POSITIVE_INFINITY,
         avgHeartRateBpm: null,
         maxHeartRateBpm: null,
+        totalCaloriesKcal: null,
       },
       records: [],
       strokes: [],

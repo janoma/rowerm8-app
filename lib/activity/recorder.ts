@@ -95,12 +95,17 @@ export function createActivityRecorder(): ActivityRecorder {
     }
     lastTickMs = nowMs;
     const elapsedS = Math.max(0, (nowMs - startedAtMs) / 1000);
+    const caloriesIn =
+      input.caloriesKcal != null && Number.isFinite(input.caloriesKcal)
+        ? Math.max(0, input.caloriesKcal)
+        : null;
     records.push({
       elapsedS,
       cadenceSpm: input.cadenceSpm,
       paceSecondsPer500m: input.paceSecondsPer500m,
       strokeCount: input.strokeCount,
       heartRateBpm: input.heartRateBpm,
+      caloriesKcal: caloriesIn,
     });
   }
 
@@ -165,6 +170,19 @@ export function createActivityRecorder(): ActivityRecorder {
       .map((r) => r.heartRateBpm)
       .filter((v): v is number => v != null);
 
+    // The recorder's caloriesKcal is monotonic: the last non-null
+    // value is the final total. If we never saw a value we keep this
+    // null so consumers can tell "HR-less recording" from
+    // "HR-connected, burned 0 kcal".
+    let totalCaloriesKcal: number | null = null;
+    for (let i = records.length - 1; i >= 0; i -= 1) {
+      const v = records[i].caloriesKcal;
+      if (v != null) {
+        totalCaloriesKcal = v;
+        break;
+      }
+    }
+
     const summary = {
       startedAtMs: start_,
       endedAtMs: nowMs,
@@ -178,6 +196,7 @@ export function createActivityRecorder(): ActivityRecorder {
         ? heartRates.reduce((a, b) => a + b, 0) / heartRates.length
         : null,
       maxHeartRateBpm: heartRates.length ? Math.max(...heartRates) : null,
+      totalCaloriesKcal,
     };
 
     const id = makeId(start_);

@@ -260,6 +260,12 @@ export function encodeActivityToFit(activity: RecordedActivity): Uint8Array {
     if (r.heartRateBpm != null) {
       mesg.heartRate = Math.round(r.heartRateBpm);
     }
+    if (r.caloriesKcal != null) {
+      // FIT RECORD.calories is a uint16 kcal field. Garmin Connect uses
+      // it to build the cumulative calories chart; Strava ignores it
+      // for indoor rowing.
+      mesg.calories = Math.max(0, Math.round(r.caloriesKcal));
+    }
     encoder.writeMesg(mesg);
   }
   // Any pause that closed after the last record (or recordings with no
@@ -287,6 +293,10 @@ export function encodeActivityToFit(activity: RecordedActivity): Uint8Array {
 
   // Every FIT activity MUST contain at least one LAP. We emit a single lap
   // covering the whole session.
+  const totalCaloriesField =
+    activity.summary.totalCaloriesKcal != null
+      ? Math.max(0, Math.round(activity.summary.totalCaloriesKcal))
+      : undefined;
   encoder.writeMesg({
     mesgNum: Profile.MesgNum.LAP,
     messageIndex: 0,
@@ -296,6 +306,7 @@ export function encodeActivityToFit(activity: RecordedActivity): Uint8Array {
     totalTimerTime,
     totalStrokes: activity.summary.strokeCount,
     totalDistance: cumulativeDistanceM,
+    totalCalories: totalCaloriesField,
     sport: "rowing",
     subSport: "indoorRowing",
     avgCadence:
@@ -324,6 +335,7 @@ export function encodeActivityToFit(activity: RecordedActivity): Uint8Array {
     totalTimerTime,
     totalStrokes: activity.summary.strokeCount,
     totalDistance: cumulativeDistanceM,
+    totalCalories: totalCaloriesField,
     sport: "rowing",
     subSport: "indoorRowing",
     firstLapIndex: 0,

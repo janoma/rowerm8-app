@@ -40,6 +40,16 @@ type Props = {
    */
   heartRateBpm?: number | null;
   /**
+   * HR-derived cumulative calorie estimate, in kcal. Rendered in a
+   * second column next to heart rate (using the same `<StatRow>` helper
+   * as Total time / Lap time). When `null` the column collapses,
+   * leaving the heart rate stat full-width. Setting this to `0` while
+   * HR is non-null is fine — the integration just hasn't accrued a
+   * round kcal yet — and the column will render `0 kcal` so the user
+   * sees the field is alive.
+   */
+  caloriesKcal?: number | null;
+  /**
    * Number of strokes the session has counted toward calibration, or
    * `null` once recording has started (signals "cadence is live, skip
    * the calibration UX entirely"). When `0`, the cadence block shows
@@ -85,6 +95,7 @@ export function RowMetricsCard({
   elapsedSeconds,
   lapElapsedSeconds = null,
   heartRateBpm = null,
+  caloriesKcal = null,
   calibrationStrokeCount = null,
 }: Props) {
   const { tokens } = useTheme();
@@ -114,6 +125,10 @@ export function RowMetricsCard({
   const heartRateString =
     heartRateBpm != null
       ? `${Math.round(heartRateBpm)} ${t("metrics.heartRateUnit")}`
+      : null;
+  const caloriesString =
+    caloriesKcal != null && Number.isFinite(caloriesKcal)
+      ? `${Math.round(Math.max(0, caloriesKcal))} ${t("metrics.caloriesUnit")}`
       : null;
 
   // The cadence block has three possible renderings depending on the
@@ -164,13 +179,24 @@ export function RowMetricsCard({
           }
         />
         {heartRateString ? (
-          <Stat
-            label={t("metrics.heartRate")}
-            value={heartRateString}
-            accent={
-              heartRateZone ? tokens.hrZones[heartRateZone].text : undefined
+          <StatRow
+            left={
+              <Stat
+                label={t("metrics.heartRate")}
+                value={heartRateString}
+                accent={
+                  heartRateZone ? tokens.hrZones[heartRateZone].text : undefined
+                }
+                trailing={
+                  heartRateZone ? <ZonePill zone={heartRateZone} /> : null
+                }
+              />
             }
-            trailing={heartRateZone ? <ZonePill zone={heartRateZone} /> : null}
+            right={
+              caloriesString != null ? (
+                <Stat label={t("metrics.calories")} value={caloriesString} />
+              ) : null
+            }
           />
         ) : null}
       </Card>

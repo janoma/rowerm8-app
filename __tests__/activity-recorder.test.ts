@@ -11,6 +11,7 @@ function snap(
     paceSecondsPer500m: number;
     strokeCount: number;
     heartRateBpm: number | null;
+    caloriesKcal: number | null;
   }> = {},
 ) {
   return {
@@ -18,6 +19,7 @@ function snap(
     paceSecondsPer500m: Number.POSITIVE_INFINITY,
     strokeCount: 0,
     heartRateBpm: null as number | null,
+    caloriesKcal: null as number | null,
     ...overrides,
   };
 }
@@ -219,6 +221,48 @@ describe("activity recorder", () => {
       r.resume(t0 + 4 * RECORD_INTERVAL_MS);
       const result = r.finish(t0 + 5 * RECORD_INTERVAL_MS);
       expect(result.pauses).toEqual([{ startElapsedS: 1, endElapsedS: 3 }]);
+    });
+  });
+
+  describe("calories", () => {
+    it("leaves totalCaloriesKcal null when no snapshot carried a value", () => {
+      const r = createActivityRecorder();
+      r.start(t0);
+      r.tick(snap({ heartRateBpm: 130 }), t0);
+      r.tick(snap({ heartRateBpm: 132 }), t0 + RECORD_INTERVAL_MS);
+      const result = r.finish(t0 + 2 * RECORD_INTERVAL_MS);
+      expect(result.summary.totalCaloriesKcal).toBeNull();
+      expect(result.records.every((rec) => rec.caloriesKcal === null)).toBe(
+        true,
+      );
+    });
+
+    it("stores supplied calorie values and surfaces the latest as the summary total", () => {
+      const r = createActivityRecorder();
+      r.start(t0);
+      r.tick(snap({ caloriesKcal: 0 }), t0);
+      r.tick(snap({ caloriesKcal: 0.4 }), t0 + RECORD_INTERVAL_MS);
+      r.tick(snap({ caloriesKcal: 0.9 }), t0 + 2 * RECORD_INTERVAL_MS);
+      const result = r.finish(t0 + 3 * RECORD_INTERVAL_MS);
+      expect(result.records.map((rec) => rec.caloriesKcal)).toEqual([
+        0, 0.4, 0.9,
+      ]);
+      expect(result.summary.totalCaloriesKcal).toBeCloseTo(0.9, 5);
+    });
+
+    it("clamps negative supplied values to 0 and ignores non-finite ones", () => {
+      const r = createActivityRecorder();
+      r.start(t0);
+      r.tick(snap({ caloriesKcal: -3 }), t0);
+      r.tick(snap({ caloriesKcal: Number.NaN }), t0 + RECORD_INTERVAL_MS);
+      r.tick(snap({ caloriesKcal: 1.5 }), t0 + 2 * RECORD_INTERVAL_MS);
+      const result = r.finish(t0 + 3 * RECORD_INTERVAL_MS);
+      expect(result.records.map((rec) => rec.caloriesKcal)).toEqual([
+        0,
+        null,
+        1.5,
+      ]);
+      expect(result.summary.totalCaloriesKcal).toBeCloseTo(1.5, 5);
     });
   });
 });

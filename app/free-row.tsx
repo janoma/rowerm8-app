@@ -17,6 +17,7 @@ import { useHeartRateStream } from "@/hooks/use-heart-rate-stream";
 import { useMotionStream } from "@/hooks/use-motion-stream";
 import { useStrokeSession } from "@/hooks/use-stroke-session";
 import { createActivityRecorder } from "@/lib/activity/recorder";
+import { accumulateKcal } from "@/lib/energy/calories";
 import { shareFitFile } from "@/lib/activity/share";
 import { saveActivity, type StoredActivity } from "@/lib/activity/storage";
 import {
@@ -92,6 +93,17 @@ export default function FreeRowScreen() {
   // running through pauses so the open-pause subtraction still freezes
   // the display smoothly; outside running/paused the value is unused.
   const [nowMs, setNowMs] = useState(() => Date.now());
+  // HR-derived cumulative calorie estimate (C8). The ref is the source
+  // of truth for the integrator (so successive ticks compose without
+  // races on stale state); the state mirror drives the metrics card
+  // re-render. `null` means "no HR has ever been observed during this
+  // recording" — at which point the recorder's snapshots also carry
+  // null so `summary.totalCaloriesKcal` ends up null in the saved
+  // activity, distinguishing "HRM-less recording" from "0 kcal".
+  const caloriesKcalRef = useRef(0);
+  const caloriesLastTickMsRef = useRef<number | null>(null);
+  const hasSeenHrRef = useRef(false);
+  const [caloriesKcal, setCaloriesKcal] = useState<number | null>(null);
 
   // Current open-pause duration (ms) and stroke count: the running pause
   // window isn't folded into the cumulative `pausedTotalMs` until resume,
@@ -154,12 +166,14 @@ export default function FreeRowScreen() {
     paceSecondsPer500m: Number.POSITIVE_INFINITY,
     strokeCount: 0,
     heartRateBpm: null as number | null,
+    caloriesKcal: null as number | null,
   });
   metricsRef.current = {
     cadenceSpm: strokeSession.cadenceSpm,
     paceSecondsPer500m: strokeSession.paceSecondsPer500m,
     strokeCount: displayStrokeCount,
     heartRateBpm: heartRate.bpm,
+    caloriesKcal: hasSeenHrRef.current ? caloriesKcalRef.current : null,
   };
 
   // Drive the 1 Hz snapshot stream from a setInterval rather than the
@@ -176,10 +190,48 @@ export default function FreeRowScreen() {
     const id = setInterval(() => {
       const now = Date.now();
       setNowMs(now);
+      // Integrate HR-driven calories before reading metricsRef into the
+      // recorder, so the snapshot we hand to the recorder reflects the
+      // value just produced. We only advance the integration while
+      // running; while paused we just slide the anchor forward so the
+      // first tick after Resume uses a small dt instead of the entire
+      // pause window.
+      if (phase === "running") {
+        const last = caloriesLastTickMsRef.current ?? now;
+        const dtSeconds = Math.max(0, (now - last) / 1000);
+        const hr = heartRate.bpm;
+        if (hr != null && Number.isFinite(hr) && hr > 0) {
+          hasSeenHrRef.current = true;
+        }
+        if (dtSeconds > 0) {
+          caloriesKcalRef.current = accumulateKcal(
+            caloriesKcalRef.current,
+            hr,
+            dtSeconds,
+            {
+              weightKg: profile.weightKg,
+              ageYears: profile.ageYears,
+              sex: profile.sex,
+            },
+          );
+        }
+        // Mirror the running total into state so the metrics card
+        // re-renders with the new value. Once HR has been seen we keep
+        // `caloriesKcal` non-null for the rest of the recording so
+        // brief HRM dropouts don't make the column flicker out.
+        if (hasSeenHrRef.current) {
+          setCaloriesKcal(caloriesKcalRef.current);
+          metricsRef.current = {
+            ...metricsRef.current,
+            caloriesKcal: caloriesKcalRef.current,
+          };
+        }
+      }
+      caloriesLastTickMsRef.current = now;
       recorderRef.current.tick(metricsRef.current, now);
     }, 250);
     return () => clearInterval(id);
-  }, [phase]);
+  }, [phase, heartRate.bpm, profile.weightKg, profile.ageYears, profile.sex]);
 
   // Forward each detected stroke to the recorder. The session hook clears
   // strokeJustDetected after one render, so we observe each stroke as a
@@ -210,6 +262,10 @@ export default function FreeRowScreen() {
     setStrokesDuringPauses(0);
     setLapStartedAtMovingMs(null);
     setNowMs(now);
+    caloriesKcalRef.current = 0;
+    caloriesLastTickMsRef.current = null;
+    hasSeenHrRef.current = false;
+    setCaloriesKcal(null);
     recorderRef.current.start(now);
     setPhase("running");
   }, [strokeSession.strokeCount]);
@@ -272,6 +328,10 @@ export default function FreeRowScreen() {
     setStrokesDuringPauses(0);
     setSessionStrokesAtPauseStart(0);
     setLapStartedAtMovingMs(null);
+    caloriesKcalRef.current = 0;
+    caloriesLastTickMsRef.current = null;
+    hasSeenHrRef.current = false;
+    setCaloriesKcal(null);
   }, []);
 
   const handleStop = useCallback(async () => {
@@ -373,6 +433,7 @@ export default function FreeRowScreen() {
     lapElapsedSeconds: displayLapElapsedSeconds,
     calibrationStrokeCount,
     heartRateBpm: heartRate.bpm,
+    caloriesKcal,
   };
 
   const currentZone = zoneForBpm(heartRate.bpm, hrZoneRanges);

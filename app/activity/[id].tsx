@@ -192,6 +192,15 @@ function DetailBody({
       value: `${Math.round(summary.maxHeartRateBpm)} bpm`,
     });
   }
+  if (
+    summary.totalCaloriesKcal != null &&
+    Number.isFinite(summary.totalCaloriesKcal)
+  ) {
+    rows.push({
+      label: t("detail.summary.totalCalories"),
+      value: `${Math.round(Math.max(0, summary.totalCaloriesKcal))} kcal`,
+    });
+  }
 
   rows.push({
     label: t("detail.summary.started"),

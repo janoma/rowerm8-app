@@ -21,6 +21,7 @@
       "avgPace": "Avg pace",
       "avgHeartRate": "Avg HR",
       "maxHeartRate": "Max HR",
+      "totalCalories": "Calories",
       "started": "Started",
       "ended": "Ended"
     },

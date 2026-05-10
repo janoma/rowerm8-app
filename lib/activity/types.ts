@@ -21,6 +21,14 @@ export type RecordSnapshot = {
   strokeCount: number;
   /** Heart rate in bpm at this point, or null if no HR source is connected. */
   heartRateBpm: number | null;
+  /**
+   * Cumulative HR-derived calorie estimate at this point, in kcal.
+   * `null` when the caller hasn't supplied a value (no HR has ever
+   * been seen, or the screen hasn't wired calorie integration yet).
+   * The recorder itself is a pure aggregator — see `lib/energy/calories.ts`
+   * for the integrator that feeds this field.
+   */
+  caloriesKcal: number | null;
 };
 
 /** A single stroke event emitted via {@link ActivityRecorder.markStroke}. */
@@ -53,6 +61,13 @@ export type ActivitySummary = {
   avgHeartRateBpm: number | null;
   /** Peak heart rate observed during the session, or null if no HR data. */
   maxHeartRateBpm: number | null;
+  /**
+   * Final HR-derived cumulative calorie estimate, in kcal. `null` when
+   * no snapshot ever carried a `caloriesKcal` value (i.e. no HR was
+   * ever reported), so consumers can distinguish "we have nothing to
+   * say" from "the user burned 0 kcal".
+   */
+  totalCaloriesKcal: number | null;
 };
 
 /**
@@ -90,6 +105,14 @@ export type SnapshotInput = {
   paceSecondsPer500m: number;
   strokeCount: number;
   heartRateBpm: number | null;
+  /**
+   * Cumulative HR-derived calorie estimate at the moment of the tick,
+   * in kcal. Optional: when omitted (or `null`) the recorder treats
+   * it as "no calorie data" and `summary.totalCaloriesKcal` stays
+   * `null` if no other tick supplies one. The caller is responsible
+   * for the integration; the recorder just stores what it's handed.
+   */
+  caloriesKcal?: number | null;
 };
 
 export type ActivityRecorder = {
