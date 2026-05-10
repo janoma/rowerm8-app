@@ -62,15 +62,13 @@
     }
   },
   "help": {
-    "resetPlacement": {
-      "label": "重置放置说明",
-      "subtitle": "下次选择时显示传感器放置指南",
-      "footer": "恢复你之前用“不再显示”关闭的对话框。",
-      "alert": {
-        "title": "重置放置说明",
-        "message": "下次选择传感器时将再次显示传感器放置指南。",
-        "confirm": "重置"
-      }
+    "showWelcomeSlides": {
+      "label": "显示欢迎幻灯片",
+      "subtitle": "下次打开 App 时将显示欢迎幻灯片。"
+    },
+    "showPlacementInstructions": {
+      "label": "显示放置说明",
+      "subtitle": "下次连接设备时将显示放置说明。"
     }
   }
 }

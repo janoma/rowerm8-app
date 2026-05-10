@@ -62,15 +62,13 @@
     }
   },
   "help": {
-    "resetPlacement": {
-      "label": "Platzierungsanleitung zurücksetzen",
-      "subtitle": "Die Sensor-Platzierungsanleitung bei der nächsten Auswahl anzeigen",
-      "footer": "Stellt zuvor mit „Nicht erneut anzeigen“ geschlossene Dialoge wieder her.",
-      "alert": {
-        "title": "Platzierungsanleitung zurücksetzen",
-        "message": "Die Sensor-Platzierungsanleitung wird beim nächsten Auswählen eines Sensors erneut angezeigt.",
-        "confirm": "Zurücksetzen"
-      }
+    "showWelcomeSlides": {
+      "label": "Willkommens-Slides anzeigen",
+      "subtitle": "Die Willkommens-Slides erscheinen beim nächsten Öffnen der App."
+    },
+    "showPlacementInstructions": {
+      "label": "Platzierungsanleitung anzeigen",
+      "subtitle": "Die Platzierungsanleitung erscheint beim nächsten Verbinden eines Geräts."
     }
   }
 }

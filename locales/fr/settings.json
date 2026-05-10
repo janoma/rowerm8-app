@@ -62,15 +62,13 @@
     }
   },
   "help": {
-    "resetPlacement": {
-      "label": "Réinitialiser les instructions de placement",
-      "subtitle": "Afficher le guide de placement du capteur lors de la prochaine sélection",
-      "footer": "Restaure les boîtes de dialogue précédemment masquées avec « Ne plus afficher ».",
-      "alert": {
-        "title": "Réinitialiser les instructions de placement",
-        "message": "Le guide de placement du capteur sera affiché à nouveau lors de la prochaine sélection d’un capteur.",
-        "confirm": "Réinitialiser"
-      }
+    "showWelcomeSlides": {
+      "label": "Afficher les diapositives de bienvenue",
+      "subtitle": "Les diapositives de bienvenue apparaîtront à la prochaine ouverture de l’application."
+    },
+    "showPlacementInstructions": {
+      "label": "Afficher les instructions de placement",
+      "subtitle": "Les instructions de placement apparaîtront à la prochaine connexion d’un appareil."
     }
   }
 }

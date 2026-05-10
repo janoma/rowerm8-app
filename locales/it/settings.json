@@ -62,15 +62,13 @@
     }
   },
   "help": {
-    "resetPlacement": {
-      "label": "Ripristina istruzioni di posizionamento",
-      "subtitle": "Mostra la guida al posizionamento del sensore alla prossima selezione",
-      "footer": "Ripristina le finestre di dialogo che hai precedentemente nascosto con «Non mostrare più».",
-      "alert": {
-        "title": "Ripristina istruzioni di posizionamento",
-        "message": "La guida al posizionamento del sensore verrà mostrata di nuovo la prossima volta che selezionerai un sensore.",
-        "confirm": "Ripristina"
-      }
+    "showWelcomeSlides": {
+      "label": "Mostra diapositive di benvenuto",
+      "subtitle": "Le diapositive di benvenuto compariranno alla prossima apertura dell’app."
+    },
+    "showPlacementInstructions": {
+      "label": "Mostra istruzioni di posizionamento",
+      "subtitle": "Le istruzioni di posizionamento compariranno la prossima volta che colleghi un dispositivo."
     }
   }
 }

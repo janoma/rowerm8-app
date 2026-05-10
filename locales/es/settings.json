@@ -62,15 +62,13 @@
     }
   },
   "help": {
-    "resetPlacement": {
-      "label": "Restablecer instrucciones de colocación",
-      "subtitle": "Mostrar la guía de colocación del sensor en la próxima selección",
-      "footer": "Restaura los diálogos que descartaste antes con «No mostrar de nuevo».",
-      "alert": {
-        "title": "Restablecer instrucciones de colocación",
-        "message": "La guía de colocación del sensor se mostrará de nuevo la próxima vez que selecciones un sensor.",
-        "confirm": "Restablecer"
-      }
+    "showWelcomeSlides": {
+      "label": "Mostrar diapositivas de bienvenida",
+      "subtitle": "Las diapositivas de bienvenida aparecerán la próxima vez que abras la aplicación."
+    },
+    "showPlacementInstructions": {
+      "label": "Mostrar instrucciones de colocación",
+      "subtitle": "Las instrucciones de colocación aparecerán la próxima vez que conectes un dispositivo."
     }
   }
 }

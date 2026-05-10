@@ -174,15 +174,13 @@
     }
   },
   "help": {
-    "resetPlacement": {
-      "label": "Reset placement instructions",
-      "subtitle": "Show the sensor placement guide on next selection",
-      "footer": "Restores dialogs you’ve previously dismissed with ‘Don’t show again’.",
-      "alert": {
-        "title": "Reset placement instructions",
-        "message": "The sensor placement guide will be shown again the next time you select a sensor.",
-        "confirm": "Reset"
-      }
+    "showWelcomeSlides": {
+      "label": "Show welcome slides",
+      "subtitle": "Welcome slides appear the next time you open the app."
+    },
+    "showPlacementInstructions": {
+      "label": "Show placement instructions",
+      "subtitle": "Placement instructions appear the next time you connect a device."
     }
   }
 }

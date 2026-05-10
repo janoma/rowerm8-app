@@ -1,43 +1,84 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Alert, ScrollView, StyleSheet, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { SettingsRow } from "@/components/settings/settings-row";
 import { SettingsSection } from "@/components/settings/settings-section";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { PLACEMENT_DONT_SHOW_KEY } from "@/constants/storage-keys";
+import {
+  ONBOARDING_FEATURES_SEEN_KEY,
+  PLACEMENT_DONT_SHOW_KEY,
+} from "@/constants/storage-keys";
 import { useLocale } from "@/contexts/locale-context";
 import { useProfile } from "@/contexts/profile-context";
-import { useTheme } from "@/lib/design-system";
+import { Switch, useTheme } from "@/lib/design-system";
 import { findLanguage } from "@/lib/i18n";
 import { kilogramsToPounds } from "@/lib/units";
 
 export default function SettingsScreen() {
   const { t } = useTranslation("settings");
-  const { t: tc } = useTranslation("common");
   const { prefs, resolved } = useLocale();
   const { resolved: profile } = useProfile();
   const { prefScheme, scheme } = useTheme();
 
-  const handleResetPlacement = () => {
-    Alert.alert(
-      t("help.resetPlacement.alert.title"),
-      t("help.resetPlacement.alert.message"),
-      [
-        { text: tc("actions.cancel"), style: "cancel" },
-        {
-          text: t("help.resetPlacement.alert.confirm"),
-          style: "destructive",
-          onPress: () => {
-            AsyncStorage.removeItem(PLACEMENT_DONT_SHOW_KEY).catch(() => {});
-          },
-        },
-      ],
-    );
-  };
+  // Both toggles map to "key absent => screen will show on next trigger".
+  // We start with `null` while hydrating from AsyncStorage so the Switch
+  // doesn't flash a wrong state on mount for users who had previously
+  // dismissed the corresponding screen.
+  const [showWelcomeSlides, setShowWelcomeSlides] = useState<boolean | null>(
+    null,
+  );
+  const [showPlacementInstructions, setShowPlacementInstructions] = useState<
+    boolean | null
+  >(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([
+      AsyncStorage.getItem(ONBOARDING_FEATURES_SEEN_KEY),
+      AsyncStorage.getItem(PLACEMENT_DONT_SHOW_KEY),
+    ])
+      .then(([seen, placementDontShow]) => {
+        if (cancelled) {
+          return;
+        }
+        setShowWelcomeSlides(seen !== "true");
+        setShowPlacementInstructions(placementDontShow !== "true");
+      })
+      .catch(() => {
+        if (cancelled) {
+          return;
+        }
+        // Treat a storage failure as "never dismissed" so the user can
+        // still see and operate the toggles. Worst case, the underlying
+        // screens will reappear on their next trigger.
+        setShowWelcomeSlides(true);
+        setShowPlacementInstructions(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleToggleWelcomeSlides = useCallback((next: boolean) => {
+    setShowWelcomeSlides(next);
+    const op = next
+      ? AsyncStorage.removeItem(ONBOARDING_FEATURES_SEEN_KEY)
+      : AsyncStorage.setItem(ONBOARDING_FEATURES_SEEN_KEY, "true");
+    op.catch(() => {});
+  }, []);
+
+  const handleTogglePlacementInstructions = useCallback((next: boolean) => {
+    setShowPlacementInstructions(next);
+    const op = next
+      ? AsyncStorage.removeItem(PLACEMENT_DONT_SHOW_KEY)
+      : AsyncStorage.setItem(PLACEMENT_DONT_SHOW_KEY, "true");
+    op.catch(() => {});
+  }, []);
 
   const languageNative =
     findLanguage(resolved.language)?.nativeName ?? resolved.language;
@@ -112,15 +153,32 @@ export default function SettingsScreen() {
               />
             </SettingsSection>
 
-            <SettingsSection
-              header={t("sections.help")}
-              footer={t("help.resetPlacement.footer")}
-            >
+            <SettingsSection header={t("sections.help")}>
               <SettingsRow
-                label={t("help.resetPlacement.label")}
-                subtitle={t("help.resetPlacement.subtitle")}
-                destructive
-                onPress={handleResetPlacement}
+                label={t("help.showWelcomeSlides.label")}
+                subtitle={t("help.showWelcomeSlides.subtitle")}
+                accessory={
+                  <Switch
+                    value={showWelcomeSlides ?? false}
+                    onValueChange={handleToggleWelcomeSlides}
+                    disabled={showWelcomeSlides === null}
+                    accessibilityLabel={t("help.showWelcomeSlides.label")}
+                  />
+                }
+              />
+              <SettingsRow
+                label={t("help.showPlacementInstructions.label")}
+                subtitle={t("help.showPlacementInstructions.subtitle")}
+                accessory={
+                  <Switch
+                    value={showPlacementInstructions ?? false}
+                    onValueChange={handleTogglePlacementInstructions}
+                    disabled={showPlacementInstructions === null}
+                    accessibilityLabel={t(
+                      "help.showPlacementInstructions.label",
+                    )}
+                  />
+                }
               />
             </SettingsSection>
           </View>
