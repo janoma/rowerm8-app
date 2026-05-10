@@ -13,6 +13,7 @@ import { BleProvider } from "@/contexts/ble-context";
 import { HeartRateProvider } from "@/contexts/heart-rate-context";
 import { LocaleProvider } from "@/contexts/locale-context";
 import { MotionSensorProvider } from "@/contexts/motion-sensor-context";
+import { ProfileProvider } from "@/contexts/profile-context";
 import {
   ThemeProvider,
   buildNavigationTheme,
@@ -75,15 +76,17 @@ export default function RootLayout() {
     <SafeAreaProvider initialMetrics={initialWindowMetrics}>
       <ThemeProvider>
         <LocaleProvider>
-          <AuthProvider>
-            <MotionSensorProvider>
-              <HeartRateProvider>
-                <BleProvider>
-                  <ThemedRootLayout />
-                </BleProvider>
-              </HeartRateProvider>
-            </MotionSensorProvider>
-          </AuthProvider>
+          <ProfileProvider>
+            <AuthProvider>
+              <MotionSensorProvider>
+                <HeartRateProvider>
+                  <BleProvider>
+                    <ThemedRootLayout />
+                  </BleProvider>
+                </HeartRateProvider>
+              </MotionSensorProvider>
+            </AuthProvider>
+          </ProfileProvider>
         </LocaleProvider>
       </ThemeProvider>
     </SafeAreaProvider>

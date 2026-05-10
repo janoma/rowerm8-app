@@ -10,13 +10,16 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { PLACEMENT_DONT_SHOW_KEY } from "@/constants/storage-keys";
 import { useLocale } from "@/contexts/locale-context";
+import { useProfile } from "@/contexts/profile-context";
 import { useTheme } from "@/lib/design-system";
 import { findLanguage } from "@/lib/i18n";
+import { kilogramsToPounds } from "@/lib/units";
 
 export default function SettingsScreen() {
   const { t } = useTranslation("settings");
   const { t: tc } = useTranslation("common");
   const { prefs, resolved } = useLocale();
+  const { resolved: profile } = useProfile();
   const { prefScheme, scheme } = useTheme();
 
   const handleResetPlacement = () => {
@@ -44,6 +47,17 @@ export default function SettingsScreen() {
       : t("language.row.subtitle", { language: languageNative });
 
   const unitsSubtitle = describeUnits(prefs, resolved, t);
+
+  const profileSubtitle = profile.isCustomized
+    ? t("profile.row.subtitleCustom", {
+        maxHr: profile.maxHrBpm,
+        weight:
+          resolved.weightUnit === "kg"
+            ? profile.weightKg
+            : Math.round(kilogramsToPounds(profile.weightKg)),
+        weightUnit: resolved.weightUnit === "kg" ? " kg" : " lb",
+      })
+    : t("profile.row.subtitleDefault");
 
   // Mirror the language-row pattern: when the user is on "auto", show
   // what the OS resolves to right now in parens; otherwise just the
@@ -87,6 +101,14 @@ export default function SettingsScreen() {
                 label={t("sections.units")}
                 subtitle={unitsSubtitle}
                 onPress={() => router.push("/settings/units")}
+              />
+            </SettingsSection>
+
+            <SettingsSection header={t("sections.profile")}>
+              <SettingsRow
+                label={t("profile.row.label")}
+                subtitle={profileSubtitle}
+                onPress={() => router.push("/settings/profile")}
               />
             </SettingsSection>
 

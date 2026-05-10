@@ -5,20 +5,20 @@
  * defined in `lib/design-system/tokens/hr-zones`. The ranges
  * themselves are *intentionally* parameterized: a `defaultZoneRanges`
  * helper builds the standard 60/70/80/90% × max-HR thresholds from a
- * user's max heart rate.
- *
- * **Max-HR setting is deferred** to a follow-up PR — see the Risks
- * section of the design-system plan. This module exposes a
- * `DEFAULT_MAX_HR_BPM` constant the UI layer can use as a fallback
- * until that PR lands.
+ * user's max heart rate. Call sites should pass the user's resolved
+ * max HR from `useProfile().resolved.maxHrBpm` — this module's
+ * `DEFAULT_MAX_HR_BPM` is the seed value the resolver falls back to
+ * when the user hasn't configured one yet.
  */
 
 import { type HrZoneKey } from "@/lib/design-system";
 
 /**
- * Hard-coded fallback for users who have not yet set a max HR. This
- * is roughly the average for an active 30-year-old (220 - 30 = 190).
- * Replace with a user-configurable setting in the follow-up PR.
+ * Seed fallback consumed by the profile resolver when the user hasn't
+ * explicitly set a max HR. ~220 − 30 ≈ 190 — the active-thirties
+ * average. The profile context layers user input on top of this; UI
+ * code should generally read `useProfile().resolved.maxHrBpm` instead
+ * of touching this constant directly.
  */
 export const DEFAULT_MAX_HR_BPM = 190;
 

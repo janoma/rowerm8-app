@@ -12,6 +12,7 @@ import { ThemedView } from "@/components/themed-view";
 import { APP_NAME } from "@/constants/branding";
 import { useBle } from "@/contexts/ble-context";
 import { useMotionSensor } from "@/contexts/motion-sensor-context";
+import { useProfile } from "@/contexts/profile-context";
 import { useHeartRateStream } from "@/hooks/use-heart-rate-stream";
 import { useMotionStream } from "@/hooks/use-motion-stream";
 import { useStrokeSession } from "@/hooks/use-stroke-session";
@@ -28,7 +29,7 @@ import {
   useTheme,
 } from "@/lib/design-system";
 import { formatDuration } from "@/lib/format/time";
-import { zoneForBpm } from "@/lib/hr/zones";
+import { defaultZoneRanges, zoneForBpm } from "@/lib/hr/zones";
 
 /** Recording lifecycle states. The UI flips between primary buttons (Start, Stop, Pause/Resume, Lap, Share) and notice content based on this. */
 type RecordingPhase = "armed" | "running" | "paused" | "saving" | "saved";
@@ -40,6 +41,8 @@ export default function FreeRowScreen() {
   const strokeSession = useStrokeSession();
   const heartRate = useHeartRateStream();
   const ble = useBle();
+  const { resolved: profile } = useProfile();
+  const hrZoneRanges = defaultZoneRanges(profile.maxHrBpm);
   const { t } = useTranslation("row");
 
   const deviceLabel =
@@ -372,7 +375,7 @@ export default function FreeRowScreen() {
     heartRateBpm: heartRate.bpm,
   };
 
-  const currentZone = zoneForBpm(heartRate.bpm);
+  const currentZone = zoneForBpm(heartRate.bpm, hrZoneRanges);
 
   const renderDataSection = () => {
     if (source === "none") {

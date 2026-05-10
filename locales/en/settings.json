@@ -4,6 +4,7 @@
     "appearance": "Appearance",
     "language": "Language",
     "units": "Units",
+    "profile": "Heart rate & body",
     "help": "Help"
   },
   "appearance": {
@@ -78,6 +79,81 @@
       "auto": "Follow measurement system",
       "C": "Celsius (°C)",
       "F": "Fahrenheit (°F)"
+    }
+  },
+  "profile": {
+    "row": {
+      "label": "Heart rate & body",
+      "subtitleDefault": "Using defaults",
+      "subtitleCustom": "Max HR {maxHr} bpm · Weight {weight, number}{weightUnit}"
+    },
+    "section": {
+      "heartRate": "Heart rate",
+      "body": "Body",
+      "heartRateFooter": "Max HR sets the 5-zone ramp shown in Heart rate displays. Threshold HR (LTHR) is stored for future Coggan-style zones.",
+      "bodyFooter": "Body metrics personalise the calorie estimate. Everything is stored on this device only."
+    },
+    "fields": {
+      "maxHrBpm": {
+        "label": "Max heart rate",
+        "subtitleDefault": "Using default ({value} bpm)",
+        "subtitleValue": "{value} bpm",
+        "pickerTitle": "Max heart rate",
+        "pickerFooter": "Your highest sustainable heart rate. Defaults to {default} bpm (≈ 220 − 30) when unset.",
+        "unit": "bpm"
+      },
+      "thresholdHrBpm": {
+        "label": "Threshold heart rate",
+        "subtitleDefault": "Using default (~{value} bpm)",
+        "subtitleValue": "{value} bpm",
+        "pickerTitle": "Threshold heart rate",
+        "pickerFooter": "Lactate-threshold HR (LTHR), used for future Coggan-style zones. Defaults to ~85% of max HR.",
+        "unit": "bpm"
+      },
+      "weightKg": {
+        "label": "Weight",
+        "subtitleDefault": "Using default ({value, number}{unit})",
+        "subtitleValue": "{value, number}{unit}",
+        "pickerTitle": "Weight",
+        "pickerFooter": "Used by the calorie estimate. Defaults to {default, number}{unit} when unset.",
+        "unitKg": " kg",
+        "unitLb": " lb"
+      },
+      "ageYears": {
+        "label": "Age",
+        "subtitleDefault": "Using default ({value} yrs)",
+        "subtitleValue": "{value} yrs",
+        "pickerTitle": "Age",
+        "pickerFooter": "Used by the calorie estimate. Defaults to {default} years when unset.",
+        "unit": " yrs"
+      },
+      "sex": {
+        "label": "Sex",
+        "subtitleDefault": "Using default ({value})",
+        "subtitleValue": "{value}",
+        "pickerTitle": "Sex",
+        "pickerFooter": "Used by the calorie estimate (Keytel formula). Defaults to male when unset.",
+        "options": {
+          "male": "Male",
+          "female": "Female"
+        }
+      }
+    },
+    "input": {
+      "useDefault": "Use default",
+      "save": "Save",
+      "cancel": "Cancel",
+      "outOfRange": "Enter a value between {min} and {max}."
+    },
+    "footer": "Estimates based on HR and body metrics; accuracy improves with an accurate max HR. All values stay on this device.",
+    "reset": {
+      "label": "Reset to defaults",
+      "subtitle": "Clear all profile values",
+      "alert": {
+        "title": "Reset profile?",
+        "message": "All heart-rate and body values will be cleared. The app will fall back to defaults.",
+        "confirm": "Reset"
+      }
     }
   },
   "help": {

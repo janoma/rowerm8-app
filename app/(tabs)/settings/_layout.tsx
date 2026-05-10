@@ -22,6 +22,7 @@ export default function SettingsLayout() {
         options={{ title: t("sections.language") }}
       />
       <Stack.Screen name="units" options={{ title: t("sections.units") }} />
+      <Stack.Screen name="profile" options={{ title: t("sections.profile") }} />
     </Stack>
   );
 }

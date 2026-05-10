@@ -3,9 +3,10 @@ import { useTranslation } from "react-i18next";
 import { StyleSheet, Text, View } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
+import { useProfile } from "@/contexts/profile-context";
 import { useFormatters } from "@/lib/format";
 import { Card, Stat, ZonePill, useTheme } from "@/lib/design-system";
-import { zoneForBpm } from "@/lib/hr/zones";
+import { defaultZoneRanges, zoneForBpm } from "@/lib/hr/zones";
 
 /**
  * Number of strokes the user must produce after motion data starts
@@ -68,9 +69,10 @@ type Props = {
  *
  * When `heartRateBpm` is provided, the HR row's value is tinted with
  * the corresponding zone color (via `zoneForBpm()`) and a small
- * `<ZonePill>` is rendered beside it. Until the user-configurable
- * max-HR setting lands (deferred to a follow-up PR — see plan Risks),
- * `zoneForBpm` falls back to a hard-coded default of 190 bpm.
+ * `<ZonePill>` is rendered beside it. The zone thresholds come from
+ * the user's profile (`useProfile().resolved.maxHrBpm`); when the user
+ * hasn't set a max HR, the resolver returns the documented default
+ * (~190 bpm).
  *
  * `calibrationStrokeCount` gates the cadence block through three
  * states (pre-stroke / calibrating / calibrated). See the prop
@@ -88,6 +90,8 @@ export function RowMetricsCard({
   const { tokens } = useTheme();
   const { t } = useTranslation("row");
   const formatters = useFormatters();
+  const { resolved: profile } = useProfile();
+  const hrZoneRanges = defaultZoneRanges(profile.maxHrBpm);
 
   // `paceSecondsPer500m` is what our pace-from-cadence estimator returns;
   // `formatPace` wants m/s. Invert here so the existing formatter keeps
@@ -106,7 +110,7 @@ export function RowMetricsCard({
       ? formatters.duration(lapElapsedSeconds, { tenths: false })
       : null;
 
-  const heartRateZone = zoneForBpm(heartRateBpm);
+  const heartRateZone = zoneForBpm(heartRateBpm, hrZoneRanges);
   const heartRateString =
     heartRateBpm != null
       ? `${Math.round(heartRateBpm)} ${t("metrics.heartRateUnit")}`

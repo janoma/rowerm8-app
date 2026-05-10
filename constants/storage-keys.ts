@@ -3,6 +3,14 @@ export const PLACEMENT_DONT_SHOW_KEY = "rowerm8.sensorPlacement.dontShowAgain";
 export const LOCALE_PREFS_KEY = "rowerm8.locale.prefs.v1";
 
 /**
+ * Persisted user profile — body metrics + heart rate thresholds used to
+ * personalise zone boundaries and (in a follow-up commit) calorie
+ * estimation. All fields are optional; missing values resolve to
+ * documented defaults (see `contexts/profile-context.tsx`).
+ */
+export const PROFILE_PREFS_KEY = "rowerm8.profile.prefs.v1";
+
+/**
  * Persisted appearance preference: `"auto" | "light" | "dark"`.
  * `"auto"` follows the OS color scheme; the other two pin a fixed scheme
  * regardless of system settings. See `lib/design-system/provider`.
