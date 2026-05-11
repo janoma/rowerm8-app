@@ -6,6 +6,7 @@ import {
   Linking,
   Platform,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -207,6 +208,21 @@ export default function BleScanScreen() {
         style={styles.body}
         contentContainerStyle={styles.bodyContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          // Pull-to-refresh mirrors the "Scan again" affordance below: it
+          // restarts a role-filtered scan and `RefreshControl`'s spinner is
+          // bound to `ble.scanning` so the platform-native indicator
+          // (UIRefreshControl on iOS, SwipeRefreshLayout on Android)
+          // disappears when the scan completes.
+          <RefreshControl
+            refreshing={ble.scanning}
+            onRefresh={() => {
+              void ble.startScan({ role });
+            }}
+            tintColor={tokens.colors.accent}
+            colors={[tokens.colors.accent]}
+          />
+        }
       >
         <ScanHero
           scanning={ble.scanning && ble.availability === "on"}
