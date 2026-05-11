@@ -8,7 +8,14 @@
  *     against the dimmed scrim.
  */
 
-import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  KeyboardAvoidingView,
+  Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useTheme } from "../provider";
@@ -37,32 +44,38 @@ export function Sheet({
         {dismissOnBackdrop ? (
           <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
         ) : null}
-        <SafeAreaView edges={["bottom"]} style={styles.safeArea}>
-          <View
-            style={[
-              styles.sheet,
-              elevationStyle("level3"),
-              {
-                backgroundColor: tokens.colors.surfaceElevated,
-                borderTopLeftRadius: tokens.radius.lg,
-                borderTopRightRadius: tokens.radius.lg,
-              },
-            ]}
-          >
+        <KeyboardAvoidingView
+          behavior="height"
+          style={styles.keyboardAvoider}
+          pointerEvents="box-none"
+        >
+          <SafeAreaView edges={["bottom"]} style={styles.safeArea}>
             <View
               style={[
-                styles.grabber,
-                { backgroundColor: tokens.colors.borderStrong },
+                styles.sheet,
+                elevationStyle("level3"),
+                {
+                  backgroundColor: tokens.colors.surfaceElevated,
+                  borderTopLeftRadius: tokens.radius.lg,
+                  borderTopRightRadius: tokens.radius.lg,
+                },
               ]}
-            />
-            {title ? (
-              <Text style={[styles.title, { color: tokens.colors.text }]}>
-                {title}
-              </Text>
-            ) : null}
-            <View style={styles.body}>{children}</View>
-          </View>
-        </SafeAreaView>
+            >
+              <View
+                style={[
+                  styles.grabber,
+                  { backgroundColor: tokens.colors.borderStrong },
+                ]}
+              />
+              {title ? (
+                <Text style={[styles.title, { color: tokens.colors.text }]}>
+                  {title}
+                </Text>
+              ) : null}
+              <View style={styles.body}>{children}</View>
+            </View>
+          </SafeAreaView>
+        </KeyboardAvoidingView>
       </View>
     </Modal>
   );
@@ -72,6 +85,9 @@ const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
     justifyContent: "flex-end",
+  },
+  keyboardAvoider: {
+    width: "100%",
   },
   safeArea: {
     width: "100%",
