@@ -17,6 +17,8 @@ import {
   DEFAULT_LANGUAGE,
   initI18n,
   type LocaleHint,
+  type ResolvedLanguageCode,
+  resolveI18nLanguage,
   resolveLanguage,
   type SupportedLanguageCode,
 } from "@/lib/i18n";
@@ -46,7 +48,20 @@ export type LocalePrefs = {
 export type ResolvedLocale = {
   /** BCP-47 tag, e.g. `"en-US"`. Suitable for `Intl.*` constructors. */
   locale: string;
+  /**
+   * Picker-facing language. Always one of `SupportedLanguageCode` — never a
+   * regional variant — so existing UI (settings rows, RTL detection, picker
+   * highlighting) stays simple. Use `i18nLanguage` for anything that talks
+   * to i18next directly.
+   */
   language: SupportedLanguageCode;
+  /**
+   * Active i18next language tag. May be a regional override variant like
+   * `en-GB` when `prefs.language === "auto"` and the OS reports a matching
+   * locale; missing keys fall back through `fallbackLng` to the base
+   * language catalog.
+   */
+  i18nLanguage: ResolvedLanguageCode;
   measurementSystem: MeasurementSystem;
   paceUnit: PaceUnit;
   weightUnit: WeightUnit;
@@ -150,10 +165,13 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
   // Drive i18next + RTL from the resolved language. We track the last RTL
   // state we applied so we don't re-call forceRTL on every render — it
   // would be a no-op functionally but it spams a native warning on Android.
+  // i18next runs on `i18nLanguage` (which may be a regional variant like
+  // `en-GB`); RTL only depends on the base picker language since regional
+  // overrides we ship are all LTR.
   const lastRtlAppliedRef = useRef<boolean | null>(null);
   useEffect(() => {
-    if (i18next.language !== resolved.language) {
-      changeLanguage(resolved.language).catch((err) => {
+    if (i18next.language !== resolved.i18nLanguage) {
+      changeLanguage(resolved.i18nLanguage).catch((err) => {
         console.warn("[locale] changeLanguage failed", err);
       });
     }
@@ -164,7 +182,7 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
       applyRtlForLanguage(resolved.language);
       lastRtlAppliedRef.current = resolved.isRtl;
     }
-  }, [resolved.language, resolved.isRtl]);
+  }, [resolved.i18nLanguage, resolved.language, resolved.isRtl]);
 
   const setPref = useCallback(
     <K extends keyof LocalePrefs>(key: K, value: LocalePrefs[K]) => {
@@ -237,6 +255,11 @@ function resolvePrefs(
       ? autoLanguage
       : resolveLanguage(prefs.language, hints);
 
+  // i18next runs on a tag that may include regional overrides (e.g.
+  // `en-GB`). Auto-mode promotes the OS regional tag when we ship overrides
+  // for it; explicit picker selections always resolve to the base language.
+  const i18nLanguage = resolveI18nLanguage(prefs.language, hints);
+
   const measurementSystem =
     prefs.measurementSystem === "auto"
       ? autoMeasurementSystem
@@ -270,6 +293,7 @@ function resolvePrefs(
   return {
     locale,
     language,
+    i18nLanguage,
     measurementSystem,
     paceUnit,
     weightUnit,

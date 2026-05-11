@@ -37,7 +37,15 @@ export function initI18n(): typeof i18next {
     .init({
       resources: RESOURCES,
       lng: DEFAULT_LANGUAGE,
-      fallbackLng: DEFAULT_LANGUAGE,
+      // Per-language fallback map: regional override catalogs (e.g.
+      // `en-GB`) only carry keys that differ from the base language, so we
+      // chain through to it before the global default. Anything else —
+      // including unknown tags — lands on the canonical `en` (en-US)
+      // catalog. The `default` entry is required by i18next's typing.
+      fallbackLng: {
+        "en-GB": ["en", DEFAULT_LANGUAGE],
+        default: [DEFAULT_LANGUAGE],
+      },
       ns: NAMESPACES as unknown as string[],
       defaultNS: DEFAULT_NAMESPACE,
       interpolation: {

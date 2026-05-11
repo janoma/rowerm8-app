@@ -39,6 +39,7 @@ import enRow from "@/locales/en/row.json";
 import enSensor from "@/locales/en/sensor.json";
 import enSettings from "@/locales/en/settings.json";
 import enTabs from "@/locales/en/tabs.json";
+import enGBSettings from "@/locales/en-GB/settings.json";
 import esBle from "@/locales/es/ble.json";
 import esCommon from "@/locales/es/common.json";
 import esHome from "@/locales/es/home.json";
@@ -116,6 +117,14 @@ export const RESOURCES = {
     history: enHistory,
     onboarding: enOnboarding,
     auth: enAuth,
+  },
+  // Regional override catalog: only contains keys whose phrasing or
+  // spelling differs from `en` (which is treated as en-US). Missing keys
+  // fall through to `en` via the per-language `fallbackLng` map in
+  // `lib/i18n/index.ts`. Not exposed in the language picker — auto-resolved
+  // when the OS reports `en-GB` as its primary tag.
+  "en-GB": {
+    settings: enGBSettings,
   },
   es: {
     common: esCommon,

@@ -1,6 +1,8 @@
 import {
   DEFAULT_LANGUAGE,
+  isRegionalLanguageVariant,
   isSupportedLanguage,
+  type ResolvedLanguageCode,
   type SupportedLanguageCode,
 } from "./languages";
 
@@ -43,6 +45,45 @@ export function resolveLanguage(
 
   const locales = osLocales ?? [];
   for (const locale of locales) {
+    const candidate = pickFromLocale(locale);
+    if (candidate) {
+      return candidate;
+    }
+  }
+
+  return DEFAULT_LANGUAGE;
+}
+
+/**
+ * Like `resolveLanguage`, but additionally surfaces regional override
+ * variants we ship (currently `en-GB`). Used to drive i18next's runtime
+ * language so users on, e.g., en-GB OS locales pick up UK-spelling
+ * overrides automatically — the picker still treats English as a single
+ * option.
+ *
+ * Resolution rules:
+ *
+ *   - Explicit picker selection (anything other than `"auto"`) bypasses
+ *     regional detection and resolves through `resolveLanguage`. Choosing
+ *     "English" in the picker means "give me the canonical en catalog",
+ *     regardless of OS region.
+ *   - In `"auto"` mode we walk OS locales in priority order; if any tag
+ *     matches a known regional variant, return it. Otherwise fall through
+ *     to the base-language resolution.
+ */
+export function resolveI18nLanguage(
+  prefLanguage: SupportedLanguageCode | "auto",
+  osLocales: readonly LocaleHint[] | null | undefined,
+): ResolvedLanguageCode {
+  if (prefLanguage !== "auto") {
+    return resolveLanguage(prefLanguage, osLocales);
+  }
+
+  const locales = osLocales ?? [];
+  for (const locale of locales) {
+    if (isRegionalLanguageVariant(locale.languageTag)) {
+      return locale.languageTag;
+    }
     const candidate = pickFromLocale(locale);
     if (candidate) {
       return candidate;
