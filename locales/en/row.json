@@ -4,7 +4,7 @@
     "subtitle": "Choose how you want to row.",
     "freeRow": {
       "title": "Free row",
-      "subtitle": "Row without a target. Save the activity when you’re done.",
+      "subtitle": "Row without a target. Save the activity when you're done.",
       "a11y": "Start a free-row session"
     },
     "workout": {
@@ -20,7 +20,7 @@
   },
   "workout": {
     "comingSoonTitle": "Workouts coming soon",
-    "comingSoonBody": "Structured workouts aren’t available yet. Stay tuned!"
+    "comingSoonBody": "Structured workouts aren't available yet. Stay tuned!"
   },
   "phone": {
     "noPermission": "Motion permission was denied. Enable Motion & Fitness for {appName} in Settings to see live data.",
@@ -30,8 +30,8 @@
   "ble": {
     "reconnect": "Tap Connect to reconnect to {label}.",
     "reconnectFallback": "Tap Connect to reconnect to your Bluetooth sensor.",
-    "noDecoder": "Connected to {label}, but {appName} doesn’t have a decoder for it yet. Live data is unavailable.",
-    "noDecoderFallback": "Connected to this device, but {appName} doesn’t have a decoder for it yet. Live data is unavailable.",
+    "noDecoder": "Connected to {label}, but {appName} doesn't have a decoder for it yet. Live data is unavailable.",
+    "noDecoderFallback": "Connected to this device, but {appName} doesn't have a decoder for it yet. Live data is unavailable.",
     "connecting": "Connecting to {label}…",
     "connectingFallback": "Connecting to sensor…"
   },
@@ -68,12 +68,12 @@
       "savingBody": "Encoding your activity to FIT.",
       "savedTitle": "Activity saved",
       "savedBody": "Saved {duration} of rowing with {strokes, plural, one {# stroke} other {# strokes}}. Share it to upload to Strava or Training Peaks.",
-      "savedDisclosure": "Speed and pace are estimated by RowerM8 — feel free to mention this in your Strava description.",
-      "saveErrorTitle": "Couldn’t save activity",
+      "savedDisclosure": "Speed and pace are estimated by RowerM8.",
+      "saveErrorTitle": "Couldn't save activity",
       "saveErrorBody": "Something went wrong while saving the FIT file. Try again.",
       "discardTitle": "Discard activity?",
-      "discardBody": "This will delete the recording without saving. This can’t be undone.",
-      "shareUnavailable": "Sharing isn’t available on this device.",
+      "discardBody": "This will delete the recording without saving. This can't be undone.",
+      "shareUnavailable": "Sharing isn't available on this device.",
       "shareDialogTitle": "Share activity"
     }
   }
