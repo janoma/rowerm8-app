@@ -2,8 +2,7 @@
   "title": "Home",
   "subtitle": "Pair your sensors to get ready for a row.",
   "devices": {
-    "header": "DEVICES",
-    "helper": "A motion sensor is required to row. Heart-rate monitors are optional."
+    "header": "DEVICES"
   },
   "recent": {
     "header": "RECENT",

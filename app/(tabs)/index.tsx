@@ -186,6 +186,7 @@ export default function HomeScreen() {
             selected={motion.source !== "none"}
             connected={motionConnected}
             deviceLabel={motionDeviceLabel}
+            requirement="required"
             batteryPercent={
               motion.source === "ble" ? ble.motion.batteryPercent : null
             }
@@ -199,6 +200,7 @@ export default function HomeScreen() {
             deviceLabel={
               heartRate.source === "ble" ? heartRate.deviceLabel : null
             }
+            requirement="optional"
             batteryPercent={
               heartRate.source === "ble" ? ble.hr.batteryPercent : null
             }
@@ -207,12 +209,6 @@ export default function HomeScreen() {
             // jump straight to the role-filtered scan; no picker sheet needed.
             onPressAction={() => router.push("/ble-scan?role=hr")}
           />
-
-          <ThemedText
-            style={[styles.helper, { color: tokens.colors.textSecondary }]}
-          >
-            {t("devices.helper")}
-          </ThemedText>
 
           {recentActivities.length > 0 ? (
             <>
@@ -314,11 +310,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     letterSpacing: 0.8,
     marginTop: 6,
-  },
-  helper: {
-    fontSize: 13,
-    lineHeight: 18,
-    marginTop: 4,
   },
   recentHeaderRow: {
     flexDirection: "row",

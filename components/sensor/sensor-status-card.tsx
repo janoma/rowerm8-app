@@ -4,9 +4,11 @@ import { Pressable, StyleSheet, View } from "react-native";
 import { BatteryIndicator } from "@/components/ble/battery-indicator";
 import { ThemedText } from "@/components/themed-text";
 import type { IconSymbolName } from "@/components/ui/icon-symbol";
-import { Card, Divider, Icon, useTheme } from "@/lib/design-system";
+import { Card, Divider, Icon, StatusPill, useTheme } from "@/lib/design-system";
 
 export type SensorKind = "motion" | "hr";
+
+export type SensorRequirement = "required" | "optional";
 
 type Props = {
   /** Drives copy and accessibility labels. */
@@ -16,6 +18,13 @@ type Props = {
   /** Data is actively flowing from the chosen source right now. */
   connected: boolean;
   deviceLabel: string | null;
+  /**
+   * Whether this sensor is required to start a row. Renders a small pill
+   * tag next to the section label (warning tone for "required", neutral
+   * tone for "optional") so users can see at a glance which devices they
+   * must configure before using the Row tab.
+   */
+  requirement: SensorRequirement;
   /**
    * Battery percent (0-100) for the active source. Pass `null` when the source
    * doesn't report battery yet (e.g. HR over the standard service is wired
@@ -40,6 +49,7 @@ export function SensorStatusCard({
   selected,
   connected,
   deviceLabel,
+  requirement,
   batteryPercent = null,
   liveValue = null,
   onPressAction,
@@ -59,9 +69,16 @@ export function SensorStatusCard({
   const actionText = connected
     ? t("status.actionChange")
     : t("status.actionConnect");
-  const accessibilityLabel = connected
+  const requirementLabel = t(`status.requirement.${requirement}`);
+  // Append the requirement to the a11y label so VoiceOver/TalkBack users
+  // get the same context the visual pill conveys (the inner Text inside
+  // the Pressable is collapsed into the parent's announcement).
+  const baseA11yLabel = connected
     ? t(`status.${kind}.a11yChange`)
     : t(`status.${kind}.a11yConnect`);
+  const accessibilityLabel = `${baseA11yLabel} (${requirementLabel})`;
+  const requirementPillTone =
+    requirement === "required" ? "warning" : "neutral";
 
   const showBattery = connected && batteryPercent != null;
   const showLive = connected && !!liveValue;
@@ -130,6 +147,9 @@ export function SensorStatusCard({
               ) : null}
             </View>
           ) : null}
+          <StatusPill tone={requirementPillTone} style={styles.requirementPill}>
+            {requirementLabel}
+          </StatusPill>
         </View>
         {/* The action label is now a visual affordance only — the entire card
             is the press target (see outer Pressable). */}
@@ -162,6 +182,14 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     letterSpacing: 0.8,
     lineHeight: 14,
+  },
+  // Compact pill rendered as a footer row inside the text column. The
+  // small extra `marginTop` separates it visually from the value /
+  // subtitle / live-data rows above.
+  requirementPill: {
+    marginTop: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 1,
   },
   value: {
     fontSize: 17,

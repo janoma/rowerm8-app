@@ -27,6 +27,10 @@
     "notConnected": "Not connected",
     "actionConnect": "Connect",
     "actionChange": "Change",
+    "requirement": {
+      "required": "Required",
+      "optional": "Optional"
+    },
     "motion": {
       "label": "MOTION SENSOR",
       "a11yConnect": "Connect motion sensor",
