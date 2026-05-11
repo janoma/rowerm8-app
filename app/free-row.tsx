@@ -399,12 +399,6 @@ export default function FreeRowScreen() {
     }
   }, [savedActivity, t]);
 
-  const handleAcknowledgeSaved = useCallback(() => {
-    setSavedActivity(null);
-    setPhase("armed");
-    resetRecordingDisplay();
-  }, [resetRecordingDisplay]);
-
   const handleBack = useCallback(() => {
     if (phase === "running" || phase === "paused") {
       handleDiscardRunning();
@@ -538,6 +532,7 @@ export default function FreeRowScreen() {
           <Button
             title={t("freeRow.recording.start")}
             onPress={handleStart}
+            icon="figure.indoor.rowing"
             tone="accent"
             variant="filled"
             size="lg"
@@ -570,6 +565,7 @@ export default function FreeRowScreen() {
                     : t("freeRow.recording.pause")
                 }
                 onPress={isPaused ? handleResume : handlePause}
+                icon={isPaused ? "play.fill" : "pause.fill"}
                 tone="neutral"
                 variant="tinted"
                 size="lg"
@@ -580,6 +576,7 @@ export default function FreeRowScreen() {
               <Button
                 title={t("freeRow.recording.lap")}
                 onPress={handleLap}
+                icon="flag.fill"
                 disabled={isPaused}
                 tone="neutral"
                 variant="tinted"
@@ -591,6 +588,7 @@ export default function FreeRowScreen() {
           <Button
             title={t("freeRow.recording.stop")}
             onPress={handleStop}
+            icon="stop.fill"
             tone="danger"
             variant="filled"
             size="lg"
@@ -617,6 +615,13 @@ export default function FreeRowScreen() {
     }
 
     // saved
+    //
+    // Only Share is offered here. The screen-level back affordance lives
+    // in the AppHeader (top-leading), which `handleBack` delegates to
+    // `router.back()` once we're out of `running`/`paused`. Surfacing a
+    // second Back button here in the bottom-right would put the
+    // dismiss-and-go-back action where users expect a "Next" / forward
+    // action, which is confusing.
     return (
       <View style={styles.controlsBlock}>
         <Banner tone="success" title={t("freeRow.recording.savedTitle")}>
@@ -635,28 +640,15 @@ export default function FreeRowScreen() {
         >
           {t("freeRow.recording.savedDisclosure")}
         </ThemedText>
-        <View style={styles.savedActions}>
-          <View style={styles.savedActionFlex}>
-            <Button
-              title={t("freeRow.recording.share")}
-              onPress={handleShare}
-              tone="accent"
-              variant="filled"
-              size="lg"
-              block
-            />
-          </View>
-          <View style={styles.savedActionFlex}>
-            <Button
-              title={t("freeRow.back")}
-              onPress={handleAcknowledgeSaved}
-              tone="neutral"
-              variant="tinted"
-              size="lg"
-              block
-            />
-          </View>
-        </View>
+        <Button
+          title={t("freeRow.recording.share")}
+          onPress={handleShare}
+          icon="square.and.arrow.up"
+          tone="accent"
+          variant="filled"
+          size="lg"
+          block
+        />
       </View>
     );
   };
@@ -694,13 +686,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     textAlign: "center",
-  },
-  savedActions: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  savedActionFlex: {
-    flex: 1,
   },
   savedDisclosure: {
     fontSize: 13,
