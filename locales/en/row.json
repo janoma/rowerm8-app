@@ -46,7 +46,6 @@
     "heartRateUnit": "bpm",
     "calories": "Calories",
     "caloriesUnit": "kcal",
-    "calibrateHelper": "Start rowing to calibrate your cadence.",
     "calibrating": "Calibrating cadence…"
   },
   "freeRow": {
@@ -58,7 +57,6 @@
       "running": "Recording in progress.",
       "paused": "Recording paused.",
       "start": "Start",
-      "waitingCalibration": "Waiting for calibration…",
       "stop": "Stop",
       "pause": "Pause",
       "resume": "Resume",

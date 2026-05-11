@@ -3,10 +3,9 @@ import { useTranslation } from "react-i18next";
 import { StyleSheet, View } from "react-native";
 
 import { CalibrationWaveform } from "@/components/row/calibration-waveform";
-import { ThemedText } from "@/components/themed-text";
 import { useHrZoneResolver } from "@/hooks/use-hr-zone-resolver";
 import { useFormatters } from "@/lib/format";
-import { Card, Stat, ZonePill, useTheme } from "@/lib/design-system";
+import { Card, Stat, ZonePill } from "@/lib/design-system";
 import type { CalibrationState } from "@/lib/stroke/calibration";
 
 type Props = {
@@ -40,14 +39,12 @@ type Props = {
    */
   caloriesKcal?: number | null;
   /**
-   * Cadence-calibration state. When `null` the calibration UX is
-   * skipped entirely (recording is in flight, cadence is live). When
-   * `idle`, the cadence block shows `0 spm` plus the "start rowing to
-   * calibrate" helper line. When `calibrating`, the cadence block is
+   * Cadence-calibration state. When `null` (or `"calibrated"`) the
+   * cadence slot renders the live `<Stat>` with the smoothed cadence
+   * value. While `idle` or `calibrating`, the cadence slot is
    * replaced with the animated `<CalibrationWaveform>` so the user
-   * sees the detector is listening without us telling them how many
-   * strokes are left. When `calibrated`, live cadence is rendered —
-   * at which point `app/free-row.tsx` will enable the Start button.
+   * sees the detector is listening — recording is non-blocking, so
+   * we don't render a number until the detector stabilises.
    */
   calibrationState?: CalibrationState | null;
 };
@@ -73,9 +70,10 @@ type Props = {
  * model, `thresholdHrBpm` for the 7-zone Coggan/Friel model. When
  * neither is set, the resolver falls back to the documented defaults.
  *
- * `calibrationState` gates the cadence block through three states
- * (idle / calibrating / calibrated). See the prop docstring for the
- * precise mapping.
+ * `calibrationState` gates the cadence block: while `idle` or
+ * `calibrating`, the cadence slot shows the animated waveform;
+ * otherwise (`calibrated` / `null`) it shows the live cadence stat.
+ * See the prop docstring for the precise mapping.
  */
 export function RowMetricsCard({
   strokeCount,
@@ -87,7 +85,6 @@ export function RowMetricsCard({
   caloriesKcal = null,
   calibrationState = null,
 }: Props) {
-  const { tokens } = useTheme();
   const { t } = useTranslation("row");
   const formatters = useFormatters();
   const zoneResolver = useHrZoneResolver();
@@ -123,27 +120,22 @@ export function RowMetricsCard({
       ? `${Math.round(Math.max(0, caloriesKcal))} ${t("metrics.caloriesUnit")}`
       : null;
 
-  // The cadence block has three possible renderings depending on the
-  // calibration state; everything else in the card is unchanged.
-  //   idle         → "0 spm" + helper line below the card
-  //   calibrating  → animated <CalibrationWaveform> in the cadence slot
-  //   calibrated / null → live cadence in a primary <Stat>
-  const isCalibrating = calibrationState === "calibrating";
-  const showCadenceZero = calibrationState === "idle";
+  // The cadence block has two renderings depending on the calibration
+  // state; everything else in the card is unchanged.
+  //   idle / calibrating → animated <CalibrationWaveform> in the slot
+  //   calibrated / null  → live cadence in a primary <Stat>
+  const showCalibrationWaveform =
+    calibrationState === "idle" || calibrationState === "calibrating";
 
-  let cadenceValueString: string;
-  if (showCadenceZero) {
-    cadenceValueString = `0 ${t("metrics.cadenceUnit")}`;
-  } else if (cadenceSpm > 0) {
-    cadenceValueString = `${Math.round(cadenceSpm)} ${t("metrics.cadenceUnit")}`;
-  } else {
-    cadenceValueString = "—";
-  }
+  const cadenceValueString =
+    cadenceSpm > 0
+      ? `${Math.round(cadenceSpm)} ${t("metrics.cadenceUnit")}`
+      : "—";
 
   return (
     <View style={styles.root}>
       <Card variant="elevated" padding="md" style={styles.card}>
-        {isCalibrating ? (
+        {showCalibrationWaveform ? (
           <CalibrationWaveform />
         ) : (
           <Stat
@@ -185,16 +177,6 @@ export function RowMetricsCard({
           />
         ) : null}
       </Card>
-      {showCadenceZero ? (
-        <ThemedText
-          style={[
-            styles.calibrateHelper,
-            { color: tokens.colors.textSecondary },
-          ]}
-        >
-          {t("metrics.calibrateHelper")}
-        </ThemedText>
-      ) : null}
     </View>
   );
 }
@@ -239,12 +221,5 @@ const styles = StyleSheet.create({
   },
   statRowCell: {
     flex: 1,
-  },
-  calibrateHelper: {
-    fontSize: 13,
-    lineHeight: 18,
-    fontStyle: "italic",
-    textAlign: "center",
-    paddingHorizontal: 12,
   },
 });

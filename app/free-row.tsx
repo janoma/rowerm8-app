@@ -137,22 +137,28 @@ export default function FreeRowScreen() {
       : Math.max(0, (movingMsSinceStart - lapStartedAtMovingMs) / 1000);
   // Calibration plumbing.
   //
-  // Pre-recording (`recordingStartedAtMs == null`) the metrics card
-  // renders a calibration view inside the cadence slot; the value we
-  // pass is the live calibration state from the stroke session, which
-  // is what the card uses to decide between the three render branches
-  // (idle / calibrating / calibrated). Once recording begins we pass
-  // `null` to tell the card to skip the calibration UX entirely and
-  // render the live cadence as usual.
+  // Calibration is non-blocking: the user can tap Start at any point,
+  // and the recorder captures cadence + strokes from t=0 (the metrics
+  // ref is fed regardless of calibration state). What we DON'T do is
+  // render a numeric cadence until the detector has stabilised — until
+  // then the cadence slot in the metrics card shows the animated
+  // <CalibrationWaveform> so the user sees we're still listening.
+  //
+  // Concretely: while `calibrationState !== "calibrated"`, pass that
+  // state to the metrics card so it renders the waveform; once
+  // calibrated, pass `null` to flip back to the live cadence Stat.
+  // This applies both pre-recording (armed) and during the recording
+  // itself (running / paused).
   //
   // Calibration persists across recording sessions: after a save the
-  // user is dropped back into `armed`, but `calibrationState` is
-  // latched at "calibrated" so the Start button stays immediately
-  // enabled. The session is reset (and calibration restarts) only
-  // when the motion source changes — see `useStrokeSession`.
+  // user is dropped back into `armed`, and `calibrationState` is
+  // latched at "calibrated" so the cadence stat stays visible. The
+  // session is reset (and calibration restarts) only when the motion
+  // source changes — see `useStrokeSession`.
   const calibrationStateForCard =
-    recordingStartedAtMs == null ? strokeSession.calibrationState : null;
-  const isCalibrated = strokeSession.calibrationState === "calibrated";
+    strokeSession.calibrationState !== "calibrated"
+      ? strokeSession.calibrationState
+      : null;
 
   // The metrics ref is kept fresh on every render so the 1 Hz tick driver
   // can read the latest values without re-running its effect on every
@@ -514,14 +520,11 @@ export default function FreeRowScreen() {
     }
 
     if (phase === "armed") {
-      // The Start button is disabled until the user has produced
-      // CALIBRATION_STROKE_COUNT strokes (C4 of the row-fixes plan).
-      // While disabled we swap the label to make the wait state
-      // explicit; the design system's `disabled` styling drops the
-      // button to ~40% opacity so the change is also visible at a
-      // glance. The "Tap Start to begin recording…" helper above
-      // stays in place — it describes what Start *does* (save a FIT
-      // file), which is independent of calibration.
+      // Start is always enabled. Calibration runs in the background
+      // (and continues running once recording starts); until it
+      // stabilises, the metrics card shows the waveform in the
+      // cadence slot instead of a number, so the user has a visual
+      // signal without being blocked from starting.
       return (
         <View style={styles.controlsBlock}>
           <ThemedText
@@ -533,13 +536,8 @@ export default function FreeRowScreen() {
             {t("freeRow.recording.armed")}
           </ThemedText>
           <Button
-            title={
-              isCalibrated
-                ? t("freeRow.recording.start")
-                : t("freeRow.recording.waitingCalibration")
-            }
+            title={t("freeRow.recording.start")}
             onPress={handleStart}
-            disabled={!isCalibrated}
             tone="accent"
             variant="filled"
             size="lg"
