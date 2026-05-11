@@ -13,6 +13,13 @@
  * `null` for null / non-finite bpm so consumers can render
  * missing-data states without an extra check.
  *
+ * The Coggan/Friel branch is gated behind
+ * {@link ENABLE_COGGAN_HR_ZONE_MODEL}; while the flag is `false` the
+ * hook always returns the 5-zone variant regardless of any persisted
+ * `hrZoneModel` value, so an existing `cogganFriel7` selection on
+ * disk is harmless and is restored automatically when the flag flips
+ * back on.
+ *
  * Pure: the underlying classifiers are pure ({@link zoneForBpm} /
  * {@link cogganZoneForBpm}); this hook only adds the profile lookup
  * and a stable-identity wrapper.
@@ -27,6 +34,7 @@ import {
   type HrZonePalette,
   useTheme,
 } from "@/lib/design-system";
+import { ENABLE_COGGAN_HR_ZONE_MODEL } from "@/lib/feature-flags";
 import {
   type CogganZoneRanges,
   cogganZoneForBpm,
@@ -69,7 +77,7 @@ export function useHrZoneResolver(): HrZoneResolver {
   const { hrZoneModel, maxHrBpm, thresholdHrBpm } = profile;
 
   return useMemo<HrZoneResolver>(() => {
-    if (hrZoneModel === "cogganFriel7") {
+    if (ENABLE_COGGAN_HR_ZONE_MODEL && hrZoneModel === "cogganFriel7") {
       const ranges = cogganZoneRanges(thresholdHrBpm);
       return {
         kind: "cogganFriel7",

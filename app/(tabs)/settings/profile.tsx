@@ -24,6 +24,7 @@ import {
   useProfile,
 } from "@/contexts/profile-context";
 import { Button, Sheet, useTheme } from "@/lib/design-system";
+import { ENABLE_COGGAN_HR_ZONE_MODEL } from "@/lib/feature-flags";
 import { kilogramsToPounds, poundsToKilograms } from "@/lib/units";
 
 /**
@@ -34,6 +35,10 @@ import { kilogramsToPounds, poundsToKilograms } from "@/lib/units";
  * range. Values are persisted via `useProfile().setPref` and the
  * defaults shown in the row subtitles come from the same resolver
  * used by the rest of the app.
+ *
+ * The "Heart rate zones" section and the "Threshold heart rate" row
+ * are gated behind {@link ENABLE_COGGAN_HR_ZONE_MODEL} — see that
+ * flag's docstring for the why and the steps to flip it back on.
  */
 export default function ProfileScreen() {
   const { t } = useTranslation("settings");
@@ -70,20 +75,22 @@ export default function ProfileScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <SettingsSection
-          header={t("profile.section.zoneModel")}
-          footer={t("profile.section.zoneModelFooter")}
-        >
-          <SettingsRow
-            label={t(
-              `profile.fields.hrZoneModel.options.${resolved.hrZoneModel}.label`,
-            )}
-            subtitle={t(
-              `profile.fields.hrZoneModel.options.${resolved.hrZoneModel}.subtitle`,
-            )}
-            onPress={() => setEditingField("hrZoneModel")}
-          />
-        </SettingsSection>
+        {ENABLE_COGGAN_HR_ZONE_MODEL ? (
+          <SettingsSection
+            header={t("profile.section.zoneModel")}
+            footer={t("profile.section.zoneModelFooter")}
+          >
+            <SettingsRow
+              label={t(
+                `profile.fields.hrZoneModel.options.${resolved.hrZoneModel}.label`,
+              )}
+              subtitle={t(
+                `profile.fields.hrZoneModel.options.${resolved.hrZoneModel}.subtitle`,
+              )}
+              onPress={() => setEditingField("hrZoneModel")}
+            />
+          </SettingsSection>
+        ) : null}
 
         <SettingsSection
           header={t("profile.section.heartRate")}
@@ -96,18 +103,20 @@ export default function ProfileScreen() {
             })}
             onPress={() => setEditingField("maxHrBpm")}
           />
-          <SettingsRow
-            label={t("profile.fields.thresholdHrBpm.label")}
-            subtitle={describeNumber(
-              t,
-              "thresholdHrBpm",
-              prefs.thresholdHrBpm,
-              {
-                defaultValue: resolved.thresholdHrBpm,
-              },
-            )}
-            onPress={() => setEditingField("thresholdHrBpm")}
-          />
+          {ENABLE_COGGAN_HR_ZONE_MODEL ? (
+            <SettingsRow
+              label={t("profile.fields.thresholdHrBpm.label")}
+              subtitle={describeNumber(
+                t,
+                "thresholdHrBpm",
+                prefs.thresholdHrBpm,
+                {
+                  defaultValue: resolved.thresholdHrBpm,
+                },
+              )}
+              onPress={() => setEditingField("thresholdHrBpm")}
+            />
+          ) : null}
         </SettingsSection>
 
         <SettingsSection
@@ -167,7 +176,7 @@ export default function ProfileScreen() {
         />
       ) : null}
 
-      {editingField === "hrZoneModel" ? (
+      {ENABLE_COGGAN_HR_ZONE_MODEL && editingField === "hrZoneModel" ? (
         <HrZoneModelSheet
           value={prefs.hrZoneModel}
           onClose={closeSheet}
