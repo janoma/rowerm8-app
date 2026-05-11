@@ -6,6 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useBle } from "@/contexts/ble-context";
+import { useHeartRate } from "@/contexts/heart-rate-context";
 import { useMotionSensor } from "@/contexts/motion-sensor-context";
 import { useMotionStream } from "@/hooks/use-motion-stream";
 import {
@@ -20,6 +21,7 @@ export default function RowScreen() {
   const { tokens } = useTheme();
   const { t } = useTranslation("row");
   const { source, deviceLabel: rawDeviceLabel } = useMotionSensor();
+  const heartRate = useHeartRate();
   const stream = useMotionStream();
   const ble = useBle();
 
@@ -27,8 +29,15 @@ export default function RowScreen() {
     (source === "phone" && stream.isAvailable && !stream.permissionDenied) ||
     (source === "ble" && !!ble.motion.activeDevice && stream.hasDecoder);
 
-  const deviceLabel =
+  const motionDeviceLabel =
     source === "phone" ? t("phone.label") : (rawDeviceLabel ?? null);
+
+  // HR only ever flows over BLE today, so "connected" is equivalent to
+  // "we have a live BLE link". The device label is whatever was persisted
+  // when the user picked the monitor on Home (falls back to a generic
+  // string so the pill doesn't read "Heart rate: ").
+  const hrReady = heartRate.source === "ble" && !!ble.hr.activeDevice;
+  const hrLabel = heartRate.deviceLabel ?? "";
 
   const handleFreeRow = () => {
     router.push("/free-row");
@@ -58,9 +67,16 @@ export default function RowScreen() {
           </ThemedText>
 
           {motionReady ? (
-            <StatusPill tone="success" icon="checkmark.circle.fill">
-              {t("launcher.ready", { label: deviceLabel ?? "" })}
-            </StatusPill>
+            <View style={styles.statusPills}>
+              <StatusPill tone="success" icon="dot.radiowaves.left.and.right">
+                {t("launcher.readyMotion", { label: motionDeviceLabel ?? "" })}
+              </StatusPill>
+              {hrReady ? (
+                <StatusPill tone="success" icon="heart.fill">
+                  {t("launcher.readyHr", { label: hrLabel })}
+                </StatusPill>
+              ) : null}
+            </View>
           ) : (
             <Banner
               tone="warning"
@@ -119,5 +135,11 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 20,
     marginBottom: 4,
+  },
+  // Stack of "Motion: …" / "Heart rate: …" pills. The pills already
+  // `alignSelf: flex-start`, so a column with a small gap is all the
+  // grouping we need — without bunching against the parent's 14 px gap.
+  statusPills: {
+    gap: 6,
   },
 });

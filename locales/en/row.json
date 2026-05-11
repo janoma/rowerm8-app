@@ -12,7 +12,8 @@
       "subtitle": "Follow a structured plan with intervals.",
       "a11y": "Start a workout session"
     },
-    "ready": "Ready: {label}",
+    "readyMotion": "Motion: {label}",
+    "readyHr": "Heart rate: {label}",
     "notReady": "Pair a motion sensor on Home to start.",
     "goHome": "Go to Home",
     "a11yGoHome": "Open the Home tab to pair a motion sensor"
