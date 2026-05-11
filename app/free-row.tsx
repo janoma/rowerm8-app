@@ -20,6 +20,7 @@ import { useStrokeSession } from "@/hooks/use-stroke-session";
 import { createActivityRecorder } from "@/lib/activity/recorder";
 import { accumulateKcal } from "@/lib/energy/calories";
 import { shareFitFile } from "@/lib/activity/share";
+import { classifyShortActivity } from "@/lib/activity/short-activity";
 import { saveActivity, type StoredActivity } from "@/lib/activity/storage";
 import {
   AppHeader,
@@ -401,10 +402,11 @@ export default function FreeRowScreen() {
     handleStart();
   }, [handleStart]);
 
-  const handleStop = useCallback(async () => {
-    if (!recorderRef.current.isRunning) {
-      return;
-    }
+  // Finish the recorder and run the FIT save flow. Extracted so both
+  // the no-prompt Stop path and the Keep button on the short-activity
+  // prompt can share the same transition into the saving / saved /
+  // save-error states.
+  const performStopAndSave = useCallback(async () => {
     setPhase("saving");
     try {
       const activity = recorderRef.current.finish(Date.now());
@@ -422,6 +424,71 @@ export default function FreeRowScreen() {
     }
   }, [resetRecordingDisplay, t]);
 
+  // Drop the in-flight recording without saving and reset the screen
+  // back to `armed`. Skips its own confirmation alert — used both by
+  // the short-activity Keep/Discard prompt (which is itself the
+  // confirmation) and by the back-button discard flow below (which
+  // wraps it in `Alert.alert`).
+  const performDiscard = useCallback(() => {
+    if (recorderRef.current.isRunning) {
+      recorderRef.current.finish(Date.now());
+    }
+    setPhase("armed");
+    resetRecordingDisplay();
+  }, [resetRecordingDisplay]);
+
+  const handleStop = useCallback(() => {
+    if (!recorderRef.current.isRunning) {
+      return;
+    }
+    // Short-activity guard: a few stray strokes during calibration or
+    // an accidental Start tap shouldn't silently land in the user's
+    // history. We surface a Keep/Discard prompt naming the specific
+    // reason; Cancel leaves the user in their current phase
+    // (`running` / `paused`) so they can keep rowing or stop again.
+    const reason = classifyShortActivity(
+      displayStrokeCount,
+      displayTotalTimeSeconds,
+    );
+    if (reason == null) {
+      void performStopAndSave();
+      return;
+    }
+    const bodyKey =
+      reason === "both"
+        ? "freeRow.recording.shortActivityBodyBoth"
+        : reason === "fewStrokes"
+          ? "freeRow.recording.shortActivityBodyFewStrokes"
+          : "freeRow.recording.shortActivityBodyShortDuration";
+    Alert.alert(
+      t("freeRow.recording.shortActivityTitle"),
+      t(bodyKey, {
+        count: displayStrokeCount,
+        durationSeconds: Math.round(displayTotalTimeSeconds),
+      }),
+      [
+        {
+          text: t("freeRow.recording.shortActivityKeep"),
+          onPress: () => {
+            void performStopAndSave();
+          },
+        },
+        {
+          text: t("freeRow.recording.shortActivityDiscard"),
+          style: "destructive",
+          onPress: performDiscard,
+        },
+        { text: t("freeRow.back"), style: "cancel" },
+      ],
+    );
+  }, [
+    displayStrokeCount,
+    displayTotalTimeSeconds,
+    performDiscard,
+    performStopAndSave,
+    t,
+  ]);
+
   const handleDiscardRunning = useCallback(() => {
     Alert.alert(
       t("freeRow.recording.discardTitle"),
@@ -430,18 +497,12 @@ export default function FreeRowScreen() {
         {
           text: t("freeRow.recording.discard"),
           style: "destructive",
-          onPress: () => {
-            if (recorderRef.current.isRunning) {
-              recorderRef.current.finish(Date.now());
-            }
-            setPhase("armed");
-            resetRecordingDisplay();
-          },
+          onPress: performDiscard,
         },
         { text: t("freeRow.back"), style: "cancel" },
       ],
     );
-  }, [resetRecordingDisplay, t]);
+  }, [performDiscard, t]);
 
   const handleShare = useCallback(async () => {
     if (!savedActivity) {

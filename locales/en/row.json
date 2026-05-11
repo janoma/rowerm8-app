@@ -71,6 +71,12 @@
       "saveErrorBody": "Something went wrong while saving the FIT file. Try again.",
       "discardTitle": "Discard activity?",
       "discardBody": "This will delete the recording without saving. This can't be undone.",
+      "shortActivityTitle": "Save this activity?",
+      "shortActivityBodyFewStrokes": "Only {count, plural, one {# stroke} other {# strokes}} were detected. Do you want to keep it or discard it?",
+      "shortActivityBodyShortDuration": "The activity is only {durationSeconds, plural, one {# second} other {# seconds}} long. Do you want to keep it or discard it?",
+      "shortActivityBodyBoth": "Only {count, plural, one {# stroke} other {# strokes}} in {durationSeconds, plural, one {# second} other {# seconds}}. Do you want to keep it or discard it?",
+      "shortActivityKeep": "Keep",
+      "shortActivityDiscard": "Discard",
       "shareUnavailable": "Sharing isn't available on this device.",
       "shareDialogTitle": "Share activity"
     },
