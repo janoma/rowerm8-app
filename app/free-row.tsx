@@ -2,6 +2,7 @@ import { router } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Alert, StyleSheet, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { AutoStartModal } from "@/components/row/auto-start-modal";
 import { RowMetricsCard } from "@/components/row/row-metrics-card";
@@ -44,6 +45,9 @@ export default function FreeRowScreen() {
   const { resolved: profile } = useProfile();
   const zoneResolver = useHrZoneResolver();
   const { t } = useTranslation("row");
+  // Safe-area inset for the bottom-docked control bar so the buttons
+  // never tuck under the iOS home indicator or Android nav gesture bar.
+  const insets = useSafeAreaInsets();
 
   const deviceLabel =
     source === "phone" ? t("phone.label") : (rawDeviceLabel ?? null);
@@ -605,16 +609,6 @@ export default function FreeRowScreen() {
       const isPaused = phase === "paused";
       return (
         <View style={styles.controlsBlock}>
-          <ThemedText
-            style={[
-              styles.controlsHelper,
-              { color: tokens.colors.textSecondary },
-            ]}
-          >
-            {isPaused
-              ? t("freeRow.recording.paused")
-              : t("freeRow.recording.running")}
-          </ThemedText>
           <View style={styles.runningControlsRow}>
             <View style={styles.runningControlsCell}>
               <Button
@@ -712,6 +706,8 @@ export default function FreeRowScreen() {
     );
   };
 
+  const recordingControls = renderRecordingControls();
+
   return (
     <ThemedView style={styles.root}>
       <AppHeader
@@ -719,10 +715,24 @@ export default function FreeRowScreen() {
         onBack={handleBack}
         backLabel={t("freeRow.back")}
       />
-      <View style={styles.body}>
-        {renderDataSection()}
-        {renderRecordingControls()}
-      </View>
+      <View style={styles.body}>{renderDataSection()}</View>
+      {recordingControls != null ? (
+        <View
+          style={[
+            styles.controlsDock,
+            {
+              // Add the device's bottom safe-area inset to our base
+              // padding so buttons sit comfortably above the home
+              // indicator / nav gesture bar.
+              paddingBottom: insets.bottom + 12,
+              backgroundColor: tokens.colors.surface,
+              borderTopColor: tokens.colors.border,
+            },
+          ]}
+        >
+          {recordingControls}
+        </View>
+      ) : null}
       <AutoStartModal
         visible={autoStartModalVisible}
         onCancel={handleAutoStartCancel}
@@ -742,9 +752,16 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     gap: 14,
   },
+  // Bottom-pinned dock for primary recording controls. Lives outside
+  // `body` so the pause / lap / stop row stays in a predictable place
+  // regardless of how tall the metrics card or HR ribbon grow.
+  controlsDock: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
   controlsBlock: {
     gap: 12,
-    marginTop: 4,
   },
   controlsHelper: {
     fontSize: 13,

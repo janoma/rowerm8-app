@@ -54,8 +54,6 @@
     "placeholder": "Live sensor data will appear here once data starts flowing.",
     "recording": {
       "armed": "Tap Start to begin recording. Your row will be saved as a FIT file you can upload to Strava, Training Peaks, or Garmin Connect.",
-      "running": "Recording in progress.",
-      "paused": "Recording paused.",
       "start": "Start",
       "stop": "Stop",
       "pause": "Pause",
