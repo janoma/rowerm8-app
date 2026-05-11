@@ -75,6 +75,11 @@
       "discardBody": "This will delete the recording without saving. This can't be undone.",
       "shareUnavailable": "Sharing isn't available on this device.",
       "shareDialogTitle": "Share activity"
+    },
+    "autoStart": {
+      "title": "Auto-starting activity…",
+      "cancel": "Cancel",
+      "a11yProgress": "Auto-start countdown"
     }
   }
 }

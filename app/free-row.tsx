@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Alert, StyleSheet, View } from "react-native";
 
+import { AutoStartModal } from "@/components/row/auto-start-modal";
 import { RowMetricsCard } from "@/components/row/row-metrics-card";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
@@ -10,6 +11,7 @@ import { APP_NAME } from "@/constants/branding";
 import { useBle } from "@/contexts/ble-context";
 import { useMotionSensor } from "@/contexts/motion-sensor-context";
 import { useProfile } from "@/contexts/profile-context";
+import { useAutoStartPref } from "@/hooks/use-auto-start-pref";
 import { useHeartRateStream } from "@/hooks/use-heart-rate-stream";
 import { useHrZoneResolver } from "@/hooks/use-hr-zone-resolver";
 import { useMotionStream } from "@/hooks/use-motion-stream";
@@ -54,6 +56,17 @@ export default function FreeRowScreen() {
   const [savedActivity, setSavedActivity] = useState<StoredActivity | null>(
     null,
   );
+
+  // Auto-start state. The modal is shown when the detector picks up
+  // strokes while we're still in `armed` and the user hasn't disabled
+  // the feature in Settings. `autoStartSuppressedRef` latches once the
+  // user taps Cancel inside the modal so we don't immediately re-arm
+  // on the next stroke during the same armed session — it's reset in
+  // `resetRecordingDisplay`, i.e. after a discard / save error / save +
+  // re-mount, which all naturally signal "fresh attempt".
+  const { enabled: autoStartEnabled } = useAutoStartPref();
+  const [autoStartModalVisible, setAutoStartModalVisible] = useState(false);
+  const autoStartSuppressedRef = useRef(false);
 
   // Display-layer gating for items 2 and 3 of the row-fixes plan.
   //
@@ -252,6 +265,35 @@ export default function FreeRowScreen() {
     recorderRef.current.markStroke(strokeSession.cadenceSpm, Date.now());
   }, [phase, strokeSession.strokeJustDetected, strokeSession.cadenceSpm]);
 
+  // Arm the auto-start modal on the first detected stroke while still
+  // in `armed`. The modal owns the 5 s countdown and decides whether
+  // to call `onComplete` (→ `handleStart`) or `onCancel` (→ suppress).
+  // Hydration of the user preference is async, so we explicitly check
+  // `=== true` to avoid showing the modal before the value loads.
+  useEffect(() => {
+    if (phase !== "armed") {
+      return;
+    }
+    if (!strokeSession.strokeJustDetected) {
+      return;
+    }
+    if (autoStartEnabled !== true) {
+      return;
+    }
+    if (autoStartSuppressedRef.current) {
+      return;
+    }
+    if (autoStartModalVisible) {
+      return;
+    }
+    setAutoStartModalVisible(true);
+  }, [
+    phase,
+    strokeSession.strokeJustDetected,
+    autoStartEnabled,
+    autoStartModalVisible,
+  ]);
+
   const handleStart = useCallback(() => {
     // Note: we deliberately do NOT call strokeSession.reset() here.
     // Resetting the session would clear the calibrated baseline /
@@ -324,7 +366,9 @@ export default function FreeRowScreen() {
   // Centralised reset for the local recording-display state. Called by
   // handlers that transition out of an in-flight recording (stop, save,
   // discard, error, acknowledge) so the next session starts clean
-  // without resetting the stroke session (calibration persists).
+  // without resetting the stroke session (calibration persists). Also
+  // re-arms the auto-start modal so a discard / save-error → fresh
+  // attempt can use the auto-start flow again.
   const resetRecordingDisplay = useCallback(() => {
     setRecordingStartedAtMs(null);
     setPauseStartedAtMs(null);
@@ -336,7 +380,22 @@ export default function FreeRowScreen() {
     caloriesLastTickMsRef.current = null;
     hasSeenHrRef.current = false;
     setCaloriesKcal(null);
+    autoStartSuppressedRef.current = false;
   }, []);
+
+  const handleAutoStartCancel = useCallback(() => {
+    setAutoStartModalVisible(false);
+    // Latch suppression so we don't immediately re-trigger on the very
+    // next stroke. The user can still tap Start manually; the latch is
+    // released by `resetRecordingDisplay` on discard / save error / by
+    // the screen unmounting after a successful save.
+    autoStartSuppressedRef.current = true;
+  }, []);
+
+  const handleAutoStartComplete = useCallback(() => {
+    setAutoStartModalVisible(false);
+    handleStart();
+  }, [handleStart]);
 
   const handleStop = useCallback(async () => {
     if (!recorderRef.current.isRunning) {
@@ -664,6 +723,11 @@ export default function FreeRowScreen() {
         {renderDataSection()}
         {renderRecordingControls()}
       </View>
+      <AutoStartModal
+        visible={autoStartModalVisible}
+        onCancel={handleAutoStartCancel}
+        onComplete={handleAutoStartComplete}
+      />
     </ThemedView>
   );
 }

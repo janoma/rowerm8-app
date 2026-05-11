@@ -5,6 +5,7 @@
     "language": "Language",
     "units": "Units",
     "profile": "Heart rate & body",
+    "recording": "Recording",
     "help": "Help"
   },
   "appearance": {
@@ -171,6 +172,12 @@
         "message": "All heart-rate and body values will be cleared. The app will fall back to defaults.",
         "confirm": "Reset"
       }
+    }
+  },
+  "recording": {
+    "autoStart": {
+      "label": "Auto-start activity",
+      "subtitle": "Start recording automatically when we detect you've started rowing."
     }
   },
   "help": {

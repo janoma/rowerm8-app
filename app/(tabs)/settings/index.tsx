@@ -15,6 +15,7 @@ import {
 } from "@/constants/storage-keys";
 import { useLocale } from "@/contexts/locale-context";
 import { useProfile } from "@/contexts/profile-context";
+import { useAutoStartPref } from "@/hooks/use-auto-start-pref";
 import { Switch, useTheme } from "@/lib/design-system";
 import { findLanguage } from "@/lib/i18n";
 import { kilogramsToPounds } from "@/lib/units";
@@ -24,6 +25,8 @@ export default function SettingsScreen() {
   const { prefs, resolved } = useLocale();
   const { resolved: profile } = useProfile();
   const { prefScheme, scheme } = useTheme();
+  const { enabled: autoStartEnabled, setEnabled: setAutoStartEnabled } =
+    useAutoStartPref();
 
   // Both toggles map to "key absent => screen will show on next trigger".
   // We start with `null` while hydrating from AsyncStorage so the Switch
@@ -150,6 +153,21 @@ export default function SettingsScreen() {
                 label={t("profile.row.label")}
                 subtitle={profileSubtitle}
                 onPress={() => router.push("/settings/profile")}
+              />
+            </SettingsSection>
+
+            <SettingsSection header={t("sections.recording")}>
+              <SettingsRow
+                label={t("recording.autoStart.label")}
+                subtitle={t("recording.autoStart.subtitle")}
+                accessory={
+                  <Switch
+                    value={autoStartEnabled ?? false}
+                    onValueChange={setAutoStartEnabled}
+                    disabled={autoStartEnabled === null}
+                    accessibilityLabel={t("recording.autoStart.label")}
+                  />
+                }
               />
             </SettingsSection>
 

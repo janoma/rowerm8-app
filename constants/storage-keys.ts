@@ -32,3 +32,12 @@ export const ONBOARDING_FEATURES_SEEN_KEY =
  * sites use the same key.
  */
 export const AUTH_SESSION_KEY = "rowerm8.auth.session.v1";
+
+/**
+ * When set to `"true"`, the Free-row "Auto-starting activity…" modal is
+ * suppressed and the user has to tap Start manually. Stored in the
+ * "disabled" form so that a missing key (the default) means auto-start
+ * is enabled — same convention as `ONBOARDING_FEATURES_SEEN_KEY` and
+ * `PLACEMENT_DONT_SHOW_KEY`.
+ */
+export const AUTO_START_DISABLED_KEY = "rowerm8.freeRow.autoStartDisabled.v1";
