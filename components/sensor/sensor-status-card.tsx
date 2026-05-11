@@ -68,74 +68,76 @@ export function SensorStatusCard({
   const showBottomRow = showBattery || showLive;
 
   return (
-    <Card variant="elevated" padding="md" style={styles.card}>
-      <View
-        style={[
-          styles.iconBadge,
-          {
-            backgroundColor: badgeBg,
-            borderRadius: tokens.radius.pill,
-          },
-        ]}
-      >
-        {/* Selected = primary kind icon; not selected = warning glyph. The
-            badge background already telegraphs status with colour, so the
-            kind icon stays useful as a quick "which sensor is this" cue. */}
-        <Icon
-          name={selected ? KIND_ICONS[kind] : statusIcon}
-          size={26}
-          color={badgeColor}
-        />
-      </View>
-      <View style={styles.textBlock}>
-        <ThemedText
-          style={[styles.label, { color: tokens.colors.textSecondary }]}
+    <Pressable
+      onPress={onPressAction}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+    >
+      <Card variant="elevated" padding="md" style={styles.card}>
+        <View
+          style={[
+            styles.iconBadge,
+            {
+              backgroundColor: badgeBg,
+              borderRadius: tokens.radius.pill,
+            },
+          ]}
         >
-          {t(`status.${kind}.label`)}
-        </ThemedText>
-        <ThemedText style={styles.value} numberOfLines={1}>
-          {valueText}
-        </ThemedText>
-        {showSubtitle ? (
+          {/* Selected = primary kind icon; not selected = warning glyph. The
+              badge background already telegraphs status with colour, so the
+              kind icon stays useful as a quick "which sensor is this" cue. */}
+          <Icon
+            name={selected ? KIND_ICONS[kind] : statusIcon}
+            size={26}
+            color={badgeColor}
+          />
+        </View>
+        <View style={styles.textBlock}>
           <ThemedText
-            style={[styles.subtitle, { color: tokens.colors.warning }]}
+            style={[styles.label, { color: tokens.colors.textSecondary }]}
           >
-            {t("status.notConnected")}
+            {t(`status.${kind}.label`)}
           </ThemedText>
-        ) : null}
-        {showBottomRow ? (
-          <View style={styles.bottomRow}>
-            {showBattery ? (
-              <BatteryIndicator
-                percent={batteryPercent!}
-                height={14}
-                fontSize={12}
-              />
-            ) : null}
-            {showBattery && showLive ? (
-              <Divider style={styles.verticalDivider} />
-            ) : null}
-            {showLive ? (
-              <ThemedText
-                style={[styles.liveValue, { color: tokens.colors.text }]}
-              >
-                {liveValue}
-              </ThemedText>
-            ) : null}
-          </View>
-        ) : null}
-      </View>
-      <Pressable
-        onPress={onPressAction}
-        hitSlop={8}
-        accessibilityRole="button"
-        accessibilityLabel={accessibilityLabel}
-      >
+          <ThemedText style={styles.value} numberOfLines={1}>
+            {valueText}
+          </ThemedText>
+          {showSubtitle ? (
+            <ThemedText
+              style={[styles.subtitle, { color: tokens.colors.warning }]}
+            >
+              {t("status.notConnected")}
+            </ThemedText>
+          ) : null}
+          {showBottomRow ? (
+            <View style={styles.bottomRow}>
+              {showBattery ? (
+                <BatteryIndicator
+                  percent={batteryPercent!}
+                  height={14}
+                  fontSize={12}
+                />
+              ) : null}
+              {showBattery && showLive ? (
+                <Divider style={styles.verticalDivider} />
+              ) : null}
+              {showLive ? (
+                <ThemedText
+                  style={[styles.liveValue, { color: tokens.colors.text }]}
+                >
+                  {liveValue}
+                </ThemedText>
+              ) : null}
+            </View>
+          ) : null}
+        </View>
+        {/* The action label is now a visual affordance only — the entire card
+            is the press target (see outer Pressable). */}
         <ThemedText style={[styles.action, { color: tokens.colors.accent }]}>
           {actionText}
         </ThemedText>
-      </Pressable>
-    </Card>
+      </Card>
+    </Pressable>
   );
 }
 
