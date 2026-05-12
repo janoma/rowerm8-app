@@ -79,7 +79,7 @@
       "shortActivityDiscard": "Discard",
       "shareUnavailable": "Sharing isn't available on this device.",
       "shareDialogTitle": "Share activity",
-      "pause": {
+      "pauseBanners": {
         "inactivityTitle": "Paused — no strokes detected",
         "inactivityBody": "We paused the recording because we didn't see any strokes for a few minutes. Tap Resume to keep going, or Stop to save what you have.",
         "backgroundPhoneTitle": "Paused while in background",

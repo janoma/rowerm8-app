@@ -1017,17 +1017,17 @@ export default function FreeRowScreen() {
       {phase === "paused" && pauseReason === "inactivity" ? (
         <Banner
           tone="warning"
-          title={t("freeRow.recording.pause.inactivityTitle")}
+          title={t("freeRow.recording.pauseBanners.inactivityTitle")}
         >
-          {t("freeRow.recording.pause.inactivityBody")}
+          {t("freeRow.recording.pauseBanners.inactivityBody")}
         </Banner>
       ) : null}
       {showBackgroundPauseBanner ? (
         <Banner
           tone="warning"
-          title={t("freeRow.recording.pause.backgroundPhoneTitle")}
+          title={t("freeRow.recording.pauseBanners.backgroundPhoneTitle")}
         >
-          {t("freeRow.recording.pause.backgroundPhoneBody")}
+          {t("freeRow.recording.pauseBanners.backgroundPhoneBody")}
         </Banner>
       ) : null}
       {heartRate.bpm != null ? (
