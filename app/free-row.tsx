@@ -1,10 +1,18 @@
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, Alert, StyleSheet, View } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  AppState,
+  type AppStateStatus,
+  StyleSheet,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { AutoStartModal } from "@/components/row/auto-start-modal";
+import { RecoveryPrompt } from "@/components/row/recovery-prompt";
 import { RowMetricsCard } from "@/components/row/row-metrics-card";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
@@ -15,9 +23,15 @@ import { useProfile } from "@/contexts/profile-context";
 import { useAutoStartPref } from "@/hooks/use-auto-start-pref";
 import { useHeartRateStream } from "@/hooks/use-heart-rate-stream";
 import { useHrZoneResolver } from "@/hooks/use-hr-zone-resolver";
+import { useInactivityReminderPref } from "@/hooks/use-inactivity-reminder-pref";
 import { useMotionStream } from "@/hooks/use-motion-stream";
 import { useStrokeSession } from "@/hooks/use-stroke-session";
-import { createActivityRecorder } from "@/lib/activity/recorder";
+import {
+  createActivityRecorder,
+  INACTIVITY_AUTO_PAUSE_MS,
+  INACTIVITY_AUTO_SAVE_MS,
+} from "@/lib/activity/recorder";
+import { deleteDraft, loadDraft, writeDraft } from "@/lib/activity/draft";
 import { accumulateKcal } from "@/lib/energy/calories";
 import { shareFitFile } from "@/lib/activity/share";
 import { classifyShortActivity } from "@/lib/activity/short-activity";
@@ -32,9 +46,29 @@ import {
   useTheme,
 } from "@/lib/design-system";
 import { formatDuration } from "@/lib/format/time";
+import { useRecordingKeepAwake } from "@/lib/lifecycle/keep-awake";
+import {
+  startRecordingForegroundService,
+  stopRecordingForegroundService,
+} from "@/lib/lifecycle/foreground-service";
+import {
+  cancelInactivityReminder,
+  scheduleInactivityReminder,
+} from "@/lib/lifecycle/inactivity-notification";
 
 /** Recording lifecycle states. The UI flips between primary buttons (Start, Stop, Pause/Resume, Lap, Share) and notice content based on this. */
 type RecordingPhase = "armed" | "running" | "paused" | "saving" | "saved";
+
+/**
+ * Why a pause was opened, used to decide whether to surface a banner
+ * once the user is back in foreground. Auto-pauses (inactivity, iOS
+ * background with phone-only motion) are explained on screen so the
+ * user understands why we stopped counting on their behalf.
+ */
+type PauseReason = "user" | "inactivity" | "ios-background-no-sensor";
+
+/** Throttle for the on-disk draft flush loop. */
+const DRAFT_FLUSH_INTERVAL_MS = 5_000;
 
 export default function FreeRowScreen() {
   const { tokens } = useTheme();
@@ -61,6 +95,30 @@ export default function FreeRowScreen() {
   const [savedActivity, setSavedActivity] = useState<StoredActivity | null>(
     null,
   );
+  // Reason for the most recent pause, used to surface a banner when
+  // the pause was triggered by the app rather than the user. Set on
+  // each transition into `paused` and cleared on resume / stop.
+  const [pauseReason, setPauseReason] = useState<PauseReason>("user");
+  // Banner surfaced after AppState came back to foreground from a
+  // background-induced auto-pause. Distinct from `pauseReason` so we
+  // can keep the banner up across a manual Resume.
+  const [showBackgroundPauseBanner, setShowBackgroundPauseBanner] =
+    useState(false);
+  // Recovery flow: when we cold-start with a fresh draft on disk,
+  // `app/_layout.tsx` navigates to `/free-row?recover=<id>` and we
+  // surface a modal letting the user Resume / Save / Discard.
+  const params = useLocalSearchParams<{ recover?: string }>();
+  const [recoveryDraftId, setRecoveryDraftId] = useState<string | null>(null);
+
+  // Inactivity-reminder opt-in toggle (Settings → Recording). When on,
+  // we schedule a local notification after the auto-pause threshold
+  // while the app is backgrounded; cancelled on every stroke / on
+  // foreground / on stop.
+  const { enabled: reminderEnabled } = useInactivityReminderPref();
+  const reminderEnabledRef = useRef(false);
+  useEffect(() => {
+    reminderEnabledRef.current = reminderEnabled === true;
+  }, [reminderEnabled]);
 
   // Auto-start state. The modal is shown when the detector picks up
   // strokes while we're still in `armed` and the user hasn't disabled
@@ -313,25 +371,42 @@ export default function FreeRowScreen() {
     setStrokesDuringPauses(0);
     setLapStartedAtMovingMs(null);
     setNowMs(now);
+    setPauseReason("user");
+    setShowBackgroundPauseBanner(false);
     caloriesKcalRef.current = 0;
     caloriesLastTickMsRef.current = null;
     hasSeenHrRef.current = false;
     setCaloriesKcal(null);
     recorderRef.current.start(now);
     setPhase("running");
-  }, [strokeSession.strokeCount]);
+    // Fire-and-forget: starting the foreground service is async on
+    // Android (notifee channel + notification post). The recording
+    // itself doesn't depend on the result.
+    void startRecordingForegroundService({
+      title: t("freeRow.recording.foregroundService.title"),
+      body: t("freeRow.recording.foregroundService.body"),
+    });
+  }, [strokeSession.strokeCount, t]);
+
+  const pauseInternal = useCallback(
+    (reason: PauseReason) => {
+      const now = Date.now();
+      setSessionStrokesAtPauseStart(strokeSession.strokeCount);
+      setPauseStartedAtMs(now);
+      setNowMs(now);
+      setPauseReason(reason);
+      recorderRef.current.pause(now);
+      setPhase("paused");
+    },
+    [strokeSession.strokeCount],
+  );
 
   const handlePause = useCallback(() => {
     if (phase !== "running") {
       return;
     }
-    const now = Date.now();
-    setSessionStrokesAtPauseStart(strokeSession.strokeCount);
-    setPauseStartedAtMs(now);
-    setNowMs(now);
-    recorderRef.current.pause(now);
-    setPhase("paused");
-  }, [phase, strokeSession.strokeCount]);
+    pauseInternal("user");
+  }, [phase, pauseInternal]);
 
   const handleResume = useCallback(() => {
     if (phase !== "paused" || pauseStartedAtMs == null) {
@@ -347,6 +422,8 @@ export default function FreeRowScreen() {
     setStrokesDuringPauses((prev) => prev + pauseStrokes);
     setPauseStartedAtMs(null);
     setNowMs(now);
+    setPauseReason("user");
+    setShowBackgroundPauseBanner(false);
     recorderRef.current.resume(now);
     setPhase("running");
   }, [
@@ -381,11 +458,30 @@ export default function FreeRowScreen() {
     setStrokesDuringPauses(0);
     setSessionStrokesAtPauseStart(0);
     setLapStartedAtMovingMs(null);
+    setPauseReason("user");
+    setShowBackgroundPauseBanner(false);
     caloriesKcalRef.current = 0;
     caloriesLastTickMsRef.current = null;
     hasSeenHrRef.current = false;
     setCaloriesKcal(null);
     autoStartSuppressedRef.current = false;
+  }, []);
+
+  // Tear-down helper invoked from every code path that finishes the
+  // current recording (manual save, discard, auto-save). Clears the
+  // on-disk draft, stops the Android foreground service, and cancels
+  // any pending inactivity reminder so the user doesn't get a stale
+  // notification after the session ended.
+  const teardownRecordingSideEffects = useCallback((draftId: string | null) => {
+    if (draftId) {
+      try {
+        deleteDraft(draftId);
+      } catch (e) {
+        console.warn("[free-row] deleteDraft failed", e);
+      }
+    }
+    void stopRecordingForegroundService();
+    void cancelInactivityReminder();
   }, []);
 
   const handleAutoStartCancel = useCallback(() => {
@@ -406,23 +502,37 @@ export default function FreeRowScreen() {
   // the no-prompt Stop path and the Keep button on the short-activity
   // prompt can share the same transition into the saving / saved /
   // save-error states.
-  const performStopAndSave = useCallback(async () => {
-    setPhase("saving");
-    try {
-      const activity = recorderRef.current.finish(Date.now());
-      const stored = await saveActivity(activity);
-      setSavedActivity(stored);
-      setPhase("saved");
-    } catch (e) {
-      console.error("[free-row] save failed", e);
-      Alert.alert(
-        t("freeRow.recording.saveErrorTitle"),
-        t("freeRow.recording.saveErrorBody"),
-      );
-      setPhase("armed");
-      resetRecordingDisplay();
-    }
-  }, [resetRecordingDisplay, t]);
+  //
+  // `endedReason` propagates to `summary.endedReason` so consumers
+  // (FIT note, history filtering) can distinguish a manual stop from
+  // an inactivity-driven auto-save or a "Save now" recovery.
+  const performStopAndSave = useCallback(
+    async (endedReason: "user" | "inactivity-timeout" = "user") => {
+      const draftId = recorderRef.current.currentId;
+      setPhase("saving");
+      try {
+        const activity = recorderRef.current.finish(Date.now(), endedReason);
+        const stored = await saveActivity(activity);
+        setSavedActivity(stored);
+        setPhase("saved");
+        teardownRecordingSideEffects(draftId);
+      } catch (e) {
+        console.error("[free-row] save failed", e);
+        Alert.alert(
+          t("freeRow.recording.saveErrorTitle"),
+          t("freeRow.recording.saveErrorBody"),
+        );
+        setPhase("armed");
+        resetRecordingDisplay();
+        // We intentionally do NOT delete the draft on save failure;
+        // the user might retry from a fresh launch and we'd rather
+        // surface the recovery prompt than silently lose the work.
+        void stopRecordingForegroundService();
+        void cancelInactivityReminder();
+      }
+    },
+    [resetRecordingDisplay, t, teardownRecordingSideEffects],
+  );
 
   // Drop the in-flight recording without saving and reset the screen
   // back to `armed`. Skips its own confirmation alert — used both by
@@ -430,12 +540,304 @@ export default function FreeRowScreen() {
   // confirmation) and by the back-button discard flow below (which
   // wraps it in `Alert.alert`).
   const performDiscard = useCallback(() => {
+    const draftId = recorderRef.current.currentId;
     if (recorderRef.current.isRunning) {
-      recorderRef.current.finish(Date.now());
+      recorderRef.current.abandon();
     }
     setPhase("armed");
     resetRecordingDisplay();
-  }, [resetRecordingDisplay]);
+    teardownRecordingSideEffects(draftId);
+  }, [resetRecordingDisplay, teardownRecordingSideEffects]);
+
+  // -- Keep-screen-awake --------------------------------------------------
+  //
+  // Only hold the wake lock while a recording is in flight. The screen
+  // is allowed to dim/sleep again as soon as the user stops, saves, or
+  // discards — at which point we don't need to keep it on.
+  useRecordingKeepAwake(phase === "running" || phase === "paused");
+
+  // -- Draft persistence --------------------------------------------------
+  //
+  // Flush a JSON snapshot of the recorder to disk every 5 s while a
+  // recording is live (running or paused). The recorder owns a `dirty`
+  // flag so we skip the disk write when nothing has changed since the
+  // last flush. We also flush immediately on AppState transitions to
+  // background (see the AppState effect below) so a quick swipe-to-
+  // close doesn't lose the last few seconds of strokes.
+  useEffect(() => {
+    if (phase !== "running" && phase !== "paused") {
+      return;
+    }
+    const flush = () => {
+      const recorder = recorderRef.current;
+      if (!recorder.isRunning) {
+        return;
+      }
+      if (!recorder.isDirty) {
+        return;
+      }
+      const draft = recorder.serialize({
+        motionSource: source === "ble" ? "ble" : "phone",
+        uiPhase: recorder.isPaused ? "paused" : "running",
+        nowMs: Date.now(),
+      });
+      if (!draft) {
+        return;
+      }
+      try {
+        writeDraft(draft);
+        recorder.clearDirty();
+      } catch (e) {
+        console.warn("[free-row] draft flush failed", e);
+      }
+    };
+    const id = setInterval(flush, DRAFT_FLUSH_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, [phase, source]);
+
+  // -- AppState lifecycle -------------------------------------------------
+  //
+  // Two responsibilities:
+  //   1. Flush the draft on every active → background transition so a
+  //      kill / OS swipe doesn't lose the last 5 s of strokes.
+  //   2. When the only motion source is the phone accelerometer (no BLE
+  //      sensor connected), iOS suspends `expo-sensors` within seconds
+  //      of backgrounding. Honest UX is to auto-pause the recording
+  //      with a `pausedReason: "ios-background-no-sensor"` instead of
+  //      silently dropping samples. When BLE is the source we leave
+  //      the recording running — BLE notifications keep JS alive.
+  //   3. Schedule the optional inactivity reminder (when opted-in)
+  //      while we're backgrounded; cancel it on foreground.
+  //
+  // Refs mirror state so we don't churn the listener on every change.
+  const sourceRef = useRef(source);
+  sourceRef.current = source;
+  const bleMotionConnectedRef = useRef(!!ble.motion.activeDevice);
+  bleMotionConnectedRef.current = !!ble.motion.activeDevice;
+  const phaseRef = useRef(phase);
+  phaseRef.current = phase;
+
+  useEffect(() => {
+    const onChange = (next: AppStateStatus) => {
+      const recorder = recorderRef.current;
+      if (next === "active") {
+        // Returning to the foreground: cancel any inactivity
+        // reminder that was scheduled to fire while we were away.
+        // The 250 ms tick + stroke detection takes over from here.
+        void cancelInactivityReminder();
+        return;
+      }
+      if (next !== "background" && next !== "inactive") {
+        return;
+      }
+      // Heading into the background: flush the draft right now so
+      // we don't lose any work if iOS / Android kill us.
+      if (recorder.isRunning && recorder.isDirty) {
+        const draft = recorder.serialize({
+          motionSource: sourceRef.current === "ble" ? "ble" : "phone",
+          uiPhase: recorder.isPaused ? "paused" : "running",
+          nowMs: Date.now(),
+        });
+        if (draft) {
+          try {
+            writeDraft(draft);
+            recorder.clearDirty();
+          } catch (e) {
+            console.warn("[free-row] background flush failed", e);
+          }
+        }
+      }
+      // Phone-only motion can't keep producing samples in the
+      // background on iOS. Auto-pause so the saved activity reflects
+      // what actually happened.
+      if (
+        phaseRef.current === "running" &&
+        sourceRef.current === "phone" &&
+        !bleMotionConnectedRef.current
+      ) {
+        pauseInternal("ios-background-no-sensor");
+        setShowBackgroundPauseBanner(true);
+      }
+      // Optional opt-in reminder: wake the user up at the auto-pause
+      // threshold so they can come back and save / discard. We
+      // schedule from the last detected event rather than now so a
+      // long-paused session doesn't double-reminder.
+      if (reminderEnabledRef.current && recorder.isRunning) {
+        const lastEvent = recorder.lastEventAtMs ?? Date.now();
+        const elapsedSinceEvent = Math.max(0, Date.now() - lastEvent);
+        const delayMs = Math.max(
+          30_000,
+          INACTIVITY_AUTO_PAUSE_MS - elapsedSinceEvent,
+        );
+        void scheduleInactivityReminder({
+          delayMs,
+          title: t("freeRow.recording.inactivityReminder.title"),
+          body: t("freeRow.recording.inactivityReminder.body"),
+        });
+      }
+    };
+    const sub = AppState.addEventListener("change", onChange);
+    return () => sub.remove();
+  }, [pauseInternal, t]);
+
+  // -- Inactivity policy --------------------------------------------------
+  //
+  // Watches the recorder for stroke-inactivity:
+  //   - phase=running and no stroke for INACTIVITY_AUTO_PAUSE_MS
+  //     → auto-pause with `pauseReason: "inactivity"`.
+  //   - phase=paused longer than INACTIVITY_AUTO_SAVE_MS → finalize
+  //     and save (truncated to the last detected stroke), tagged
+  //     with `endedReason: "inactivity-timeout"`.
+  //
+  // Runs on its own 5 s timer rather than piggy-backing on the 250 ms
+  // tick so we don't add a state-read on every render of the metrics
+  // card.
+  useEffect(() => {
+    if (phase !== "running" && phase !== "paused") {
+      return;
+    }
+    const id = setInterval(() => {
+      const now = Date.now();
+      const recorder = recorderRef.current;
+      if (!recorder.isRunning) {
+        return;
+      }
+      if (phaseRef.current === "running") {
+        const lastEvent =
+          recorder.lastStrokeAtMs ?? recorder.lastEventAtMs ?? now;
+        if (now - lastEvent >= INACTIVITY_AUTO_PAUSE_MS) {
+          pauseInternal("inactivity");
+        }
+        return;
+      }
+      // Paused: check whether we've crossed the auto-save threshold.
+      // We only auto-save when the pause was opened by us (not by the
+      // user) — a manual Pause should never auto-finalize the session
+      // out from under the user.
+      if (pauseStartedAtMs == null) {
+        return;
+      }
+      if (pauseReason === "user") {
+        return;
+      }
+      if (now - pauseStartedAtMs < INACTIVITY_AUTO_SAVE_MS) {
+        return;
+      }
+      // Truncate to the last stroke (or last event) before saving so
+      // the activity reflects when rowing actually stopped, not when
+      // the timeout fired.
+      const cutoff = recorder.lastStrokeAtMs ?? recorder.lastEventAtMs;
+      if (cutoff != null) {
+        recorder.truncateTo(cutoff);
+      }
+      void performStopAndSave("inactivity-timeout");
+    }, 5_000);
+    return () => clearInterval(id);
+  }, [phase, pauseStartedAtMs, pauseReason, pauseInternal, performStopAndSave]);
+
+  // -- Cold-start recovery ------------------------------------------------
+  //
+  // The root layout cold-start logic navigates to /free-row?recover=<id>
+  // when a fresh draft was found. We mirror the param into local state
+  // (since `useLocalSearchParams` returns fresh values on every render)
+  // and surface the recovery modal. Tapping Resume / Save now /
+  // Discard transitions us back into a normal recorder state.
+  useEffect(() => {
+    if (typeof params.recover !== "string" || params.recover.length === 0) {
+      return;
+    }
+    if (recorderRef.current.isRunning) {
+      // We already restored once this mount; ignore stale param.
+      return;
+    }
+    setRecoveryDraftId(params.recover);
+  }, [params.recover]);
+
+  const handleRecoveryResume = useCallback(() => {
+    if (!recoveryDraftId) {
+      return;
+    }
+    const draft = loadDraft(recoveryDraftId);
+    setRecoveryDraftId(null);
+    if (!draft) {
+      return;
+    }
+    recorderRef.current.restoreFrom(draft);
+    setRecordingStartedAtMs(draft.startedAtMs);
+    // Anchor the display so the existing draft strokes are visible
+    // immediately. New strokes detected post-resume add on top.
+    setRecordingStartStrokeCount(
+      strokeSession.strokeCount - draft.strokes.length,
+    );
+    setPausedTotalMs(draft.pausedMs);
+    setStrokesDuringPauses(0);
+    setSessionStrokesAtPauseStart(strokeSession.strokeCount);
+    setLapStartedAtMovingMs(null);
+    setPauseStartedAtMs(draft.pauseStartedAtMs);
+    setPauseReason("user");
+    setShowBackgroundPauseBanner(false);
+    caloriesKcalRef.current =
+      draft.records.length > 0
+        ? (draft.records[draft.records.length - 1].caloriesKcal ?? 0)
+        : 0;
+    caloriesLastTickMsRef.current = null;
+    hasSeenHrRef.current = caloriesKcalRef.current > 0;
+    setCaloriesKcal(hasSeenHrRef.current ? caloriesKcalRef.current : null);
+    setNowMs(Date.now());
+    // Resume into `paused` so the user explicitly taps Resume to
+    // start counting again. This is more honest than springing
+    // straight into running — they may have force-closed because
+    // they were done rowing.
+    if (!recorderRef.current.isPaused) {
+      recorderRef.current.pause(Date.now());
+    }
+    setPhase("paused");
+    void startRecordingForegroundService({
+      title: t("freeRow.recording.foregroundService.title"),
+      body: t("freeRow.recording.foregroundService.body"),
+    });
+  }, [recoveryDraftId, strokeSession.strokeCount, t]);
+
+  const handleRecoverySaveNow = useCallback(async () => {
+    if (!recoveryDraftId) {
+      return;
+    }
+    const draft = loadDraft(recoveryDraftId);
+    setRecoveryDraftId(null);
+    if (!draft) {
+      return;
+    }
+    setPhase("saving");
+    try {
+      recorderRef.current.restoreFrom(draft);
+      const cutoff =
+        recorderRef.current.lastStrokeAtMs ?? recorderRef.current.lastEventAtMs;
+      if (cutoff != null) {
+        recorderRef.current.truncateTo(cutoff);
+      }
+      const finishAt = recorderRef.current.lastEventAtMs ?? draft.lastEventAtMs;
+      const activity = recorderRef.current.finish(finishAt, "recovery-save");
+      const stored = await saveActivity(activity);
+      setSavedActivity(stored);
+      setPhase("saved");
+      deleteDraft(draft.id);
+    } catch (e) {
+      console.error("[free-row] recovery save failed", e);
+      Alert.alert(
+        t("freeRow.recording.saveErrorTitle"),
+        t("freeRow.recording.saveErrorBody"),
+      );
+      setPhase("armed");
+      resetRecordingDisplay();
+    }
+  }, [recoveryDraftId, resetRecordingDisplay, t]);
+
+  const handleRecoveryDiscard = useCallback(() => {
+    if (recoveryDraftId) {
+      deleteDraft(recoveryDraftId);
+    }
+    setRecoveryDraftId(null);
+  }, [recoveryDraftId]);
 
   const handleStop = useCallback(() => {
     if (!recorderRef.current.isRunning) {
@@ -612,6 +1014,22 @@ export default function FreeRowScreen() {
 
   const renderMetrics = () => (
     <Stack gap="sm">
+      {phase === "paused" && pauseReason === "inactivity" ? (
+        <Banner
+          tone="warning"
+          title={t("freeRow.recording.pause.inactivityTitle")}
+        >
+          {t("freeRow.recording.pause.inactivityBody")}
+        </Banner>
+      ) : null}
+      {showBackgroundPauseBanner ? (
+        <Banner
+          tone="warning"
+          title={t("freeRow.recording.pause.backgroundPhoneTitle")}
+        >
+          {t("freeRow.recording.pause.backgroundPhoneBody")}
+        </Banner>
+      ) : null}
       {heartRate.bpm != null ? (
         zoneResolver.kind === "cogganFriel7" ? (
           // The resolver's `current` zone is one of the Coggan keys
@@ -798,6 +1216,14 @@ export default function FreeRowScreen() {
         visible={autoStartModalVisible}
         onCancel={handleAutoStartCancel}
         onComplete={handleAutoStartComplete}
+      />
+      <RecoveryPrompt
+        draftId={recoveryDraftId}
+        onResume={handleRecoveryResume}
+        onSaveNow={() => {
+          void handleRecoverySaveNow();
+        }}
+        onDiscard={handleRecoveryDiscard}
       />
     </ThemedView>
   );

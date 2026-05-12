@@ -41,3 +41,14 @@ export const AUTH_SESSION_KEY = "rowerm8.auth.session.v1";
  * `PLACEMENT_DONT_SHOW_KEY`.
  */
 export const AUTO_START_DISABLED_KEY = "rowerm8.freeRow.autoStartDisabled.v1";
+
+/**
+ * When set to `"true"`, the Free-row screen schedules a local
+ * notification at the inactivity-auto-pause threshold so the user gets
+ * a "Are you still rowing?" reminder when the app isn't in foreground.
+ * Stored in "enabled" form (missing/`"false"` = off, `"true"` = on)
+ * because the feature is opt-in: most users haven't granted the
+ * notification permission.
+ */
+export const INACTIVITY_REMINDER_ENABLED_KEY =
+  "rowerm8.freeRow.inactivityReminder.v1";

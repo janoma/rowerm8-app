@@ -13,7 +13,8 @@
       "supportsTablet": true,
       "infoPlist": {
         "NSMotionUsageDescription": "RowerM8 reads motion data to track your rowing strokes.",
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIBackgroundModes": ["bluetooth-central"]
       },
       "bundleIdentifier": "com.janoma.rowerm8"
     },
@@ -31,7 +32,11 @@
         "android.permission.BLUETOOTH_ADMIN",
         "android.permission.BLUETOOTH_CONNECT",
         "android.permission.BLUETOOTH_SCAN",
-        "android.permission.ACCESS_FINE_LOCATION"
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_HEALTH",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.WAKE_LOCK"
       ]
     },
     "web": {
@@ -44,11 +49,13 @@
       [
         "react-native-ble-plx",
         {
-          "isBackgroundEnabled": false,
-          "modes": [],
+          "isBackgroundEnabled": true,
+          "modes": ["central"],
           "bluetoothAlwaysPermission": "RowerM8 connects to Bluetooth motion sensors to track your rowing strokes."
         }
       ],
+      "expo-notifications",
+      "./plugins/with-notifee-foreground-service-android.js",
       [
         "expo-splash-screen",
         {

@@ -178,6 +178,10 @@
     "autoStart": {
       "label": "Auto-start activity",
       "subtitle": "Start recording automatically when we detect you've started rowing."
+    },
+    "inactivityReminder": {
+      "label": "Remind me if I forget to stop",
+      "subtitle": "Sends a notification if no strokes are detected for a few minutes while RowerM8 is in the background. Requires notification permission."
     }
   },
   "help": {

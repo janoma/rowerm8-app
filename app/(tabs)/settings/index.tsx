@@ -16,6 +16,8 @@ import {
 import { useLocale } from "@/contexts/locale-context";
 import { useProfile } from "@/contexts/profile-context";
 import { useAutoStartPref } from "@/hooks/use-auto-start-pref";
+import { useInactivityReminderPref } from "@/hooks/use-inactivity-reminder-pref";
+import { ensureNotificationPermission } from "@/lib/lifecycle/inactivity-notification";
 import { Switch, useTheme } from "@/lib/design-system";
 import { findLanguage } from "@/lib/i18n";
 import { kilogramsToPounds } from "@/lib/units";
@@ -27,6 +29,32 @@ export default function SettingsScreen() {
   const { prefScheme, scheme } = useTheme();
   const { enabled: autoStartEnabled, setEnabled: setAutoStartEnabled } =
     useAutoStartPref();
+  const {
+    enabled: inactivityReminderEnabled,
+    setEnabled: setInactivityReminderEnabled,
+  } = useInactivityReminderPref();
+
+  const handleToggleInactivityReminder = useCallback(
+    (next: boolean) => {
+      // Optimistic UI: set the toggle first, then ask the OS for
+      // permission. If permission is denied we revert so the toggle
+      // accurately reflects whether reminders will actually fire.
+      setInactivityReminderEnabled(next);
+      if (!next) {
+        return;
+      }
+      ensureNotificationPermission()
+        .then((granted) => {
+          if (!granted) {
+            setInactivityReminderEnabled(false);
+          }
+        })
+        .catch(() => {
+          setInactivityReminderEnabled(false);
+        });
+    },
+    [setInactivityReminderEnabled],
+  );
 
   // Both toggles map to "key absent => screen will show on next trigger".
   // We start with `null` while hydrating from AsyncStorage so the Switch
@@ -166,6 +194,18 @@ export default function SettingsScreen() {
                     onValueChange={setAutoStartEnabled}
                     disabled={autoStartEnabled === null}
                     accessibilityLabel={t("recording.autoStart.label")}
+                  />
+                }
+              />
+              <SettingsRow
+                label={t("recording.inactivityReminder.label")}
+                subtitle={t("recording.inactivityReminder.subtitle")}
+                accessory={
+                  <Switch
+                    value={inactivityReminderEnabled ?? false}
+                    onValueChange={handleToggleInactivityReminder}
+                    disabled={inactivityReminderEnabled === null}
+                    accessibilityLabel={t("recording.inactivityReminder.label")}
                   />
                 }
               />

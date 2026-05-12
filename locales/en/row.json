@@ -78,12 +78,34 @@
       "shortActivityKeep": "Keep",
       "shortActivityDiscard": "Discard",
       "shareUnavailable": "Sharing isn't available on this device.",
-      "shareDialogTitle": "Share activity"
+      "shareDialogTitle": "Share activity",
+      "pause": {
+        "inactivityTitle": "Paused — no strokes detected",
+        "inactivityBody": "We paused the recording because we didn't see any strokes for a few minutes. Tap Resume to keep going, or Stop to save what you have.",
+        "backgroundPhoneTitle": "Paused while in background",
+        "backgroundPhoneBody": "Phone-only motion can't record in the background. Tap Resume to keep recording, or pair a Bluetooth motion sensor next time so the activity continues when the screen is off."
+      },
+      "foregroundService": {
+        "title": "RowerM8 — recording",
+        "body": "Recording your activity. Tap to return to RowerM8."
+      },
+      "inactivityReminder": {
+        "title": "Are you still rowing?",
+        "body": "We haven't seen any strokes for a few minutes. Open RowerM8 to save or discard your activity."
+      }
     },
     "autoStart": {
       "title": "Auto-starting activity…",
       "cancel": "Cancel",
       "a11yProgress": "Auto-start countdown"
+    },
+    "recovery": {
+      "title": "Resume your activity?",
+      "bodyResumable": "We saved {duration} of rowing with {strokes, plural, one {# stroke} other {# strokes}} from {ageMinutes, plural, one {# minute ago} other {# minutes ago}}. Resume to keep recording, or save what you have.",
+      "bodyExpired": "We saved {duration} of rowing with {strokes, plural, one {# stroke} other {# strokes}} from {ageMinutes, plural, one {# minute ago} other {# minutes ago}}. It's older than the {resumeWindowMinutes}-minute resume window, so you can save or discard it.",
+      "resume": "Resume",
+      "saveNow": "Save now",
+      "discard": "Discard"
     }
   }
 }
