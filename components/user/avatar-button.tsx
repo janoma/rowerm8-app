@@ -25,7 +25,7 @@ const SIZE_TOKENS: Record<Size, { container: number; font: number }> = {
  * Compact circular avatar shown in screen chrome (currently the Home header).
  *
  * Renders the user's initials over a soft accent-tinted background. Guests
- * see the localized "GR" placeholder; real signed-in users see whichever
+ * see the localized guest initials (shown uppercase via style); real signed-in users see whichever
  * `initials` their `AuthUser` carries.
  *
  * Tapping opens the login prompt overlay so guests can sign in at any time.
@@ -104,5 +104,6 @@ const styles = StyleSheet.create({
   initials: {
     fontWeight: "700",
     letterSpacing: 0.5,
+    textTransform: "uppercase",
   },
 });

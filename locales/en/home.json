@@ -2,10 +2,10 @@
   "title": "Home",
   "subtitle": "Pair your sensors to get ready for a row.",
   "devices": {
-    "header": "DEVICES"
+    "header": "Devices"
   },
   "recent": {
-    "header": "RECENT",
+    "header": "Recent",
     "seeAll": "See all",
     "a11ySeeAll": "Open the History tab"
   }

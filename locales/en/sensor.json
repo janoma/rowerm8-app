@@ -1,13 +1,13 @@
 {
   "placement": {
     "handlebar": "Attach the sensor to the side of the handlebar using double-sided tape or velcro.",
-    "phone": "If you’re using your phone instead, attach it to the side or the bottom of the seat."
+    "phone": "If youʼre using your phone instead, attach it to the side or the bottom of the seat."
   },
   "picker": {
     "title": "Choose motion sensor",
     "phone": {
       "title": "Use phone",
-      "subtitle": "Use this device’s built-in accelerometer",
+      "subtitle": "Use this deviceʼs built-in accelerometer",
       "a11y": "Use phone accelerometer"
     },
     "ble": {
@@ -32,19 +32,19 @@
       "optional": "Optional"
     },
     "motion": {
-      "label": "MOTION SENSOR",
+      "label": "Motion sensor",
       "a11yConnect": "Connect motion sensor",
       "a11yChange": "Change motion sensor"
     },
     "hr": {
-      "label": "HEART-RATE MONITOR",
+      "label": "Heart-rate monitor",
       "a11yConnect": "Connect heart-rate monitor",
       "a11yChange": "Change heart-rate monitor",
       "live": "{bpm, number} bpm"
     }
   },
   "live": {
-    "header": "LIVE ACCELERATION (m/s²)",
+    "header": "Live acceleration (m/s²)",
     "footer": "Sampling at {rate, number} Hz"
   }
 }

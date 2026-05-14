@@ -13,7 +13,6 @@
 import arBle from "@/locales/ar/ble.json";
 import arCommon from "@/locales/ar/common.json";
 import arHome from "@/locales/ar/home.json";
-import arModal from "@/locales/ar/modal.json";
 import arOnboarding from "@/locales/ar/onboarding.json";
 import arRow from "@/locales/ar/row.json";
 import arSensor from "@/locales/ar/sensor.json";
@@ -22,7 +21,6 @@ import arTabs from "@/locales/ar/tabs.json";
 import deBle from "@/locales/de/ble.json";
 import deCommon from "@/locales/de/common.json";
 import deHome from "@/locales/de/home.json";
-import deModal from "@/locales/de/modal.json";
 import deOnboarding from "@/locales/de/onboarding.json";
 import deRow from "@/locales/de/row.json";
 import deSensor from "@/locales/de/sensor.json";
@@ -33,7 +31,6 @@ import enBle from "@/locales/en/ble.json";
 import enCommon from "@/locales/en/common.json";
 import enHistory from "@/locales/en/history.json";
 import enHome from "@/locales/en/home.json";
-import enModal from "@/locales/en/modal.json";
 import enOnboarding from "@/locales/en/onboarding.json";
 import enRow from "@/locales/en/row.json";
 import enSensor from "@/locales/en/sensor.json";
@@ -43,7 +40,6 @@ import enGBSettings from "@/locales/en-GB/settings.json";
 import esBle from "@/locales/es/ble.json";
 import esCommon from "@/locales/es/common.json";
 import esHome from "@/locales/es/home.json";
-import esModal from "@/locales/es/modal.json";
 import esOnboarding from "@/locales/es/onboarding.json";
 import esRow from "@/locales/es/row.json";
 import esSensor from "@/locales/es/sensor.json";
@@ -52,7 +48,6 @@ import esTabs from "@/locales/es/tabs.json";
 import frBle from "@/locales/fr/ble.json";
 import frCommon from "@/locales/fr/common.json";
 import frHome from "@/locales/fr/home.json";
-import frModal from "@/locales/fr/modal.json";
 import frOnboarding from "@/locales/fr/onboarding.json";
 import frRow from "@/locales/fr/row.json";
 import frSensor from "@/locales/fr/sensor.json";
@@ -61,7 +56,6 @@ import frTabs from "@/locales/fr/tabs.json";
 import itBle from "@/locales/it/ble.json";
 import itCommon from "@/locales/it/common.json";
 import itHome from "@/locales/it/home.json";
-import itModal from "@/locales/it/modal.json";
 import itOnboarding from "@/locales/it/onboarding.json";
 import itRow from "@/locales/it/row.json";
 import itSensor from "@/locales/it/sensor.json";
@@ -70,7 +64,6 @@ import itTabs from "@/locales/it/tabs.json";
 import jaBle from "@/locales/ja/ble.json";
 import jaCommon from "@/locales/ja/common.json";
 import jaHome from "@/locales/ja/home.json";
-import jaModal from "@/locales/ja/modal.json";
 import jaOnboarding from "@/locales/ja/onboarding.json";
 import jaRow from "@/locales/ja/row.json";
 import jaSensor from "@/locales/ja/sensor.json";
@@ -79,7 +72,6 @@ import jaTabs from "@/locales/ja/tabs.json";
 import zhHansBle from "@/locales/zh-Hans/ble.json";
 import zhHansCommon from "@/locales/zh-Hans/common.json";
 import zhHansHome from "@/locales/zh-Hans/home.json";
-import zhHansModal from "@/locales/zh-Hans/modal.json";
 import zhHansOnboarding from "@/locales/zh-Hans/onboarding.json";
 import zhHansRow from "@/locales/zh-Hans/row.json";
 import zhHansSensor from "@/locales/zh-Hans/sensor.json";
@@ -94,7 +86,6 @@ export const NAMESPACES = [
   "sensor",
   "ble",
   "settings",
-  "modal",
   "history",
   "onboarding",
   "auth",
@@ -113,7 +104,6 @@ export const RESOURCES = {
     sensor: enSensor,
     ble: enBle,
     settings: enSettings,
-    modal: enModal,
     history: enHistory,
     onboarding: enOnboarding,
     auth: enAuth,
@@ -134,7 +124,6 @@ export const RESOURCES = {
     sensor: esSensor,
     ble: esBle,
     settings: esSettings,
-    modal: esModal,
     onboarding: esOnboarding,
   },
   fr: {
@@ -145,7 +134,6 @@ export const RESOURCES = {
     sensor: frSensor,
     ble: frBle,
     settings: frSettings,
-    modal: frModal,
     onboarding: frOnboarding,
   },
   it: {
@@ -156,7 +144,6 @@ export const RESOURCES = {
     sensor: itSensor,
     ble: itBle,
     settings: itSettings,
-    modal: itModal,
     onboarding: itOnboarding,
   },
   ja: {
@@ -167,7 +154,6 @@ export const RESOURCES = {
     sensor: jaSensor,
     ble: jaBle,
     settings: jaSettings,
-    modal: jaModal,
     onboarding: jaOnboarding,
   },
   ar: {
@@ -178,7 +164,6 @@ export const RESOURCES = {
     sensor: arSensor,
     ble: arBle,
     settings: arSettings,
-    modal: arModal,
     onboarding: arOnboarding,
   },
   de: {
@@ -189,7 +174,6 @@ export const RESOURCES = {
     sensor: deSensor,
     ble: deBle,
     settings: deSettings,
-    modal: deModal,
     onboarding: deOnboarding,
   },
   // BCP-47 tag with script subtag — must be quoted because it's not a
@@ -203,7 +187,6 @@ export const RESOURCES = {
     sensor: zhHansSensor,
     ble: zhHansBle,
     settings: zhHansSettings,
-    modal: zhHansModal,
     onboarding: zhHansOnboarding,
   },
 } as const;

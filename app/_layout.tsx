@@ -143,10 +143,6 @@ function ThemedRootLayout() {
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen
-          name="modal"
-          options={{ presentation: "modal", title: "Modal" }}
-        />
-        <Stack.Screen
           name="ble-scan"
           options={{
             presentation: "fullScreenModal",

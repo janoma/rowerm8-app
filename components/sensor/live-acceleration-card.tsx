@@ -217,6 +217,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     letterSpacing: 0.8,
     flex: 1,
+    textTransform: "uppercase",
   },
   pulseDot: {
     width: 8,

@@ -11,9 +11,10 @@ When working on UI changes (adding screens, copy edits, new buttons, error messa
 
 - Add new keys under the appropriate namespace in `locales/en/`:
   - `common.json` — shared actions ("Cancel", "OK", "Done")
-  - `tabs.json`, `home.json`, `row.json`, `settings.json`, `sensor.json`, `ble.json`, `modal.json` — screen-specific
+  - `tabs.json`, `home.json`, `row.json`, `settings.json`, `sensor.json`, `ble.json` — screen-specific
 - Reference keys in components via `useTranslation("<namespace>")` and `t("path.to.key")`.
 - Use ICU MessageFormat for plurals/selects/numbers, e.g. `"{count, number}"`, `"{direction, select, rtl {…} other {…}}"`.
+- Use U+02BC (Modifier Letter Apostrophe) for English apostrophes, like in the contraction itʼs or in the possessive Johnʼs.
 
 ## What NOT to do
 

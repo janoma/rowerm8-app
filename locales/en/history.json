@@ -39,15 +39,15 @@
     },
     "share": "Share",
     "shareDialogTitle": "Share activity",
-    "shareUnavailable": "Sharing isn’t available on this device.",
+    "shareUnavailable": "Sharing isnʼt available on this device.",
     "delete": "Delete",
     "deleteTitle": "Delete activity?",
-    "deleteBody": "This will remove the FIT file and the entry from your history. This can’t be undone.",
+    "deleteBody": "This will remove the FIT file and the entry from your history. This canʼt be undone.",
     "deleteConfirm": "Delete",
     "deleteCancel": "Cancel",
     "notFoundTitle": "Activity not found",
     "notFoundBody": "This activity may have been deleted.",
-    "loadFailedTitle": "Couldn’t open this activity",
-    "loadFailedBody": "The FIT file couldn’t be read. It may be corrupted."
+    "loadFailedTitle": "Couldnʼt open this activity",
+    "loadFailedBody": "The FIT file couldnʼt be read. It may be corrupted."
   }
 }

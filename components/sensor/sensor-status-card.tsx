@@ -182,6 +182,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     letterSpacing: 0.8,
     lineHeight: 14,
+    textTransform: "uppercase",
   },
   // Compact pill rendered as a footer row inside the text column. The
   // small extra `marginTop` separates it visually from the value /

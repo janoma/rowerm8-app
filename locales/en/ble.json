@@ -5,15 +5,15 @@
       "hr": "Heart-rate monitor"
     },
     "section": {
-      "motion": "COMPATIBLE MOTION SENSORS ({count, number})",
-      "hr": "COMPATIBLE HEART-RATE MONITORS ({count, number})"
+      "motion": "Motion sensors ({count, number})",
+      "hr": "Heart-rate monitors ({count, number})"
     },
     "empty": {
       "motion": "No compatible motion sensors found yet. Make sure your sensor is on and try again.",
       "hr": "No compatible heart-rate monitors found yet. Make sure your monitor is on, worn, and within range."
     },
     "connecting": "Connecting…",
-    "connectError": "Couldn’t connect: {error}",
+    "connectError": "Couldnʼt connect: {error}",
     "permissions": {
       "denied": "Bluetooth permission is required to find nearby sensors. Tap to try again.",
       "blocked": "Bluetooth permission is blocked. Open Settings to grant it.",

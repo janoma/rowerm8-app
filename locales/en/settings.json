@@ -102,7 +102,7 @@
         "subtitleDefault": "Using default ({value} bpm)",
         "subtitleValue": "{value} bpm",
         "pickerTitle": "Max heart rate",
-        "pickerFooter": "Your highest sustainable heart rate. Defaults to {default} bpm (≈ 220 − 30) when unset.",
+        "pickerFooter": "Your highest sustainable heart rate. Defaults to {default} bpm (≈ 220 - 30) when unset.",
         "unit": "bpm"
       },
       "thresholdHrBpm": {
@@ -177,7 +177,7 @@
   "recording": {
     "autoStart": {
       "label": "Auto-start activity",
-      "subtitle": "Start recording automatically when we detect you've started rowing."
+      "subtitle": "Start recording automatically when we detect youʼve started rowing."
     },
     "inactivityReminder": {
       "label": "Remind me if I forget to stop",

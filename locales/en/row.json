@@ -4,7 +4,7 @@
     "subtitle": "Choose how you want to row.",
     "freeRow": {
       "title": "Free row",
-      "subtitle": "Row without a target. Save the activity when you're done.",
+      "subtitle": "Row without a target. Save the activity when youʼre done.",
       "a11y": "Start a free-row session"
     },
     "workout": {
@@ -20,7 +20,7 @@
   },
   "workout": {
     "comingSoonTitle": "Workouts coming soon",
-    "comingSoonBody": "Structured workouts aren't available yet. Stay tuned!"
+    "comingSoonBody": "Structured workouts arenʼt available yet. Stay tuned!"
   },
   "phone": {
     "noPermission": "Motion permission was denied. Enable Motion & Fitness for {appName} in Settings to see live data.",
@@ -30,8 +30,8 @@
   "ble": {
     "reconnect": "Tap Connect to reconnect to {label}.",
     "reconnectFallback": "Tap Connect to reconnect to your Bluetooth sensor.",
-    "noDecoder": "Connected to {label}, but {appName} doesn't have a decoder for it yet. Live data is unavailable.",
-    "noDecoderFallback": "Connected to this device, but {appName} doesn't have a decoder for it yet. Live data is unavailable.",
+    "noDecoder": "Connected to {label}, but {appName} doesnʼt have a decoder for it yet. Live data is unavailable.",
+    "noDecoderFallback": "Connected to this device, but {appName} doesnʼt have a decoder for it yet. Live data is unavailable.",
     "connecting": "Connecting to {label}…",
     "connectingFallback": "Connecting to sensor…"
   },
@@ -67,23 +67,23 @@
       "savedTitle": "Activity saved",
       "savedBody": "Saved {duration} of rowing with {strokes, plural, one {# stroke} other {# strokes}}. Share it to upload to Strava or Training Peaks.",
       "savedDisclosure": "Speed and pace are estimated by RowerM8.",
-      "saveErrorTitle": "Couldn't save activity",
+      "saveErrorTitle": "Couldnʼt save activity",
       "saveErrorBody": "Something went wrong while saving the FIT file. Try again.",
       "discardTitle": "Discard activity?",
-      "discardBody": "This will delete the recording without saving. This can't be undone.",
+      "discardBody": "This will delete the recording without saving. This canʼt be undone.",
       "shortActivityTitle": "Save this activity?",
       "shortActivityBodyFewStrokes": "Only {count, plural, one {# stroke} other {# strokes}} were detected. Do you want to keep it or discard it?",
       "shortActivityBodyShortDuration": "The activity is only {durationSeconds, plural, one {# second} other {# seconds}} long. Do you want to keep it or discard it?",
       "shortActivityBodyBoth": "Only {count, plural, one {# stroke} other {# strokes}} in {durationSeconds, plural, one {# second} other {# seconds}}. Do you want to keep it or discard it?",
       "shortActivityKeep": "Keep",
       "shortActivityDiscard": "Discard",
-      "shareUnavailable": "Sharing isn't available on this device.",
+      "shareUnavailable": "Sharing isnʼt available on this device.",
       "shareDialogTitle": "Share activity",
       "pauseBanners": {
         "inactivityTitle": "Paused — no strokes detected",
-        "inactivityBody": "We paused the recording because we didn't see any strokes for a few minutes. Tap Resume to keep going, or Stop to save what you have.",
+        "inactivityBody": "We paused the recording because we didnʼt see any strokes for a few minutes. Tap Resume to keep going, or Stop to save what you have.",
         "backgroundPhoneTitle": "Paused while in background",
-        "backgroundPhoneBody": "Phone-only motion can't record in the background. Tap Resume to keep recording, or pair a Bluetooth motion sensor next time so the activity continues when the screen is off."
+        "backgroundPhoneBody": "Phone-only motion canʼt record in the background. Tap Resume to keep recording, or pair a Bluetooth motion sensor next time so the activity continues when the screen is off."
       },
       "foregroundService": {
         "title": "RowerM8 — recording",
@@ -91,7 +91,7 @@
       },
       "inactivityReminder": {
         "title": "Are you still rowing?",
-        "body": "We haven't seen any strokes for a few minutes. Open RowerM8 to save or discard your activity."
+        "body": "We havenʼt seen any strokes for a few minutes. Open RowerM8 to save or discard your activity."
       }
     },
     "autoStart": {
@@ -102,7 +102,7 @@
     "recovery": {
       "title": "Resume your activity?",
       "bodyResumable": "We saved {duration} of rowing with {strokes, plural, one {# stroke} other {# strokes}} from {ageMinutes, plural, one {# minute ago} other {# minutes ago}}. Resume to keep recording, or save what you have.",
-      "bodyExpired": "We saved {duration} of rowing with {strokes, plural, one {# stroke} other {# strokes}} from {ageMinutes, plural, one {# minute ago} other {# minutes ago}}. It's older than the {resumeWindowMinutes}-minute resume window, so you can save or discard it.",
+      "bodyExpired": "We saved {duration} of rowing with {strokes, plural, one {# stroke} other {# strokes}} from {ageMinutes, plural, one {# minute ago} other {# minutes ago}}. Itʼs older than the {resumeWindowMinutes}-minute resume window, so you can save or discard it.",
       "resume": "Resume",
       "saveNow": "Save now",
       "discard": "Discard"

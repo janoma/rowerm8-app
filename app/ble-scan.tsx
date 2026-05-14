@@ -344,6 +344,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
     letterSpacing: 0.8,
+    textTransform: "uppercase",
   },
   scanAgain: {
     fontSize: 14,
