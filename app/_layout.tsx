@@ -1,5 +1,5 @@
 import { ThemeProvider as NavThemeProvider } from "@react-navigation/native";
-import { router, Stack } from "expo-router";
+import { router, Stack, useNavigationContainerRef } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef } from "react";
 import {
@@ -43,14 +43,23 @@ export const unstable_settings = {
  * The draft is kept on disk across the prompt — discarding here only
  * affects state inside the screen. The screen owns deletion via its
  * `handleRecoveryDiscard` flow.
+ *
+ * Navigation is deferred until `navigationRef.isReady()` is true.
+ * Calling `router.push` from a synchronous first-pass `useEffect`
+ * races the root `<NavigationContainer />` mount and throws:
+ * "Attempted to navigate before mounting the Root Layout component."
  */
 function useDraftRecoveryBoot(): void {
-  const ranRef = useRef(false);
+  const navigationRef = useNavigationContainerRef();
+  const scanDoneRef = useRef(false);
+
   useEffect(() => {
-    if (ranRef.current) {
+    if (scanDoneRef.current) {
       return;
     }
-    ranRef.current = true;
+    scanDoneRef.current = true;
+
+    let recoverId: string | null = null;
     try {
       const now = Date.now();
       pruneStaleDrafts(now);
@@ -65,14 +74,50 @@ function useDraftRecoveryBoot(): void {
       if (now - draft.lastEventAtMs > RESUME_WINDOW_MS * 24 * 7) {
         return;
       }
-      router.push({
-        pathname: "/free-row",
-        params: { recover: draft.id },
-      });
+      recoverId = draft.id;
     } catch (e) {
-      console.warn("[layout] draft recovery check failed", e);
+      console.warn("[layout] draft recovery scan failed", e);
+      return;
     }
-  }, []);
+
+    let cancelled = false;
+    let didNavigate = false;
+
+    const go = () => {
+      if (cancelled || didNavigate || recoverId == null) {
+        return;
+      }
+      if (!navigationRef.isReady()) {
+        return;
+      }
+      try {
+        router.push({
+          pathname: "/free-row",
+          params: { recover: recoverId },
+        });
+        didNavigate = true;
+      } catch (e) {
+        console.warn("[layout] draft recovery navigate failed", e);
+      }
+    };
+
+    // First attempts on the next macrotasks / animation frames; then
+    // poll briefly until `isReady()` flips true (typically < 1 frame).
+    const t0 = setTimeout(go, 0);
+    const t1 = setTimeout(go, 50);
+    const iv = setInterval(go, 50);
+    const stop = setTimeout(() => {
+      clearInterval(iv);
+    }, 10_000);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(t0);
+      clearTimeout(t1);
+      clearInterval(iv);
+      clearTimeout(stop);
+    };
+  }, [navigationRef]);
 }
 
 /**

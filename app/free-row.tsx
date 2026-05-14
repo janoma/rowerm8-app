@@ -26,13 +26,12 @@ import { useHrZoneResolver } from "@/hooks/use-hr-zone-resolver";
 import { useInactivityReminderPref } from "@/hooks/use-inactivity-reminder-pref";
 import { useMotionStream } from "@/hooks/use-motion-stream";
 import { useStrokeSession } from "@/hooks/use-stroke-session";
+import { deleteDraft, loadDraft, writeDraft } from "@/lib/activity/draft";
 import {
   createActivityRecorder,
   INACTIVITY_AUTO_PAUSE_MS,
   INACTIVITY_AUTO_SAVE_MS,
 } from "@/lib/activity/recorder";
-import { deleteDraft, loadDraft, writeDraft } from "@/lib/activity/draft";
-import { accumulateKcal } from "@/lib/energy/calories";
 import { shareFitFile } from "@/lib/activity/share";
 import { classifyShortActivity } from "@/lib/activity/short-activity";
 import { saveActivity, type StoredActivity } from "@/lib/activity/storage";
@@ -42,11 +41,11 @@ import {
   Button,
   EmptyState,
   Stack,
-  ZoneBar,
   useTheme,
+  ZoneBar,
 } from "@/lib/design-system";
+import { accumulateKcal } from "@/lib/energy/calories";
 import { formatDuration } from "@/lib/format/time";
-import { useRecordingKeepAwake } from "@/lib/lifecycle/keep-awake";
 import {
   startRecordingForegroundService,
   stopRecordingForegroundService,
@@ -55,6 +54,7 @@ import {
   cancelInactivityReminder,
   scheduleInactivityReminder,
 } from "@/lib/lifecycle/inactivity-notification";
+import { useRecordingKeepAwake } from "@/lib/lifecycle/keep-awake";
 
 /** Recording lifecycle states. The UI flips between primary buttons (Start, Stop, Pause/Resume, Lap, Share) and notice content based on this. */
 type RecordingPhase = "armed" | "running" | "paused" | "saving" | "saved";
@@ -821,6 +821,8 @@ export default function FreeRowScreen() {
       setSavedActivity(stored);
       setPhase("saved");
       deleteDraft(draft.id);
+      teardownRecordingSideEffects(null);
+      router.replace("/(tabs)/row");
     } catch (e) {
       console.error("[free-row] recovery save failed", e);
       Alert.alert(
@@ -830,13 +832,14 @@ export default function FreeRowScreen() {
       setPhase("armed");
       resetRecordingDisplay();
     }
-  }, [recoveryDraftId, resetRecordingDisplay, t]);
+  }, [recoveryDraftId, resetRecordingDisplay, t, teardownRecordingSideEffects]);
 
   const handleRecoveryDiscard = useCallback(() => {
     if (recoveryDraftId) {
       deleteDraft(recoveryDraftId);
     }
     setRecoveryDraftId(null);
+    router.replace("/(tabs)/row");
   }, [recoveryDraftId]);
 
   const handleStop = useCallback(() => {
